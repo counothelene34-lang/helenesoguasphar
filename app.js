@@ -41,6 +41,8 @@ const adminPanel = document.querySelector(".admin-panel");
 const adminContent = document.querySelector("#adminContent");
 const adminCampaignPicker = document.querySelector("#adminCampaignPicker");
 const adminDashboardNav = document.querySelector("#adminDashboardNav");
+const adminCampaignTitle = document.querySelector("#adminCampaignTitle");
+const adminSectionIntro = document.querySelector("#adminSectionIntro");
 const adminCampaignCards = document.querySelector("#adminCampaignCards");
 const createCampaignForm = document.querySelector("#createCampaignForm");
 const newCampaignTitle = document.querySelector("#newCampaignTitle");
@@ -103,6 +105,33 @@ let currentOrderTemplate = [];
 let adminShowingClosedCampaigns = false;
 let pollResponseCounts = {};
 let activeAdminSection = "new-campaign";
+
+const ADMIN_SECTIONS = {
+  "new-campaign": {
+    title: "Créer une précommande",
+    intro: "Indiquez le nom de la campagne, puis ouvrez-la pour importer son bon de commande."
+  },
+  "new-poll": {
+    title: "Créer un sondage",
+    intro: "Renseignez la question, les réponses possibles et le champ libre si nécessaire."
+  },
+  campaigns: {
+    title: "Campagnes en cours",
+    intro: "Retrouvez les précommandes actives, leur suivi et leurs exports."
+  },
+  polls: {
+    title: "Sondages en cours",
+    intro: "Consultez les sondages actifs et les réponses reçues."
+  },
+  pharmacies: {
+    title: "Accès pharmacies",
+    intro: "Créez ou supprimez les accès pharmacies et retrouvez leurs mots de passe."
+  },
+  archives: {
+    title: "Archivés",
+    intro: "Retrouvez les campagnes et sondages clôturés, avec possibilité de les rouvrir."
+  }
+};
 
 function localResponses() {
   return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
@@ -852,11 +881,14 @@ function pollCard(poll, target) {
 
 function showAdminSection(section) {
   activeAdminSection = section || "new-campaign";
+  const sectionCopy = ADMIN_SECTIONS[activeAdminSection] || ADMIN_SECTIONS["new-campaign"];
   const closedActions = showClosedCampaignsBtn?.closest(".closed-campaign-actions");
   const showCampaignList = activeAdminSection === "campaigns" || activeAdminSection === "archives";
   const showPollList = activeAdminSection === "polls" || activeAdminSection === "archives";
   const showPharmacies = activeAdminSection === "pharmacies";
 
+  adminCampaignTitle.textContent = sectionCopy.title;
+  adminSectionIntro.textContent = sectionCopy.intro;
   createCampaignForm.hidden = activeAdminSection !== "new-campaign";
   createPollForm.hidden = activeAdminSection !== "new-poll";
   createPharmacyForm.hidden = !showPharmacies;

@@ -1486,24 +1486,25 @@ tbody tr:hover {
 }
 
 .admin-dashboard-nav {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-  margin: 22px 0 24px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin: 18px 0 24px;
 }
 
 .admin-dashboard-btn {
-  min-height: 66px;
-  padding: 14px 16px;
+  min-height: 42px;
+  padding: 9px 14px;
   color: var(--green-dark);
   background: #eef8f3;
   border: 1px solid #c8ddd4;
-  border-radius: 10px;
+  border-radius: 999px;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 900;
   text-align: center;
-  box-shadow: 0 8px 18px rgba(25, 45, 34, .06);
+  box-shadow: none;
 }
 
 .admin-dashboard-btn:hover,
@@ -1511,7 +1512,7 @@ tbody tr:hover {
   color: #fff;
   background: var(--green);
   border-color: var(--green);
-  box-shadow: 0 14px 28px rgba(0, 143, 74, .22);
+  box-shadow: 0 10px 24px rgba(0, 143, 74, .18);
 }
 
 .admin-dashboard-btn.active {
