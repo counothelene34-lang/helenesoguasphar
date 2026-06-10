@@ -10,6 +10,9 @@ const form = document.querySelector("#requestForm");
 const pharmacyGate = document.querySelector("#pharmacyGate");
 const pharmacyLoginForm = document.querySelector("#pharmacyLoginForm");
 const pharmacyPassword = document.querySelector("#pharmacyPassword");
+const pharmacyPasswordChangeForm = document.querySelector("#pharmacyPasswordChangeForm");
+const newPharmacyPassword = document.querySelector("#newPharmacyPassword");
+const confirmPharmacyPassword = document.querySelector("#confirmPharmacyPassword");
 const pharmacyLoginMessage = document.querySelector("#pharmacyLoginMessage");
 const pharmacySessionBar = document.querySelector("#pharmacySessionBar");
 const currentPharmacyName = document.querySelector("#currentPharmacyName");
@@ -107,6 +110,8 @@ let campaigns = [];
 let polls = [];
 let pharmacies = [];
 let currentPharmacy = JSON.parse(localStorage.getItem(PHARMACY_SESSION_KEY) || "null");
+let pendingPasswordPharmacy = null;
+let pendingInitialPassword = "";
 let pharmacyPollAnswers = {};
 let pharmacyCampaignResponses = {};
 let selectedCampaign = null;
@@ -320,6 +325,13 @@ async function loginPharmacy(password) {
   });
 }
 
+async function changePharmacyPassword(pharmacyId, oldPassword, newPassword) {
+  return requestJson("/api/pharmacy-password", {
+    method: "PUT",
+    body: JSON.stringify({ pharmacyId, oldPassword, newPassword })
+  });
+}
+
 async function refreshPharmacyPollAnswers() {
   pharmacyPollAnswers = {};
   if (!API_AVAILABLE || !currentPharmacy?.id) return;
@@ -365,7 +377,7 @@ function generatePharmacyPassword(name) {
 }
 
 function pharmacyAccessRequired() {
-  return pharmacies.length > 0 && !currentPharmacy;
+  return pharmacies.length > 0 && (!currentPharmacy || pendingPasswordPharmacy);
 }
 
 async function getOrderTemplate() {
@@ -592,6 +604,19 @@ function renderPharmacyAccess() {
   pharmacyGate.hidden = !requiresLogin;
   pharmacySessionBar.hidden = !currentPharmacy;
   currentPharmacyName.textContent = currentPharmacy ? `Connecté : ${currentPharmacy.name}` : "";
+  if (pendingPasswordPharmacy) {
+    pharmacyLoginForm.hidden = true;
+    pharmacyPasswordChangeForm.hidden = false;
+    pharmacyGate.querySelector("h2").textContent = "Créez votre mot de passe";
+    pharmacyGate.querySelector(".pharmacy-gate-card > p:not(.eyebrow):not(.status-message)").textContent =
+      `Première connexion pour ${pendingPasswordPharmacy.name}. Choisissez un nouveau mot de passe personnel.`;
+  } else {
+    pharmacyLoginForm.hidden = false;
+    pharmacyPasswordChangeForm.hidden = true;
+    pharmacyGate.querySelector("h2").textContent = "Identifiez votre pharmacie";
+    pharmacyGate.querySelector(".pharmacy-gate-card > p:not(.eyebrow):not(.status-message)").textContent =
+      "Entrez le mot de passe transmis par SOGUASPHAR pour accéder aux commandes et sondages.";
+  }
 
   if (requiresLogin) {
     heroBand.hidden = true;
@@ -622,12 +647,13 @@ function renderPharmacyAccounts() {
   pharmacyAccountsList.innerHTML = `
     <div class="table-wrap compact">
       <table>
-        <thead><tr><th>Pharmacie</th><th>Mot de passe</th><th>Action</th></tr></thead>
+        <thead><tr><th>Pharmacie</th><th>Mot de passe actuel</th><th>Statut</th><th>Action</th></tr></thead>
         <tbody>
           ${pharmacies.map((pharmacy) => `
             <tr>
               <td><strong>${escapeHtml(pharmacy.name)}</strong></td>
               <td><code>${escapeHtml(pharmacy.password)}</code></td>
+              <td>${pharmacy.mustChangePassword === false ? "Personnalisé" : "À changer"}</td>
               <td><button class="delete-response-btn" type="button" data-delete-pharmacy="${escapeHtml(pharmacy.id)}" aria-label="Supprimer ${escapeHtml(pharmacy.name)}">&#128465;</button></td>
             </tr>
           `).join("")}
@@ -1636,7 +1662,18 @@ pharmacyLoginForm.addEventListener("submit", async (event) => {
   }
 
   try {
-    currentPharmacy = await loginPharmacy(password);
+    const pharmacy = await loginPharmacy(password);
+    if (pharmacy.mustChangePassword) {
+      pendingPasswordPharmacy = pharmacy;
+      pendingInitialPassword = password;
+      pharmacyPassword.value = "";
+      pharmacyLoginMessage.textContent = "";
+      renderPharmacyAccess();
+      newPharmacyPassword.focus();
+      return;
+    }
+
+    currentPharmacy = pharmacy;
     localStorage.setItem(PHARMACY_SESSION_KEY, JSON.stringify(currentPharmacy));
     pharmacyPassword.value = "";
     pharmacyLoginMessage.textContent = "";
@@ -1650,8 +1687,51 @@ pharmacyLoginForm.addEventListener("submit", async (event) => {
   }
 });
 
+pharmacyPasswordChangeForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (!pendingPasswordPharmacy || !pendingInitialPassword) {
+    pharmacyLoginMessage.textContent = "Reconnectez-vous avec le mot de passe transmis.";
+    pendingPasswordPharmacy = null;
+    pendingInitialPassword = "";
+    renderPharmacyAccess();
+    return;
+  }
+
+  const newPassword = newPharmacyPassword.value.trim();
+  const confirmation = confirmPharmacyPassword.value.trim();
+
+  if (newPassword.length < 6) {
+    pharmacyLoginMessage.textContent = "Le nouveau mot de passe doit contenir au moins 6 caractères.";
+    return;
+  }
+
+  if (newPassword !== confirmation) {
+    pharmacyLoginMessage.textContent = "Les deux mots de passe ne sont pas identiques.";
+    return;
+  }
+
+  try {
+    currentPharmacy = await changePharmacyPassword(pendingPasswordPharmacy.id, pendingInitialPassword, newPassword);
+    localStorage.setItem(PHARMACY_SESSION_KEY, JSON.stringify(currentPharmacy));
+    pendingPasswordPharmacy = null;
+    pendingInitialPassword = "";
+    newPharmacyPassword.value = "";
+    confirmPharmacyPassword.value = "";
+    pharmacyLoginMessage.textContent = "";
+    await refreshPharmacyPollAnswers();
+    await refreshPharmacyCampaignResponses();
+    renderCampaignPickers();
+    showCampaignPicker();
+    renderPharmacyAccess();
+  } catch {
+    pharmacyLoginMessage.textContent = "Impossible d'enregistrer ce mot de passe. Réessayez.";
+  }
+});
+
 logoutPharmacyBtn.addEventListener("click", () => {
   currentPharmacy = null;
+  pendingPasswordPharmacy = null;
+  pendingInitialPassword = "";
   pharmacyPollAnswers = {};
   pharmacyCampaignResponses = {};
   localStorage.removeItem(PHARMACY_SESSION_KEY);
@@ -1974,7 +2054,8 @@ createPharmacyForm.addEventListener("submit", async (event) => {
     id: `pharmacy-${Date.now()}-${Math.random().toString(16).slice(2)}`,
     name,
     password: generatePharmacyPassword(name),
-    active: true
+    active: true,
+    mustChangePassword: true
   };
 
   pharmacies = await savePharmacies([...pharmacies, pharmacy]);

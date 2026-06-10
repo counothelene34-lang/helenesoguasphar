@@ -303,7 +303,8 @@ const server = http.createServer(async (request, response) => {
         id: String(pharmacy.id || Date.now()),
         name: String(pharmacy.name || "").trim(),
         password: String(pharmacy.password || "").trim(),
-        active: pharmacy.active !== false
+        active: pharmacy.active !== false,
+        mustChangePassword: pharmacy.mustChangePassword !== false
       })).filter((pharmacy) => pharmacy.name && pharmacy.password) : [];
       writePharmacies(pharmacies);
       sendJson(response, 200, pharmacies);
@@ -318,7 +319,39 @@ const server = http.createServer(async (request, response) => {
         sendJson(response, 401, { error: "Mot de passe pharmacie incorrect" });
         return;
       }
-      sendJson(response, 200, { id: pharmacy.id, name: pharmacy.name });
+      sendJson(response, 200, {
+        id: pharmacy.id,
+        name: pharmacy.name,
+        mustChangePassword: pharmacy.mustChangePassword !== false
+      });
+      return;
+    }
+
+    if (url.pathname === "/api/pharmacy-password" && request.method === "PUT") {
+      const payload = JSON.parse(await readBody(request));
+      const pharmacyId = String(payload.pharmacyId || "").trim();
+      const oldPassword = String(payload.oldPassword || "").trim();
+      const newPassword = String(payload.newPassword || "").trim();
+      const pharmacies = readPharmacies();
+      const pharmacy = pharmacies.find((item) => item.active !== false && item.id === pharmacyId && item.password === oldPassword);
+
+      if (!pharmacy) {
+        sendJson(response, 401, { error: "Mot de passe actuel incorrect" });
+        return;
+      }
+
+      if (newPassword.length < 6) {
+        sendJson(response, 400, { error: "Le nouveau mot de passe doit contenir au moins 6 caractères" });
+        return;
+      }
+
+      const updatedPharmacies = pharmacies.map((item) => item.id === pharmacy.id ? {
+        ...item,
+        password: newPassword,
+        mustChangePassword: false
+      } : item);
+      writePharmacies(updatedPharmacies);
+      sendJson(response, 200, { id: pharmacy.id, name: pharmacy.name, mustChangePassword: false });
       return;
     }
 

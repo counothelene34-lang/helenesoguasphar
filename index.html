@@ -38,6 +38,13 @@
             <input id="pharmacyPassword" type="password" autocomplete="current-password" placeholder="Mot de passe">
             <button class="primary-btn" type="submit">Entrer</button>
           </form>
+          <form id="pharmacyPasswordChangeForm" class="pharmacy-password-change" hidden>
+            <label for="newPharmacyPassword">Nouveau mot de passe</label>
+            <input id="newPharmacyPassword" type="password" autocomplete="new-password" placeholder="Nouveau mot de passe" minlength="6">
+            <label for="confirmPharmacyPassword">Confirmer le mot de passe</label>
+            <input id="confirmPharmacyPassword" type="password" autocomplete="new-password" placeholder="Confirmer le mot de passe" minlength="6">
+            <button class="primary-btn" type="submit">Enregistrer mon mot de passe</button>
+          </form>
           <p id="pharmacyLoginMessage" class="status-message" role="status"></p>
         </div>
       </section>
