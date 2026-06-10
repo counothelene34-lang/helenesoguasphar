@@ -393,6 +393,57 @@ const server = http.createServer(async (request, response) => {
       return;
     }
 
+    if (url.pathname === "/api/responses" && request.method === "PUT") {
+      if (request.headers["x-admin-code"] !== ADMIN_CODE) {
+        sendJson(response, 401, { error: "Code administrateur incorrect" });
+        return;
+      }
+
+      const payload = JSON.parse(await readBody(request));
+      const responses = Array.isArray(payload) ? payload.map((item) => ({
+        id: String(item.id || Date.now()),
+        campaignId: String(item.campaignId || "herboristerie"),
+        campaignTitle: String(item.campaignTitle || "Herboristerie"),
+        createdAt: String(item.createdAt || new Date().toLocaleString("fr-FR")),
+        pharmacyId: String(item.pharmacyId || "").trim(),
+        pharmacyName: String(item.pharmacyName || "").trim(),
+        interest: String(item.interest || "").trim(),
+        products: Array.isArray(item.products) ? item.products.map((product) => ({
+          designation: String(product.designation || product.product || "").trim(),
+          cip: String(product.cip || "").trim(),
+          tarif: String(product.tarif || "").trim(),
+          colisage: String(product.colisage || "").trim(),
+          quantity: String(product.quantity || "").trim()
+        })) : [],
+        notes: String(item.notes || "").trim()
+      })) : [];
+      writeResponses(responses);
+      sendJson(response, 200, responses);
+      return;
+    }
+
+    if (url.pathname === "/api/poll-responses" && request.method === "PUT") {
+      if (request.headers["x-admin-code"] !== ADMIN_CODE) {
+        sendJson(response, 401, { error: "Code administrateur incorrect" });
+        return;
+      }
+
+      const payload = JSON.parse(await readBody(request));
+      const responses = Array.isArray(payload) ? payload.map((item) => ({
+        id: String(item.id || Date.now()),
+        pollId: String(item.pollId || ""),
+        pollQuestion: String(item.pollQuestion || "").trim(),
+        createdAt: String(item.createdAt || new Date().toLocaleString("fr-FR")),
+        pharmacyId: String(item.pharmacyId || "").trim(),
+        pharmacyName: String(item.pharmacyName || "").trim(),
+        answer: String(item.answer || "").trim(),
+        freeText: String(item.freeText || "").trim()
+      })) : [];
+      writePollResponses(responses);
+      sendJson(response, 200, responses);
+      return;
+    }
+
     if (url.pathname === "/api/pharmacy-poll-responses" && request.method === "GET") {
       const pharmacyId = url.searchParams.get("pharmacyId");
       const responses = readPollResponses()
