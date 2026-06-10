@@ -675,29 +675,132 @@ function normalizeHeader(value) {
     .replace(/[^a-z0-9]/g, "");
 }
 
+const TEMPLATE_HEADER_ALIASES = {
+  designation: [
+    "designation", "desig", "libelle", "article", "articles", "produit", "produits",
+    "description", "nom", "intitule", "reference", "ref"
+  ],
+  cip: ["cip", "codecip", "cip7", "cip13", "code", "codeean", "ean", "ean13", "gencode"],
+  tarif: [
+    "tarif", "tarifunitaire", "prix", "prixunitaire", "prixht", "tarifht", "pvc",
+    "pu", "punitaire", "montant", "prixpublic"
+  ],
+  colisage: ["colisage", "conditionnement", "colis", "parcolis", "uvc", "pcb"]
+};
+
+function findTemplateColumn(headers, kind) {
+  return headers.findIndex((header) => (TEMPLATE_HEADER_ALIASES[kind] || []).includes(header));
+}
+
+function cleanTemplateCell(value) {
+  if (value === null || value === undefined) return "";
+  return String(value).replace(/\s+/g, " ").trim();
+}
+
+function formatTemplateTarif(value) {
+  if (value === null || value === undefined || value === "") return "";
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return `${value.toLocaleString("fr-FR", {
+      minimumFractionDigits: value % 1 ? 2 : 0,
+      maximumFractionDigits: 2
+    })} €`;
+  }
+  const clean = cleanTemplateCell(value);
+  if (!clean) return "";
+  return clean.replace(".", ",").replace(/\s*€?$/, " €").trim();
+}
+
+function looksLikeHeaderRow(headers) {
+  const score = ["designation", "cip", "tarif", "colisage"]
+    .reduce((total, kind) => total + (findTemplateColumn(headers, kind) !== -1 ? 1 : 0), 0);
+  return score >= 2 || (findTemplateColumn(headers, "designation") !== -1 && score >= 1);
+}
+
+function isIgnoredTemplateLine(text) {
+  const header = normalizeHeader(text);
+  return !header
+    || [
+      "designation", "desig", "libelle", "article", "produit", "produits", "tarif",
+      "tarifunitaire", "cip", "colisage", "commandes", "quantite", "quantites"
+    ].includes(header)
+    || /^(total|soustotal|bondecommande|commande|precommande)$/.test(header);
+}
+
+function inferTemplateRows(rows) {
+  const priceRegex = /(?:\d+[,.]\d{1,2}\s*€?|\d+\s*€)/;
+  const cipRegex = /\b(?:\d[\s.-]*){7,14}\b/;
+
+  return rows
+    .map((row, index) => {
+      const cells = row.map(cleanTemplateCell);
+      const joined = cells.filter(Boolean).join(" ");
+      if (isIgnoredTemplateLine(joined)) return null;
+
+      const cipMatch = joined.match(cipRegex);
+      const priceIndex = cells.findIndex((cell) => priceRegex.test(cell));
+      const designationCell = cells.find((cell, cellIndex) => {
+        if (!cell || cellIndex === priceIndex) return false;
+        if (cipMatch && cell.replace(/\D/g, "") === cipMatch[0].replace(/\D/g, "")) return false;
+        if (priceRegex.test(cell)) return false;
+        return /[a-zA-ZÀ-ÿ]/.test(cell) && !isIgnoredTemplateLine(cell);
+      });
+      const designation = cleanTemplateCell(designationCell || cells.find(Boolean));
+
+      if (!designation || isIgnoredTemplateLine(designation)) return null;
+
+      return {
+        id: `line-${Date.now()}-${index}`,
+        designation,
+        cip: cipMatch ? cipMatch[0].replace(/\D/g, "") : "",
+        tarif: priceIndex !== -1 ? formatTemplateTarif(cells[priceIndex]) : "",
+        colisage: ""
+      };
+    })
+    .filter(Boolean);
+}
+
 function normalizeTemplateRows(rows) {
-  if (!rows.length) return [];
-  const headers = rows[0].map(normalizeHeader);
+  const cleanRows = rows
+    .map((row) => Array.isArray(row) ? row : [])
+    .filter((row) => row.some((cell) => cleanTemplateCell(cell)));
+  if (!cleanRows.length) return [];
+
+  const headerIndex = cleanRows.findIndex((row) => looksLikeHeaderRow(row.map(normalizeHeader)));
+  if (headerIndex === -1) {
+    const inferredRows = inferTemplateRows(cleanRows);
+    if (inferredRows.length) return inferredRows;
+    throw new Error("Aucune ligne produit exploitable n'a été trouvée.");
+  }
+
+  const headers = cleanRows[headerIndex].map(normalizeHeader);
   const indexes = {
-    designation: headers.findIndex((header) => ["designation", "desig", "libelle", "produit"].includes(header)),
-    cip: headers.findIndex((header) => ["cip", "codecip", "cip13", "code"].includes(header)),
-    tarif: headers.findIndex((header) => ["tarif", "prix", "prixht", "tarifht", "pvc"].includes(header)),
-    colisage: headers.findIndex((header) => ["colisage", "conditionnement", "colis"].includes(header))
+    designation: findTemplateColumn(headers, "designation"),
+    cip: findTemplateColumn(headers, "cip"),
+    tarif: findTemplateColumn(headers, "tarif"),
+    colisage: findTemplateColumn(headers, "colisage")
   };
 
-  if (indexes.designation === -1 || indexes.cip === -1 || indexes.tarif === -1 || indexes.colisage === -1) {
+  if (indexes.designation === -1) {
+    const inferredRows = inferTemplateRows(cleanRows.slice(headerIndex + 1));
+    if (inferredRows.length) return inferredRows;
     throw new Error("Colonnes attendues : désignation, CIP, tarif, colisage.");
   }
 
-  return rows.slice(1)
+  const importedRows = cleanRows.slice(headerIndex + 1)
     .map((row, index) => ({
       id: `line-${Date.now()}-${index}`,
-      designation: String(row[indexes.designation] || "").trim(),
-      cip: String(row[indexes.cip] || "").trim(),
-      tarif: String(row[indexes.tarif] || "").trim(),
-      colisage: String(row[indexes.colisage] || "").trim()
+      designation: cleanTemplateCell(row[indexes.designation]),
+      cip: indexes.cip === -1 ? "" : cleanTemplateCell(row[indexes.cip]),
+      tarif: indexes.tarif === -1 ? "" : formatTemplateTarif(row[indexes.tarif]),
+      colisage: indexes.colisage === -1 ? "" : cleanTemplateCell(row[indexes.colisage])
     }))
-    .filter((row) => row.designation || row.cip);
+    .filter((row) => row.designation && !isIgnoredTemplateLine(row.designation));
+
+  if (importedRows.length) return importedRows;
+
+  const inferredRows = inferTemplateRows(cleanRows.slice(headerIndex + 1));
+  if (inferredRows.length) return inferredRows;
+  throw new Error("Aucune ligne produit exploitable n'a été trouvée.");
 }
 
 function parseDelimited(text) {
