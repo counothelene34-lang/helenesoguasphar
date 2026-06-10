@@ -369,6 +369,12 @@ main::before {
   transform: none;
 }
 
+.whatsapp-poll-card.is-open {
+  background: linear-gradient(180deg, #dcffd7, #f7fff5);
+  border-color: #8ed986;
+  box-shadow: 0 16px 34px rgba(40, 92, 63, .18);
+}
+
 .whatsapp-poll-title {
   padding: 0 16px;
   color: #101b16;
@@ -466,6 +472,46 @@ main::before {
   font-size: 15px;
   font-weight: 900;
   text-align: center;
+}
+
+.inline-poll-form {
+  display: grid;
+  gap: 12px;
+  padding: 14px 16px 16px;
+  border-top: 1px solid rgba(112, 179, 101, .34);
+}
+
+.inline-poll-options {
+  display: grid;
+  gap: 9px;
+}
+
+.inline-poll-choice {
+  margin: 0;
+}
+
+.inline-poll-free-label {
+  color: #101b16;
+  font-weight: 800;
+}
+
+.inline-poll-form textarea {
+  width: 100%;
+  min-height: 82px;
+  padding: 12px;
+  color: var(--ink);
+  background: rgba(255, 255, 255, .92);
+  border: 1px solid #b8cbc4;
+  border-radius: 10px;
+  resize: vertical;
+}
+
+.inline-poll-form .primary-btn {
+  width: 100%;
+}
+
+.inline-poll-message {
+  margin: 0;
 }
 
 @media (min-width: 1180px) {

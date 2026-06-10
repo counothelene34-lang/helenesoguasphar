@@ -985,6 +985,7 @@ function pollCard(poll, target) {
   const optionCount = (poll.options || []).length;
   const responseCount = isAdmin ? (pollResponseCounts[poll.id] || 0) : optionCount;
   const localAnswer = !isAdmin ? (currentPharmacy ? pharmacyPollAnswers[poll.id] : localAnsweredPolls()[poll.id]) : null;
+  const isSelected = !isAdmin && !localAnswer && selectedPoll?.id === poll.id;
   const optionsPreview = (poll.options || []).map((option) => `
     <div class="whatsapp-poll-option ${localAnswer === option ? "is-answered" : ""}">
       <span class="whatsapp-poll-circle" aria-hidden="true">${localAnswer === option ? "✓" : ""}</span>
@@ -993,15 +994,34 @@ function pollCard(poll, target) {
       <span class="whatsapp-poll-bar" aria-hidden="true"></span>
     </div>
   `).join("");
+  const inlineOptions = (poll.options || []).map((option, index) => `
+    <label class="poll-choice inline-poll-choice">
+      <input type="radio" name="inlinePollAnswer" value="${escapeHtml(option)}" ${index === 0 ? "required" : ""}>
+      <span class="poll-choice-mark" aria-hidden="true"></span>
+      <span class="poll-choice-text">${escapeHtml(option)}</span>
+    </label>
+  `).join("");
+  const inlineFreeText = poll.freeTextLabel ? `
+    <label class="inline-poll-free-label" for="inlineFreeText-${escapeHtml(poll.id)}">${escapeHtml(poll.freeTextLabel)}</label>
+    <textarea id="inlineFreeText-${escapeHtml(poll.id)}" name="inlinePollFreeText" rows="3" ${poll.freeTextRequired ? "required" : ""}></textarea>
+  ` : "";
 
   if (!isAdmin) {
     return `
-      <article class="whatsapp-poll-card ${localAnswer ? "answered" : ""}" ${localAnswer ? "" : `data-form-poll="${escapeHtml(poll.id)}"`}>
+      <article class="whatsapp-poll-card ${localAnswer ? "answered" : ""} ${isSelected ? "is-open" : ""}" ${localAnswer || isSelected ? "" : `data-form-poll="${escapeHtml(poll.id)}"`}>
         <div class="whatsapp-poll-title">${escapeHtml(poll.question)}</div>
         <div class="whatsapp-poll-options">
           ${optionsPreview}
         </div>
-        ${localAnswer
+        ${isSelected ? `
+          <form class="inline-poll-form" data-inline-poll-form="${escapeHtml(poll.id)}">
+            <input type="hidden" name="inlinePollPharmacy" value="${escapeHtml(currentPharmacy?.name || "")}">
+            <div class="poll-choice-list inline-poll-options">${inlineOptions}</div>
+            ${inlineFreeText}
+            <button class="primary-btn" type="submit">Valider ma réponse</button>
+            <p class="status-message inline-poll-message" role="status"></p>
+          </form>
+        ` : localAnswer
           ? `<div class="whatsapp-poll-answered">Réponse enregistrée : ${escapeHtml(localAnswer)}</div>`
           : `<button class="whatsapp-poll-votes" type="button" data-form-poll="${escapeHtml(poll.id)}">Répondre au sondage</button>`}
       </article>
@@ -1059,8 +1079,7 @@ function showAdminSection(section) {
 function renderCampaignPickers() {
   const openCampaigns = campaigns.filter((campaign) => !campaign.closed);
   const adminCampaigns = campaigns.filter((campaign) => activeAdminSection === "archives" ? campaign.closed : !campaign.closed);
-  const answeredPolls = currentPharmacy ? pharmacyPollAnswers : localAnsweredPolls();
-  const openPolls = polls.filter((poll) => !poll.closed && !answeredPolls[poll.id]);
+  const openPolls = polls.filter((poll) => !poll.closed);
   const adminPolls = polls.filter((poll) => activeAdminSection === "archives" ? poll.closed : !poll.closed);
 
   campaignCards.innerHTML = openCampaigns.length
@@ -1124,32 +1143,36 @@ function selectPoll(pollId) {
   campaignPicker.hidden = false;
   heroBand.hidden = false;
   form.hidden = true;
-  pollForm.hidden = false;
+  pollForm.hidden = true;
   responseSuccess.hidden = true;
-  pollMessage.textContent = "";
-  pollForm.reset();
-  applyCurrentPharmacyToForms();
-  pollQuestionTitle.textContent = selectedPoll.question;
-  pollOptions.innerHTML = (selectedPoll.options || []).map((option, index) => `
-    <label class="poll-choice">
-      <input type="radio" name="pollAnswer" value="${escapeHtml(option)}" ${index === 0 ? "required" : ""}>
-      <span class="poll-choice-mark" aria-hidden="true"></span>
-      <span class="poll-choice-text">${escapeHtml(option)}</span>
-    </label>
-  `).join("");
-  updatePollChoiceSelection();
-
-  const hasFreeText = Boolean(selectedPoll.freeTextLabel);
-  pollFreeTextBlock.hidden = !hasFreeText;
-  pollFreeTextLabel.textContent = selectedPoll.freeTextLabel || "Commentaire";
-  pollFreeText.required = Boolean(selectedPoll.freeTextRequired);
-  pollFreeText.value = "";
+  renderCampaignPickers();
+  const openedCard = Array.from(pollCards.querySelectorAll("[data-inline-poll-form]"))
+    .find((item) => item.dataset.inlinePollForm === selectedPoll.id);
+  openedCard?.closest(".whatsapp-poll-card")?.scrollIntoView({ behavior: "smooth", block: "center" });
 }
 
 function updatePollChoiceSelection() {
   pollOptions.querySelectorAll(".poll-choice").forEach((choice) => {
     choice.classList.toggle("is-selected", Boolean(choice.querySelector("input")?.checked));
   });
+}
+
+async function savePollAnswer(poll, answer, pharmacyName, freeText) {
+  await appendPollResponse({
+    id: createId(),
+    pollId: poll.id,
+    pollQuestion: poll.question,
+    createdAt: new Date().toLocaleString("fr-FR"),
+    pharmacyId: currentPharmacy?.id || "",
+    pharmacyName,
+    answer,
+    freeText
+  });
+
+  saveLocalAnsweredPoll(poll.id, answer);
+  if (currentPharmacy?.id) {
+    pharmacyPollAnswers[poll.id] = answer;
+  }
 }
 
 function showCampaignPicker() {
@@ -1652,9 +1675,47 @@ campaignCards.addEventListener("keydown", (event) => {
 });
 
 pollCards.addEventListener("click", (event) => {
+  if (event.target.closest("form")) return;
   const button = event.target.closest("[data-form-poll]");
   if (!button) return;
   selectPoll(button.dataset.formPoll);
+});
+
+pollCards.addEventListener("change", (event) => {
+  const form = event.target.closest("[data-inline-poll-form]");
+  if (!form) return;
+  form.querySelectorAll(".poll-choice").forEach((choice) => {
+    choice.classList.toggle("is-selected", Boolean(choice.querySelector("input")?.checked));
+  });
+});
+
+pollCards.addEventListener("submit", async (event) => {
+  const inlineForm = event.target.closest("[data-inline-poll-form]");
+  if (!inlineForm) return;
+  event.preventDefault();
+
+  const poll = polls.find((item) => item.id === inlineForm.dataset.inlinePollForm);
+  const message = inlineForm.querySelector(".inline-poll-message");
+  if (!poll) return;
+
+  const selectedAnswer = inlineForm.querySelector('input[name="inlinePollAnswer"]:checked')?.value || "";
+  const pharmacyName = currentPharmacy?.name || inlineForm.querySelector('[name="inlinePollPharmacy"]')?.value.trim() || "";
+  const freeText = inlineForm.querySelector('[name="inlinePollFreeText"]')?.value.trim() || "";
+
+  if (!pharmacyName || !selectedAnswer) {
+    if (message) message.textContent = "Le nom de la pharmacie et la réponse sont obligatoires.";
+    return;
+  }
+
+  if (poll.freeTextRequired && !freeText) {
+    if (message) message.textContent = "Merci de remplir le champ demandé.";
+    return;
+  }
+
+  await savePollAnswer(poll, selectedAnswer, pharmacyName, freeText);
+  selectedPoll = null;
+  renderCampaignPickers();
+  await renderPollResults();
 });
 
 pollOptions.addEventListener("change", updatePollChoiceSelection);
@@ -2012,21 +2073,7 @@ pollForm.addEventListener("submit", async (event) => {
     return;
   }
 
-  await appendPollResponse({
-    id: createId(),
-    pollId: selectedPoll.id,
-    pollQuestion: selectedPoll.question,
-    createdAt: new Date().toLocaleString("fr-FR"),
-    pharmacyId: currentPharmacy?.id || "",
-    pharmacyName,
-    answer: selectedAnswer,
-    freeText
-  });
-
-  saveLocalAnsweredPoll(selectedPoll.id, selectedAnswer);
-  if (currentPharmacy?.id) {
-    pharmacyPollAnswers[selectedPoll.id] = selectedAnswer;
-  }
+  await savePollAnswer(selectedPoll, selectedAnswer, pharmacyName, freeText);
   renderCampaignPickers();
   pollForm.reset();
   await renderPollResults();
