@@ -71,12 +71,20 @@ const saveCampaignMessageBtn = document.querySelector("#saveCampaignMessageBtn")
 const campaignImageBlock = document.querySelector("#campaignImageBlock");
 const campaignImageLink = document.querySelector("#campaignImageLink");
 const campaignImage = document.querySelector("#campaignImage");
+const campaignImageBlock2 = document.querySelector("#campaignImageBlock2");
+const campaignImageLink2 = document.querySelector("#campaignImageLink2");
+const campaignImage2 = document.querySelector("#campaignImage2");
 const campaignImageFile = document.querySelector("#campaignImageFile");
+const campaignImageFile2 = document.querySelector("#campaignImageFile2");
 const campaignImageAdminPreview = document.querySelector("#campaignImageAdminPreview");
 const campaignImageAdminLink = document.querySelector("#campaignImageAdminLink");
 const campaignImageAdmin = document.querySelector("#campaignImageAdmin");
+const campaignImageAdminPreview2 = document.querySelector("#campaignImageAdminPreview2");
+const campaignImageAdminLink2 = document.querySelector("#campaignImageAdminLink2");
+const campaignImageAdmin2 = document.querySelector("#campaignImageAdmin2");
 const campaignImageMessage = document.querySelector("#campaignImageMessage");
 const removeCampaignImageBtn = document.querySelector("#removeCampaignImageBtn");
+const removeCampaignImageBtn2 = document.querySelector("#removeCampaignImageBtn2");
 const adminMessage = document.querySelector("#adminMessage");
 const responsesTable = document.querySelector("#responsesTable");
 const answeredPharmacies = document.querySelector("#answeredPharmacies");
@@ -184,6 +192,7 @@ function buildDefaultCampaigns(orderTemplate = []) {
       description: "Bon de commande Herboristerie extrait du PDF.",
       pharmacyMessage: "",
       imageData: "",
+      imageData2: "",
       closed: false,
       template: orderTemplate
     }
@@ -527,6 +536,7 @@ function campaignResponseSummary(response) {
 
 function refreshCampaignImagePreview(campaign) {
   const imageData = campaign?.imageData || "";
+  const imageData2 = campaign?.imageData2 || "";
   if (campaignImageBlock && campaignImage) {
     campaignImageBlock.hidden = !imageData;
     campaignImageLink.href = imageData || "#";
@@ -534,11 +544,25 @@ function refreshCampaignImagePreview(campaign) {
     campaignImage.alt = imageData ? `Image ${campaign?.title || "commande"}` : "";
   }
 
+  if (campaignImageBlock2 && campaignImage2) {
+    campaignImageBlock2.hidden = !imageData2;
+    campaignImageLink2.href = imageData2 || "#";
+    campaignImage2.src = imageData2;
+    campaignImage2.alt = imageData2 ? `Deuxième image ${campaign?.title || "commande"}` : "";
+  }
+
   if (campaignImageAdminPreview && campaignImageAdmin) {
     campaignImageAdminPreview.hidden = !imageData;
     campaignImageAdminLink.href = imageData || "#";
     campaignImageAdmin.src = imageData;
     campaignImageAdmin.alt = imageData ? `Image ${campaign?.title || "commande"}` : "";
+  }
+
+  if (campaignImageAdminPreview2 && campaignImageAdmin2) {
+    campaignImageAdminPreview2.hidden = !imageData2;
+    campaignImageAdminLink2.href = imageData2 || "#";
+    campaignImageAdmin2.src = imageData2;
+    campaignImageAdmin2.alt = imageData2 ? `Deuxième image ${campaign?.title || "commande"}` : "";
   }
 }
 
@@ -795,9 +819,10 @@ function campaignCard(campaign, target) {
   const isAdmin = target === "admin";
   const completedResponse = !isAdmin ? pharmacyCampaignResponses[campaign.id] : null;
   const isCompleted = Boolean(completedResponse);
-  const imageMarkup = campaign.imageData
-    ? `<a class="campaign-card-image" href="${campaign.imageData}" target="_blank" rel="noopener" title="Ouvrir l'image"><img src="${campaign.imageData}" alt="Image ${escapeHtml(campaign.title)}"></a>`
-    : "";
+  const imageMarkup = [campaign.imageData, campaign.imageData2]
+    .filter(Boolean)
+    .map((imageData, index) => `<a class="campaign-card-image" href="${imageData}" target="_blank" rel="noopener" title="Ouvrir l'image ${index + 1}"><img src="${imageData}" alt="Image ${index + 1} ${escapeHtml(campaign.title)}"></a>`)
+    .join("");
   const statusLabel = campaign.closed ? "Clôturée" : (campaign.type || "Commande");
   const displayStatusLabel = isCompleted ? "Réalisée" : statusLabel;
   const summary = campaignResponseSummary(completedResponse);
@@ -1038,6 +1063,7 @@ async function selectAdminCampaign(campaignId) {
   campaignPharmacyMessage.value = selectedAdminCampaign.pharmacyMessage || selectedAdminCampaign.description || "";
   campaignImageMessage.textContent = "";
   campaignImageFile.value = "";
+  campaignImageFile2.value = "";
   refreshCampaignImagePreview(selectedAdminCampaign);
   adminCampaignPicker.hidden = true;
   adminDetail.hidden = false;
@@ -1593,6 +1619,25 @@ campaignImageFile.addEventListener("change", async () => {
   }
 });
 
+campaignImageFile2.addEventListener("change", async () => {
+  const file = campaignImageFile2.files[0];
+  if (!file || !selectedAdminCampaign) return;
+
+  try {
+    campaignImageMessage.textContent = "Préparation de la deuxième image...";
+    selectedAdminCampaign.imageData2 = await imageFileToDataUrl(file);
+    campaigns = campaigns.map((campaign) => campaign.id === selectedAdminCampaign.id ? selectedAdminCampaign : campaign);
+    await saveCampaigns(campaigns);
+    refreshCampaignImagePreview(selectedAdminCampaign);
+    renderCampaignPickers();
+    campaignImageMessage.textContent = "Deuxième image enregistrée.";
+  } catch (error) {
+    campaignImageMessage.textContent = error.message;
+  } finally {
+    campaignImageFile2.value = "";
+  }
+});
+
 removeCampaignImageBtn.addEventListener("click", async () => {
   if (!selectedAdminCampaign) return;
   const confirmed = selectedAdminCampaign.imageData ? confirm("Retirer l'image de cette commande ?") : true;
@@ -1603,6 +1648,18 @@ removeCampaignImageBtn.addEventListener("click", async () => {
   refreshCampaignImagePreview(selectedAdminCampaign);
   renderCampaignPickers();
   campaignImageMessage.textContent = "Image retirée.";
+});
+
+removeCampaignImageBtn2.addEventListener("click", async () => {
+  if (!selectedAdminCampaign) return;
+  const confirmed = selectedAdminCampaign.imageData2 ? confirm("Retirer la deuxième image de cette commande ?") : true;
+  if (!confirmed) return;
+  selectedAdminCampaign.imageData2 = "";
+  campaigns = campaigns.map((campaign) => campaign.id === selectedAdminCampaign.id ? selectedAdminCampaign : campaign);
+  await saveCampaigns(campaigns);
+  refreshCampaignImagePreview(selectedAdminCampaign);
+  renderCampaignPickers();
+  campaignImageMessage.textContent = "Deuxième image retirée.";
 });
 
 createCampaignForm.addEventListener("submit", async (event) => {
@@ -1628,6 +1685,7 @@ createCampaignForm.addEventListener("submit", async (event) => {
     description: "Nouvelle précommande à paramétrer.",
     pharmacyMessage: "",
     imageData: "",
+    imageData2: "",
     closed: false,
     template: []
   };

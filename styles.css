@@ -974,7 +974,8 @@ textarea:focus {
 }
 
 #orderFile,
-#campaignImageFile {
+#campaignImageFile,
+#campaignImageFile2 {
   position: absolute;
   width: 1px;
   height: 1px;

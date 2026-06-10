@@ -59,6 +59,7 @@ function defaultOrders() {
       description: "Bon de commande Herboristerie extrait du PDF.",
       pharmacyMessage: "",
       imageData: "",
+      imageData2: "",
       closed: false,
       template: readOrderTemplate()
     }
@@ -335,6 +336,7 @@ const server = http.createServer(async (request, response) => {
         description: String(order.description || "").trim(),
         pharmacyMessage: String(order.pharmacyMessage || "").trim(),
         imageData: String(order.imageData || ""),
+        imageData2: String(order.imageData2 || ""),
         closed: Boolean(order.closed),
         template: Array.isArray(order.template) ? order.template : []
       })) : [];

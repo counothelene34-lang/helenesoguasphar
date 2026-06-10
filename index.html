@@ -74,6 +74,11 @@
             <img id="campaignImage" alt="">
           </a>
         </section>
+        <section id="campaignImageBlock2" class="campaign-image-block" hidden>
+          <a id="campaignImageLink2" href="#" target="_blank" rel="noopener">
+            <img id="campaignImage2" alt="">
+          </a>
+        </section>
         <section class="question-block">
           <label for="pharmacyName">Nom de la pharmacie <span aria-hidden="true">*</span></label>
           <input id="pharmacyName" name="pharmacyName" type="text" autocomplete="organization" required placeholder="Ex. Pharmacie du Centre">
@@ -253,6 +258,16 @@
             <div id="campaignImageAdminPreview" class="campaign-image-admin-preview" hidden>
               <a id="campaignImageAdminLink" href="#" target="_blank" rel="noopener">
                 <img id="campaignImageAdmin" alt="">
+              </a>
+            </div>
+            <div class="upload-actions">
+              <label class="file-btn" for="campaignImageFile2">Choisir une deuxième image</label>
+              <input id="campaignImageFile2" type="file" accept="image/*">
+              <button id="removeCampaignImageBtn2" class="ghost-btn" type="button">Retirer la deuxième image</button>
+            </div>
+            <div id="campaignImageAdminPreview2" class="campaign-image-admin-preview" hidden>
+              <a id="campaignImageAdminLink2" href="#" target="_blank" rel="noopener">
+                <img id="campaignImageAdmin2" alt="">
               </a>
             </div>
             <p id="campaignImageMessage" class="status-message" role="status"></p>
