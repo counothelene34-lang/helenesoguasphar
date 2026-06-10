@@ -97,6 +97,10 @@ const orderFile = document.querySelector("#orderFile");
 const orderTemplateTable = document.querySelector("#orderTemplateTable");
 const orderAdminMessage = document.querySelector("#orderAdminMessage");
 const downloadTemplateBtn = document.querySelector("#downloadTemplateBtn");
+const imagePreviewModal = document.querySelector("#imagePreviewModal");
+const imagePreviewImg = document.querySelector("#imagePreviewImg");
+const imagePreviewClose = document.querySelector("#imagePreviewClose");
+const imagePreviewCloseBtn = document.querySelector("#imagePreviewCloseBtn");
 let preserveSubmitMessage = false;
 let adminUnlocked = false;
 let campaigns = [];
@@ -566,6 +570,23 @@ function refreshCampaignImagePreview(campaign) {
   }
 }
 
+function openImagePreview(src, alt = "Image") {
+  if (!src || !imagePreviewModal || !imagePreviewImg) return;
+  imagePreviewImg.src = src;
+  imagePreviewImg.alt = alt;
+  imagePreviewModal.hidden = false;
+  document.body.classList.add("modal-open");
+  imagePreviewClose?.focus();
+}
+
+function closeImagePreview() {
+  if (!imagePreviewModal || imagePreviewModal.hidden) return;
+  imagePreviewModal.hidden = true;
+  imagePreviewImg.src = "";
+  imagePreviewImg.alt = "";
+  document.body.classList.remove("modal-open");
+}
+
 function renderPharmacyAccess() {
   const requiresLogin = pharmacyAccessRequired();
   pharmacyGate.hidden = !requiresLogin;
@@ -821,7 +842,7 @@ function campaignCard(campaign, target) {
   const isCompleted = Boolean(completedResponse);
   const imageMarkup = [campaign.imageData, campaign.imageData2]
     .filter(Boolean)
-    .map((imageData, index) => `<a class="campaign-card-image" href="${imageData}" target="_blank" rel="noopener" title="Ouvrir l'image ${index + 1}"><img src="${imageData}" alt="Image ${index + 1} ${escapeHtml(campaign.title)}"></a>`)
+    .map((imageData, index) => `<a class="campaign-card-image" href="${imageData}" data-preview-image title="Voir la photo ${index + 1}"><img src="${imageData}" alt="Image ${index + 1} ${escapeHtml(campaign.title)}"></a>`)
     .join("");
   const statusLabel = campaign.closed ? "Clôturée" : (campaign.type || "Commande");
   const displayStatusLabel = isCompleted ? "Réalisée" : statusLabel;
@@ -1441,6 +1462,29 @@ document.querySelectorAll(".switch-btn").forEach((button) => {
     document.querySelector(`#${button.dataset.view}`).classList.add("active");
     await renderAdmin();
   });
+});
+
+document.addEventListener("click", (event) => {
+  const previewLink = event.target.closest("[data-preview-image]");
+  if (previewLink) {
+    event.preventDefault();
+    const image = previewLink.querySelector("img");
+    openImagePreview(previewLink.getAttribute("href"), image?.alt || "Image");
+    return;
+  }
+
+  if (event.target.closest("[data-close-image-preview]")) {
+    closeImagePreview();
+  }
+});
+
+imagePreviewClose?.addEventListener("click", closeImagePreview);
+imagePreviewCloseBtn?.addEventListener("click", closeImagePreview);
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    closeImagePreview();
+  }
 });
 
 document.querySelectorAll('input[name="interest"]').forEach((input) => {

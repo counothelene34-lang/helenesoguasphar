@@ -58,6 +58,10 @@ body::after {
   pointer-events: none;
 }
 
+body.modal-open {
+  overflow: hidden;
+}
+
 button,
 input,
 textarea {
@@ -593,6 +597,79 @@ main::before {
 
 .campaign-card-image img {
   max-height: 220px;
+}
+
+.image-preview-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.image-preview-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(9, 22, 16, .62);
+}
+
+.image-preview-dialog {
+  position: relative;
+  z-index: 1;
+  width: min(1100px, 96vw);
+  max-height: 92vh;
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 26px 70px rgba(0, 0, 0, .34);
+}
+
+.image-preview-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.image-preview-head h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.image-preview-close {
+  width: 42px;
+  height: 42px;
+  color: var(--green-dark);
+  background: var(--green-soft);
+  border: 1px solid #b9d8ca;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.image-preview-close:hover {
+  color: #fff;
+  background: var(--green);
+  border-color: var(--green);
+}
+
+.image-preview-dialog img {
+  display: block;
+  width: 100%;
+  max-height: calc(92vh - 150px);
+  object-fit: contain;
+  background: var(--soft);
+  border-radius: 8px;
+}
+
+.image-preview-dialog .primary-btn {
+  justify-self: center;
+  min-width: 160px;
 }
 
 .campaign-image-block {

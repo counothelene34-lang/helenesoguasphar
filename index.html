@@ -70,12 +70,12 @@
         <button id="backToCampaignsBtn" class="back-strong-btn" type="button">← Retour au menu</button>
         <section id="campaignNotice" class="campaign-notice" hidden></section>
         <section id="campaignImageBlock" class="campaign-image-block" hidden>
-          <a id="campaignImageLink" href="#" target="_blank" rel="noopener">
+          <a id="campaignImageLink" href="#" data-preview-image>
             <img id="campaignImage" alt="">
           </a>
         </section>
         <section id="campaignImageBlock2" class="campaign-image-block" hidden>
-          <a id="campaignImageLink2" href="#" target="_blank" rel="noopener">
+          <a id="campaignImageLink2" href="#" data-preview-image>
             <img id="campaignImage2" alt="">
           </a>
         </section>
@@ -256,7 +256,7 @@
               <button id="removeCampaignImageBtn" class="ghost-btn" type="button">Retirer l'image</button>
             </div>
             <div id="campaignImageAdminPreview" class="campaign-image-admin-preview" hidden>
-              <a id="campaignImageAdminLink" href="#" target="_blank" rel="noopener">
+              <a id="campaignImageAdminLink" href="#" data-preview-image>
                 <img id="campaignImageAdmin" alt="">
               </a>
             </div>
@@ -266,7 +266,7 @@
               <button id="removeCampaignImageBtn2" class="ghost-btn" type="button">Retirer la deuxième image</button>
             </div>
             <div id="campaignImageAdminPreview2" class="campaign-image-admin-preview" hidden>
-              <a id="campaignImageAdminLink2" href="#" target="_blank" rel="noopener">
+              <a id="campaignImageAdminLink2" href="#" data-preview-image>
                 <img id="campaignImageAdmin2" alt="">
               </a>
             </div>
@@ -432,6 +432,18 @@
       </div>
     </section>
   </main>
+
+  <div id="imagePreviewModal" class="image-preview-modal" role="dialog" aria-modal="true" aria-labelledby="imagePreviewTitle" hidden>
+    <div class="image-preview-backdrop" data-close-image-preview></div>
+    <div class="image-preview-dialog">
+      <div class="image-preview-head">
+        <h2 id="imagePreviewTitle">Prévisualisation</h2>
+        <button id="imagePreviewClose" class="image-preview-close" type="button" aria-label="Fermer la prévisualisation">X</button>
+      </div>
+      <img id="imagePreviewImg" alt="">
+      <button id="imagePreviewCloseBtn" class="primary-btn" type="button">Fermer</button>
+    </div>
+  </div>
 
   <script src="app.js"></script>
 </body>
