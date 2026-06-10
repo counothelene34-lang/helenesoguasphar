@@ -17,6 +17,20 @@
   box-sizing: border-box;
 }
 
+html,
+body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+img,
+svg,
+video,
+canvas {
+  max-width: 100%;
+}
+
 [hidden] {
   display: none !important;
 }
@@ -65,7 +79,12 @@ body.modal-open {
 button,
 input,
 textarea {
+  max-width: 100%;
   font: inherit;
+}
+
+button {
+  min-width: 0;
 }
 
 .topbar {
@@ -1721,11 +1740,31 @@ td {
   color: #344054;
   font-size: 14px;
   line-height: 1.45;
+  overflow-wrap: anywhere;
+  word-break: normal;
 }
 
 .empty-state {
   text-align: center;
   color: var(--muted);
+}
+
+.topbar,
+main,
+.campaign-picker,
+.form-shell,
+.question-block,
+.admin-panel,
+.admin-content,
+.admin-upload,
+.admin-message-editor,
+.quantity-summary,
+.campaign-card,
+.poll-shell,
+.poll-question-block,
+.image-preview-panel,
+.success-card {
+  max-width: 100%;
 }
 
 @media (max-width: 820px) {
@@ -1800,5 +1839,235 @@ td {
   .campaign-actions > *,
   .closed-campaign-actions > * {
     width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  body::after,
+  main::before {
+    display: none;
+  }
+
+  .topbar {
+    position: static;
+    gap: 12px;
+    padding: 10px 12px;
+  }
+
+  main {
+    width: min(100%, calc(100% - 20px));
+    padding: 10px 0 32px;
+  }
+
+  .campaign-picker,
+  .question-block,
+  .admin-panel,
+  .admin-content,
+  .admin-upload,
+  .admin-message-editor,
+  .quantity-summary,
+  .campaign-card,
+  .success-card {
+    padding: 14px;
+    border-radius: 10px;
+  }
+
+  .hero-band {
+    min-height: 86px;
+    padding: 14px;
+    border-radius: 10px;
+  }
+
+  .hero-copy h1 {
+    font-size: clamp(24px, 8vw, 34px);
+    line-height: 1.08;
+  }
+
+  .page-title,
+  .picker-head h1,
+  .picker-head h2,
+  .admin-panel h1,
+  .success-card h2 {
+    font-size: clamp(24px, 8vw, 32px);
+    line-height: 1.12;
+  }
+
+  .picker-head p,
+  .campaign-card p,
+  .form-help,
+  .admin-upload p,
+  .table-toolbar p,
+  .section-head p {
+    font-size: 15px;
+  }
+
+  .view-switch,
+  .form-actions,
+  .toolbar-actions,
+  .upload-actions,
+  .table-toolbar,
+  .section-head,
+  .pharmacy-session-bar {
+    width: 100%;
+  }
+
+  .form-actions > *,
+  .toolbar-actions > *,
+  .upload-actions > *,
+  .pharmacy-session-bar > button,
+  .admin-dashboard-btn,
+  .primary-btn,
+  .ghost-btn,
+  .text-btn,
+  .file-btn {
+    max-width: 100%;
+    white-space: normal;
+  }
+
+  .admin-dashboard-btn {
+    flex: 1 1 100%;
+  }
+
+  .campaign-card h3 {
+    font-size: 22px;
+    overflow-wrap: anywhere;
+  }
+
+  .campaign-card-image {
+    margin: -14px -14px 14px;
+  }
+
+  .campaign-image-block img,
+  .campaign-card-image img,
+  .campaign-image-admin-preview img,
+  .image-preview-image {
+    max-height: 70vh;
+    object-fit: contain;
+  }
+
+  .image-preview-modal,
+  .poll-shell,
+  .success-screen {
+    padding: 12px;
+  }
+
+  .image-preview-panel {
+    width: 100%;
+    max-height: calc(100vh - 24px);
+    padding: 12px;
+  }
+
+  .image-preview-head {
+    gap: 8px;
+  }
+
+  .image-preview-close {
+    flex: 0 0 40px;
+  }
+
+  .order-wrap,
+  .table-wrap {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  table,
+  .order-table {
+    width: 100%;
+    min-width: 0;
+    table-layout: fixed;
+  }
+
+  th,
+  td {
+    padding: 9px 6px;
+    font-size: 12px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  th {
+    font-size: 11px;
+  }
+
+  .order-table th:nth-child(1),
+  .order-table td:nth-child(1) {
+    width: 34%;
+  }
+
+  .order-table th:nth-child(2),
+  .order-table td:nth-child(2) {
+    width: 17%;
+  }
+
+  .order-table th:nth-child(3),
+  .order-table td:nth-child(3),
+  .admin-upload th:nth-child(3),
+  .admin-upload td:nth-child(3) {
+    width: 16%;
+    white-space: normal;
+  }
+
+  .order-table th:nth-child(4),
+  .order-table td:nth-child(4) {
+    width: 15%;
+  }
+
+  .order-table th:nth-child(5),
+  .order-table td:nth-child(5) {
+    width: 18%;
+  }
+
+  .order-table td:last-child,
+  .order-table th:last-child {
+    width: 18%;
+  }
+
+  .order-table input {
+    width: 100%;
+    min-width: 0;
+    padding: 7px 4px;
+    font-size: 13px;
+  }
+
+  #responsesTable td:nth-child(4) {
+    white-space: normal;
+  }
+}
+
+@media (max-width: 420px) {
+  .brand-logo {
+    width: 100%;
+  }
+
+  .switch-btn {
+    padding: 0 8px;
+    font-size: 14px;
+  }
+
+  .campaign-picker,
+  .question-block,
+  .admin-panel,
+  .admin-content,
+  .admin-upload,
+  .admin-message-editor,
+  .quantity-summary,
+  .campaign-card,
+  .success-card {
+    padding: 12px;
+  }
+
+  th,
+  td {
+    padding: 8px 4px;
+    font-size: 11px;
+  }
+
+  th {
+    font-size: 10px;
+  }
+
+  .order-table input {
+    font-size: 12px;
   }
 }
