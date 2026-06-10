@@ -985,7 +985,6 @@ function pollCard(poll, target) {
   const optionCount = (poll.options || []).length;
   const responseCount = isAdmin ? (pollResponseCounts[poll.id] || 0) : optionCount;
   const localAnswer = !isAdmin ? (currentPharmacy ? pharmacyPollAnswers[poll.id] : localAnsweredPolls()[poll.id]) : null;
-  const isSelected = !isAdmin && !localAnswer && selectedPoll?.id === poll.id;
   const optionsPreview = (poll.options || []).map((option) => `
     <div class="whatsapp-poll-option ${localAnswer === option ? "is-answered" : ""}">
       <span class="whatsapp-poll-circle" aria-hidden="true">${localAnswer === option ? "✓" : ""}</span>
@@ -995,10 +994,12 @@ function pollCard(poll, target) {
     </div>
   `).join("");
   const inlineOptions = (poll.options || []).map((option, index) => `
-    <label class="poll-choice inline-poll-choice">
+    <label class="whatsapp-poll-option inline-whatsapp-option">
       <input type="radio" name="inlinePollAnswer" value="${escapeHtml(option)}" ${index === 0 ? "required" : ""}>
-      <span class="poll-choice-mark" aria-hidden="true"></span>
-      <span class="poll-choice-text">${escapeHtml(option)}</span>
+      <span class="whatsapp-poll-circle" aria-hidden="true"></span>
+      <span class="whatsapp-poll-label">${escapeHtml(option)}</span>
+      <span class="whatsapp-poll-count">0</span>
+      <span class="whatsapp-poll-bar" aria-hidden="true"></span>
     </label>
   `).join("");
   const inlineFreeText = poll.freeTextLabel ? `
@@ -1008,22 +1009,22 @@ function pollCard(poll, target) {
 
   if (!isAdmin) {
     return `
-      <article class="whatsapp-poll-card ${localAnswer ? "answered" : ""} ${isSelected ? "is-open" : ""}" ${localAnswer || isSelected ? "" : `data-form-poll="${escapeHtml(poll.id)}"`}>
+      <article class="whatsapp-poll-card ${localAnswer ? "answered" : "is-open"}">
         <div class="whatsapp-poll-title">${escapeHtml(poll.question)}</div>
-        <div class="whatsapp-poll-options">
-          ${optionsPreview}
-        </div>
-        ${isSelected ? `
+        ${localAnswer ? `
+          <div class="whatsapp-poll-options">
+            ${optionsPreview}
+          </div>
+          <div class="whatsapp-poll-answered">Réponse enregistrée : ${escapeHtml(localAnswer)}</div>
+        ` : `
           <form class="inline-poll-form" data-inline-poll-form="${escapeHtml(poll.id)}">
             <input type="hidden" name="inlinePollPharmacy" value="${escapeHtml(currentPharmacy?.name || "")}">
-            <div class="poll-choice-list inline-poll-options">${inlineOptions}</div>
+            <div class="whatsapp-poll-options inline-poll-options">${inlineOptions}</div>
             ${inlineFreeText}
             <button class="primary-btn" type="submit">Valider ma réponse</button>
             <p class="status-message inline-poll-message" role="status"></p>
           </form>
-        ` : localAnswer
-          ? `<div class="whatsapp-poll-answered">Réponse enregistrée : ${escapeHtml(localAnswer)}</div>`
-          : `<button class="whatsapp-poll-votes" type="button" data-form-poll="${escapeHtml(poll.id)}">Répondre au sondage</button>`}
+        `}
       </article>
     `;
   }

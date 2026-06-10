@@ -370,6 +370,7 @@ main::before {
 }
 
 .whatsapp-poll-card.is-open {
+  cursor: default;
   background: linear-gradient(180deg, #dcffd7, #f7fff5);
   border-color: #8ed986;
   box-shadow: 0 16px 34px rgba(40, 92, 63, .18);
@@ -484,6 +485,33 @@ main::before {
 .inline-poll-options {
   display: grid;
   gap: 9px;
+}
+
+.inline-whatsapp-option {
+  position: relative;
+  cursor: pointer;
+}
+
+.inline-whatsapp-option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.inline-whatsapp-option:has(input:checked) .whatsapp-poll-circle {
+  background: var(--green);
+  border-color: var(--green);
+}
+
+.inline-whatsapp-option:has(input:checked) .whatsapp-poll-circle::before {
+  content: "✓";
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.inline-whatsapp-option:has(input:checked) .whatsapp-poll-label,
+.inline-whatsapp-option:has(input:checked) .whatsapp-poll-count {
+  font-weight: 900;
 }
 
 .inline-poll-choice {
