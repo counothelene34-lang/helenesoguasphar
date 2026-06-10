@@ -534,6 +534,20 @@ main::before {
   box-shadow: 0 10px 26px rgba(25, 45, 34, .07);
 }
 
+.campaign-card.clickable {
+  cursor: pointer;
+}
+
+.campaign-card.clickable:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 34px rgba(25, 45, 34, .12);
+}
+
+.campaign-card.clickable:focus-visible {
+  outline: 4px solid var(--focus);
+  outline-offset: 3px;
+}
+
 .campaign-card.completed {
   border-color: #8ed986;
   background: linear-gradient(180deg, #f2fff0, #ffffff);

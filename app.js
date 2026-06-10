@@ -847,8 +847,11 @@ function campaignCard(campaign, target) {
   const statusLabel = campaign.closed ? "Clôturée" : (campaign.type || "Commande");
   const displayStatusLabel = isCompleted ? "Réalisée" : statusLabel;
   const summary = campaignResponseSummary(completedResponse);
+  const cardAction = !isAdmin && !isCompleted
+    ? `data-form-campaign="${escapeHtml(campaign.id)}" role="button" tabindex="0"`
+    : "";
   return `
-    <article class="campaign-card ${isCompleted ? "completed" : ""}">
+    <article class="campaign-card ${isCompleted ? "completed" : ""} ${cardAction ? "clickable" : ""}" ${cardAction}>
       ${imageMarkup}
       <div>
         <div class="campaign-card-top">
@@ -1530,9 +1533,19 @@ logoutPharmacyBtn.addEventListener("click", () => {
 });
 
 campaignCards.addEventListener("click", (event) => {
+  if (event.target.closest("[data-preview-image]")) return;
   const button = event.target.closest("[data-form-campaign]");
   if (!button) return;
   selectCampaign(button.dataset.formCampaign);
+});
+
+campaignCards.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter" && event.key !== " ") return;
+  if (event.target.closest("[data-preview-image], button, input, textarea")) return;
+  const card = event.target.closest("[data-form-campaign]");
+  if (!card) return;
+  event.preventDefault();
+  selectCampaign(card.dataset.formCampaign);
 });
 
 pollCards.addEventListener("click", (event) => {
