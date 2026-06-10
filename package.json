@@ -1,0 +1,13 @@
+{
+  "name": "helenesoguasphar",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Site SOGUASPHAR pour commandes, precommandes et sondages pharmacies.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

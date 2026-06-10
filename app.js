@@ -1,0 +1,1899 @@
+const STORAGE_KEY = "soguasphar_pharmacy_requests";
+const ORDER_TEMPLATE_KEY = "soguasphar_order_template";
+const POLL_RESPONSES_KEY = "soguasphar_poll_responses";
+const POLL_ANSWERED_KEY = "soguasphar_answered_polls";
+const ADMIN_CODE = "SOGUASPHAR2026";
+const API_AVAILABLE = location.protocol === "http:" || location.protocol === "https:";
+const PHARMACY_SESSION_KEY = "soguasphar_current_pharmacy";
+
+const form = document.querySelector("#requestForm");
+const pharmacyGate = document.querySelector("#pharmacyGate");
+const pharmacyLoginForm = document.querySelector("#pharmacyLoginForm");
+const pharmacyPassword = document.querySelector("#pharmacyPassword");
+const pharmacyLoginMessage = document.querySelector("#pharmacyLoginMessage");
+const pharmacySessionBar = document.querySelector("#pharmacySessionBar");
+const currentPharmacyName = document.querySelector("#currentPharmacyName");
+const logoutPharmacyBtn = document.querySelector("#logoutPharmacyBtn");
+const heroBand = document.querySelector(".hero-band");
+const campaignPicker = document.querySelector("#campaignPicker");
+const campaignCards = document.querySelector("#campaignCards");
+const pollCards = document.querySelector("#pollCards");
+const backToCampaignsBtn = document.querySelector("#backToCampaignsBtn");
+const campaignNotice = document.querySelector("#campaignNotice");
+const responseSuccess = document.querySelector("#responseSuccess");
+const returnToMenuBtn = document.querySelector("#returnToMenuBtn");
+const pollForm = document.querySelector("#pollForm");
+const backToPollsBtn = document.querySelector("#backToPollsBtn");
+const pollPharmacyName = document.querySelector("#pollPharmacyName");
+const pollQuestionTitle = document.querySelector("#pollQuestionTitle");
+const pollOptions = document.querySelector("#pollOptions");
+const pollFreeTextBlock = document.querySelector("#pollFreeTextBlock");
+const pollFreeTextLabel = document.querySelector("#pollFreeTextLabel");
+const pollFreeText = document.querySelector("#pollFreeText");
+const pollMessage = document.querySelector("#pollMessage");
+const formMessage = document.querySelector("#formMessage");
+const productRows = document.querySelector("#productRows");
+const quantitySection = document.querySelector("#quantitySection");
+const orderMessage = document.querySelector("#orderMessage");
+const lineCount = document.querySelector("#lineCount");
+const adminLogin = document.querySelector("#adminLogin");
+const adminPanel = document.querySelector(".admin-panel");
+const adminContent = document.querySelector("#adminContent");
+const adminCampaignPicker = document.querySelector("#adminCampaignPicker");
+const adminDashboardNav = document.querySelector("#adminDashboardNav");
+const adminCampaignCards = document.querySelector("#adminCampaignCards");
+const createCampaignForm = document.querySelector("#createCampaignForm");
+const newCampaignTitle = document.querySelector("#newCampaignTitle");
+const createPollForm = document.querySelector("#createPollForm");
+const newPollQuestion = document.querySelector("#newPollQuestion");
+const newPollOptions = document.querySelector("#newPollOptions");
+const newPollFreeLabel = document.querySelector("#newPollFreeLabel");
+const newPollFreeRequired = document.querySelector("#newPollFreeRequired");
+const createPharmacyForm = document.querySelector("#createPharmacyForm");
+const newPharmacyName = document.querySelector("#newPharmacyName");
+const pharmacyAccountsList = document.querySelector("#pharmacyAccountsList");
+const showClosedCampaignsBtn = document.querySelector("#showClosedCampaignsBtn");
+const adminPollCards = document.querySelector("#adminPollCards");
+const adminPollBlock = document.querySelector(".poll-picker-block");
+const adminPollDetail = document.querySelector("#adminPollDetail");
+const backToAdminPollsBtn = document.querySelector("#backToAdminPollsBtn");
+const adminPollTitle = document.querySelector("#adminPollTitle");
+const pollResultsSummary = document.querySelector("#pollResultsSummary");
+const pollResponsesTable = document.querySelector("#pollResponsesTable");
+const exportPollExcelBtn = document.querySelector("#exportPollExcelBtn");
+const adminDetail = document.querySelector("#adminDetail");
+const backToAdminCampaignsBtn = document.querySelector("#backToAdminCampaignsBtn");
+const adminSelectedCampaignName = document.querySelector("#adminSelectedCampaignName");
+const campaignPharmacyMessage = document.querySelector("#campaignPharmacyMessage");
+const saveCampaignMessageBtn = document.querySelector("#saveCampaignMessageBtn");
+const campaignImageBlock = document.querySelector("#campaignImageBlock");
+const campaignImageLink = document.querySelector("#campaignImageLink");
+const campaignImage = document.querySelector("#campaignImage");
+const campaignImageFile = document.querySelector("#campaignImageFile");
+const campaignImageAdminPreview = document.querySelector("#campaignImageAdminPreview");
+const campaignImageAdminLink = document.querySelector("#campaignImageAdminLink");
+const campaignImageAdmin = document.querySelector("#campaignImageAdmin");
+const campaignImageMessage = document.querySelector("#campaignImageMessage");
+const removeCampaignImageBtn = document.querySelector("#removeCampaignImageBtn");
+const adminMessage = document.querySelector("#adminMessage");
+const responsesTable = document.querySelector("#responsesTable");
+const answeredPharmacies = document.querySelector("#answeredPharmacies");
+const notInterestedPharmacies = document.querySelector("#notInterestedPharmacies");
+const exportExcelBtn = document.querySelector("#exportExcelBtn");
+const quantitySummaryBtn = document.querySelector("#quantitySummaryBtn");
+const quantitySummary = document.querySelector("#quantitySummary");
+const quantitySummaryTable = document.querySelector("#quantitySummaryTable");
+const orderFile = document.querySelector("#orderFile");
+const orderTemplateTable = document.querySelector("#orderTemplateTable");
+const orderAdminMessage = document.querySelector("#orderAdminMessage");
+const downloadTemplateBtn = document.querySelector("#downloadTemplateBtn");
+let preserveSubmitMessage = false;
+let adminUnlocked = false;
+let campaigns = [];
+let polls = [];
+let pharmacies = [];
+let currentPharmacy = JSON.parse(localStorage.getItem(PHARMACY_SESSION_KEY) || "null");
+let pharmacyPollAnswers = {};
+let pharmacyCampaignResponses = {};
+let selectedCampaign = null;
+let selectedPoll = null;
+let selectedAdminCampaign = null;
+let selectedAdminPoll = null;
+let currentOrderTemplate = [];
+let adminShowingClosedCampaigns = false;
+let pollResponseCounts = {};
+let activeAdminSection = "new-campaign";
+
+function localResponses() {
+  return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+}
+
+function saveLocalResponses(responses) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(responses));
+}
+
+function localOrderTemplate() {
+  return JSON.parse(localStorage.getItem(ORDER_TEMPLATE_KEY) || "[]");
+}
+
+function saveLocalOrderTemplate(template) {
+  localStorage.setItem(ORDER_TEMPLATE_KEY, JSON.stringify(template));
+}
+
+function localPolls() {
+  return JSON.parse(localStorage.getItem("soguasphar_polls") || "[]");
+}
+
+function saveLocalPolls(nextPolls) {
+  localStorage.setItem("soguasphar_polls", JSON.stringify(nextPolls));
+}
+
+function localPollResponses() {
+  return JSON.parse(localStorage.getItem(POLL_RESPONSES_KEY) || "[]");
+}
+
+function saveLocalPollResponses(responses) {
+  localStorage.setItem(POLL_RESPONSES_KEY, JSON.stringify(responses));
+}
+
+function localAnsweredPolls() {
+  return JSON.parse(localStorage.getItem(POLL_ANSWERED_KEY) || "{}");
+}
+
+function saveLocalAnsweredPoll(pollId, answer) {
+  const answered = localAnsweredPolls();
+  answered[pollId] = answer;
+  localStorage.setItem(POLL_ANSWERED_KEY, JSON.stringify(answered));
+}
+
+function buildDefaultCampaigns(orderTemplate = []) {
+  return [
+    {
+      id: "herboristerie",
+      title: "Herboristerie",
+      type: "Précommande",
+      description: "Bon de commande Herboristerie extrait du PDF.",
+      pharmacyMessage: "",
+      imageData: "",
+      closed: false,
+      template: orderTemplate
+    }
+  ];
+}
+
+function slugify(value) {
+  const slug = String(value || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+
+  return slug || `precommande-${Date.now()}`;
+}
+
+async function requestJson(url, options = {}) {
+  const response = await fetch(url, {
+    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
+    ...options
+  });
+
+  if (!response.ok) {
+    throw new Error(`Erreur serveur ${response.status}`);
+  }
+
+  return response.json();
+}
+
+async function getCampaigns() {
+  if (API_AVAILABLE) {
+    try {
+      const remoteCampaigns = await requestJson("/api/orders");
+      if (Array.isArray(remoteCampaigns) && remoteCampaigns.length) return remoteCampaigns;
+    } catch {
+      // Fallback for preview servers without multi-campaign API.
+    }
+  }
+
+  return buildDefaultCampaigns(await getOrderTemplate());
+}
+
+async function saveCampaigns(nextCampaigns) {
+  if (API_AVAILABLE) {
+    try {
+      await requestJson("/api/orders", {
+        method: "PUT",
+        headers: { "X-Admin-Code": ADMIN_CODE },
+        body: JSON.stringify(nextCampaigns)
+      });
+      return;
+    } catch {
+      // Fallback for preview servers without multi-campaign API.
+    }
+  }
+
+  const active = selectedAdminCampaign || selectedCampaign;
+  if (active) saveLocalOrderTemplate(active.template || []);
+}
+
+async function getPolls() {
+  if (API_AVAILABLE) {
+    try {
+      const remotePolls = await requestJson("/api/polls");
+      if (Array.isArray(remotePolls)) return remotePolls;
+    } catch {
+      // Fallback for preview servers without poll API.
+    }
+  }
+
+  return localPolls();
+}
+
+async function savePolls(nextPolls) {
+  if (API_AVAILABLE) {
+    try {
+      const savedPolls = await requestJson("/api/polls", {
+        method: "PUT",
+        headers: { "X-Admin-Code": ADMIN_CODE },
+        body: JSON.stringify(nextPolls)
+      });
+      saveLocalPolls(savedPolls);
+      return savedPolls;
+    } catch {
+      // Fallback for preview servers without poll API.
+    }
+  }
+
+  saveLocalPolls(nextPolls);
+  return nextPolls;
+}
+
+async function getPharmacies(admin = false) {
+  if (!API_AVAILABLE) return [];
+
+  try {
+    return await requestJson("/api/pharmacies", {
+      headers: admin ? { "X-Admin-Code": ADMIN_CODE } : {}
+    });
+  } catch {
+    return admin ? [] : { count: 0 };
+  }
+}
+
+async function savePharmacies(nextPharmacies) {
+  if (!API_AVAILABLE) return nextPharmacies;
+
+  return requestJson("/api/pharmacies", {
+    method: "PUT",
+    headers: { "X-Admin-Code": ADMIN_CODE },
+    body: JSON.stringify(nextPharmacies)
+  });
+}
+
+async function loginPharmacy(password) {
+  return requestJson("/api/pharmacy-login", {
+    method: "POST",
+    body: JSON.stringify({ password })
+  });
+}
+
+async function refreshPharmacyPollAnswers() {
+  pharmacyPollAnswers = {};
+  if (!API_AVAILABLE || !currentPharmacy?.id) return;
+
+  try {
+    const responses = await requestJson(`/api/pharmacy-poll-responses?pharmacyId=${encodeURIComponent(currentPharmacy.id)}`);
+    responses.forEach((response) => {
+      pharmacyPollAnswers[response.pollId] = response.answer;
+    });
+  } catch {
+    pharmacyPollAnswers = {};
+  }
+}
+
+async function refreshPharmacyCampaignResponses() {
+  pharmacyCampaignResponses = {};
+  if (!currentPharmacy) return;
+
+  try {
+    let responses = [];
+    if (API_AVAILABLE) {
+      const params = new URLSearchParams();
+      if (currentPharmacy.id) params.set("pharmacyId", currentPharmacy.id);
+      if (currentPharmacy.name) params.set("pharmacyName", currentPharmacy.name);
+      responses = await requestJson(`/api/pharmacy-responses?${params.toString()}`);
+    } else {
+      responses = localResponses().filter((response) => response.pharmacyName === currentPharmacy.name);
+    }
+
+    responses.forEach((response) => {
+      if (!response.campaignId) return;
+      pharmacyCampaignResponses[response.campaignId] = response;
+    });
+  } catch {
+    pharmacyCampaignResponses = {};
+  }
+}
+
+function generatePharmacyPassword(name) {
+  const prefix = slugify(name).replace(/-/g, "").slice(0, 4).toUpperCase() || "PHAR";
+  const random = Math.random().toString(36).slice(2, 6).toUpperCase();
+  return `${prefix}${random}`;
+}
+
+function pharmacyAccessRequired() {
+  return pharmacies.length > 0 && !currentPharmacy;
+}
+
+async function getOrderTemplate() {
+  if (!API_AVAILABLE) return localOrderTemplate();
+
+  try {
+    return await requestJson("/api/order-template");
+  } catch {
+    return localOrderTemplate();
+  }
+}
+
+async function saveOrderTemplate(template) {
+  if (API_AVAILABLE) {
+    try {
+      await requestJson("/api/order-template", {
+        method: "PUT",
+        headers: { "X-Admin-Code": ADMIN_CODE },
+        body: JSON.stringify(template)
+      });
+      saveLocalOrderTemplate(template);
+      return;
+    } catch {
+      // Fallback for direct preview servers without API routes.
+    }
+  }
+
+  saveLocalOrderTemplate(template);
+}
+
+async function getResponses() {
+  if (!API_AVAILABLE) return localResponses();
+
+  try {
+    return await requestJson("/api/responses", {
+      headers: adminUnlocked ? { "X-Admin-Code": ADMIN_CODE } : {}
+    });
+  } catch {
+    return localResponses();
+  }
+}
+
+async function appendResponse(response) {
+  if (API_AVAILABLE) {
+    try {
+      return await requestJson("/api/responses", {
+        method: "POST",
+        body: JSON.stringify(response)
+      });
+    } catch {
+      // Fallback for direct preview servers without API routes.
+    }
+  }
+
+  const responses = [...localResponses(), response];
+  saveLocalResponses(responses);
+  return responses;
+}
+
+async function clearResponses() {
+  if (API_AVAILABLE) {
+    try {
+      await requestJson("/api/responses", {
+        method: "DELETE",
+        headers: { "X-Admin-Code": ADMIN_CODE }
+      });
+      saveLocalResponses([]);
+      return;
+    } catch {
+      // Fallback for direct preview servers without API routes.
+    }
+  }
+
+  saveLocalResponses([]);
+}
+
+async function deleteResponse(responseId) {
+  if (API_AVAILABLE) {
+    await requestJson(`/api/responses/${encodeURIComponent(responseId)}`, {
+      method: "DELETE",
+      headers: { "X-Admin-Code": ADMIN_CODE }
+    });
+    return;
+  }
+
+  saveLocalResponses(localResponses().filter((response) => response.id !== responseId));
+}
+
+async function getPollResponses() {
+  if (!API_AVAILABLE) return localPollResponses();
+
+  try {
+    return await requestJson("/api/poll-responses", {
+      headers: adminUnlocked ? { "X-Admin-Code": ADMIN_CODE } : {}
+    });
+  } catch {
+    return localPollResponses();
+  }
+}
+
+async function refreshPollResponseCounts() {
+  pollResponseCounts = {};
+  if (!adminUnlocked) return;
+
+  const responses = await getPollResponses();
+  const countsByPoll = new Map();
+
+  responses.forEach((response) => {
+    if (!response.pollId) return;
+    const pharmacyKey = response.pharmacyId || response.pharmacyName || response.id;
+    const pollPharmacies = countsByPoll.get(response.pollId) || new Set();
+    pollPharmacies.add(pharmacyKey);
+    countsByPoll.set(response.pollId, pollPharmacies);
+  });
+
+  countsByPoll.forEach((pharmaciesSet, pollId) => {
+    pollResponseCounts[pollId] = pharmaciesSet.size;
+  });
+}
+
+async function appendPollResponse(response) {
+  if (API_AVAILABLE) {
+    try {
+      return await requestJson("/api/poll-responses", {
+        method: "POST",
+        body: JSON.stringify(response)
+      });
+    } catch {
+      // Fallback for direct preview servers without API routes.
+    }
+  }
+
+  const responses = [...localPollResponses(), response];
+  saveLocalPollResponses(responses);
+  return responses;
+}
+
+function createId() {
+  if (globalThis.crypto && typeof globalThis.crypto.randomUUID === "function") {
+    return globalThis.crypto.randomUUID();
+  }
+
+  return `response-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function escapeHtml(value) {
+  return String(value || "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function campaignResponseSummary(response) {
+  if (!response) return "";
+  if (String(response.interest || "").toLowerCase().includes("pas int")) {
+    return "Réponse : pas intéressé.";
+  }
+
+  const products = Array.isArray(response.products) ? response.products.filter((product) => Number(product.quantity) > 0) : [];
+  const productSummary = products.slice(0, 4).map((product) => `${product.designation} : ${product.quantity}`).join(", ");
+  const extraCount = products.length > 4 ? `, + ${products.length - 4} autre${products.length - 4 > 1 ? "s" : ""}` : "";
+  const notes = response.notes ? ` Commentaire : ${response.notes}` : "";
+
+  if (!products.length) {
+    return `Réponse enregistrée sans quantité.${notes}`;
+  }
+
+  return `Commande : ${productSummary}${extraCount}.${notes}`;
+}
+
+function refreshCampaignImagePreview(campaign) {
+  const imageData = campaign?.imageData || "";
+  if (campaignImageBlock && campaignImage) {
+    campaignImageBlock.hidden = !imageData;
+    campaignImageLink.href = imageData || "#";
+    campaignImage.src = imageData;
+    campaignImage.alt = imageData ? `Image ${campaign?.title || "commande"}` : "";
+  }
+
+  if (campaignImageAdminPreview && campaignImageAdmin) {
+    campaignImageAdminPreview.hidden = !imageData;
+    campaignImageAdminLink.href = imageData || "#";
+    campaignImageAdmin.src = imageData;
+    campaignImageAdmin.alt = imageData ? `Image ${campaign?.title || "commande"}` : "";
+  }
+}
+
+function renderPharmacyAccess() {
+  const requiresLogin = pharmacyAccessRequired();
+  pharmacyGate.hidden = !requiresLogin;
+  pharmacySessionBar.hidden = !currentPharmacy;
+  currentPharmacyName.textContent = currentPharmacy ? `Connecté : ${currentPharmacy.name}` : "";
+
+  if (requiresLogin) {
+    heroBand.hidden = true;
+    campaignPicker.hidden = true;
+    form.hidden = true;
+    pollForm.hidden = true;
+    responseSuccess.hidden = true;
+  }
+}
+
+function applyCurrentPharmacyToForms() {
+  const name = currentPharmacy?.name || "";
+  if (!name) return;
+  const pharmacyInput = document.querySelector("#pharmacyName");
+  pharmacyInput.value = name;
+  pharmacyInput.readOnly = true;
+  pollPharmacyName.value = name;
+  pollPharmacyName.readOnly = true;
+}
+
+function renderPharmacyAccounts() {
+  if (!pharmacyAccountsList) return;
+  if (!pharmacies.length) {
+    pharmacyAccountsList.innerHTML = '<p class="empty-campaigns">Aucun accès pharmacie créé pour le moment.</p>';
+    return;
+  }
+
+  pharmacyAccountsList.innerHTML = `
+    <div class="table-wrap compact">
+      <table>
+        <thead><tr><th>Pharmacie</th><th>Mot de passe</th><th>Action</th></tr></thead>
+        <tbody>
+          ${pharmacies.map((pharmacy) => `
+            <tr>
+              <td><strong>${escapeHtml(pharmacy.name)}</strong></td>
+              <td><code>${escapeHtml(pharmacy.password)}</code></td>
+              <td><button class="delete-response-btn" type="button" data-delete-pharmacy="${escapeHtml(pharmacy.id)}" aria-label="Supprimer ${escapeHtml(pharmacy.name)}">&#128465;</button></td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function imageFileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    if (!file || !file.type.startsWith("image/")) {
+      reject(new Error("Choisissez un fichier image."));
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Image impossible à lire."));
+    reader.onload = () => {
+      const image = new Image();
+      image.onerror = () => reject(new Error("Image impossible à préparer."));
+      image.onload = () => {
+        const maxWidth = 1100;
+        const maxHeight = 760;
+        const ratio = Math.min(1, maxWidth / image.width, maxHeight / image.height);
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(image.width * ratio));
+        canvas.height = Math.max(1, Math.round(image.height * ratio));
+        const context = canvas.getContext("2d");
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL("image/jpeg", 0.82));
+      };
+      image.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function normalizeHeader(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]/g, "");
+}
+
+function normalizeTemplateRows(rows) {
+  if (!rows.length) return [];
+  const headers = rows[0].map(normalizeHeader);
+  const indexes = {
+    designation: headers.findIndex((header) => ["designation", "desig", "libelle", "produit"].includes(header)),
+    cip: headers.findIndex((header) => ["cip", "codecip", "cip13", "code"].includes(header)),
+    tarif: headers.findIndex((header) => ["tarif", "prix", "prixht", "tarifht", "pvc"].includes(header)),
+    colisage: headers.findIndex((header) => ["colisage", "conditionnement", "colis"].includes(header))
+  };
+
+  if (indexes.designation === -1 || indexes.cip === -1 || indexes.tarif === -1 || indexes.colisage === -1) {
+    throw new Error("Colonnes attendues : désignation, CIP, tarif, colisage.");
+  }
+
+  return rows.slice(1)
+    .map((row, index) => ({
+      id: `line-${Date.now()}-${index}`,
+      designation: String(row[indexes.designation] || "").trim(),
+      cip: String(row[indexes.cip] || "").trim(),
+      tarif: String(row[indexes.tarif] || "").trim(),
+      colisage: String(row[indexes.colisage] || "").trim()
+    }))
+    .filter((row) => row.designation || row.cip);
+}
+
+function parseDelimited(text) {
+  const delimiter = text.includes(";") ? ";" : text.includes("\t") ? "\t" : ",";
+  return text
+    .split(/\r?\n/)
+    .filter((line) => line.trim())
+    .map((line) => line.split(delimiter).map((cell) => cell.trim().replace(/^"|"$/g, "")));
+}
+
+function parsePdfOrderText(text) {
+  const rows = [["Désignation", "CIP", "Tarif", "Colisage"]];
+  const seen = new Set();
+
+  function cleanDesignation(value) {
+    return String(value || "")
+      .replace(/\b(BON DE COMMANDE|Pharmacie|Cachet|Signature|Bon pour accord)\b/gi, " ")
+      .replace(/\b(Produits?|Produit|Désignation|Designation|Libellé|Libelle|Référence|Reference)\b/gi, " ")
+      .replace(/\b(Code|CIP|EAN|EAN 13|Prix|Tarif|PU|P\.U\.|Montant|Colisage|Commande|Quantité|Quantite|Qté|Qte)\b/gi, " ")
+      .replace(/\s+/g, " ")
+      .replace(/^[\s:;,\-/]+|[\s:;,\-/]+$/g, "")
+      .trim();
+  }
+
+  function addRow(designation, cip = "", tarif = "", colisage = "") {
+    const cleanName = cleanDesignation(designation);
+    const cleanCip = String(cip || "").replace(/\D/g, "");
+    const cleanTarif = String(tarif || "").replace(".", ",").replace(/\s*€?$/, " €").trim();
+    const cleanColisage = String(colisage || "").trim();
+    const key = `${cleanName.toLowerCase()}|${cleanCip}|${cleanTarif}`;
+
+    if (!cleanName || !cleanTarif || seen.has(key)) return;
+    seen.add(key);
+    rows.push([cleanName, cleanCip, cleanTarif, cleanColisage]);
+  }
+
+  function parseProductLine(line) {
+    let working = String(line || "").replace(/\s+/g, " ").trim();
+    if (!working || !/\d+[,.]\d{2}/.test(working)) return;
+    if (/^(produits?|prix|tarif|colisage|commande|quantité|quantite|code|cip|ean)\b/i.test(working)) return;
+
+    const priceMatch = working.match(/(\d+[,.]\d{2})\s*(?:€|eur)?/i);
+    if (!priceMatch) return;
+    const tarif = `${priceMatch[1].replace(".", ",")} €`;
+    working = `${working.slice(0, priceMatch.index)} ${working.slice(priceMatch.index + priceMatch[0].length)}`.trim();
+
+    let cip = "";
+    const barcodeMatch = working.match(/(?:\d[\s-]*){13}/);
+    if (barcodeMatch) {
+      cip = barcodeMatch[0].replace(/\D/g, "");
+      working = `${working.slice(0, barcodeMatch.index)} ${working.slice(barcodeMatch.index + barcodeMatch[0].length)}`.trim();
+    }
+
+    let colisage = "";
+    const trailingColisage = working.match(/\s(\d{1,4})$/);
+    if (trailingColisage && !/[A-Za-zÀ-ÿ]\d+$/.test(working.replace(/\s(\d{1,4})$/, ""))) {
+      colisage = trailingColisage[1];
+      working = working.replace(/\s\d{1,4}$/, "").trim();
+    }
+
+    addRow(working, cip, tarif, colisage);
+  }
+
+  String(text || "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .forEach(parseProductLine);
+
+  if (rows.length === 1) {
+    const compact = String(text || "")
+      .replace(/\s+/g, " ")
+      .replace(/TARIF HORS LIVRAISON.*?Quantités commandées/i, " ")
+      .trim();
+    const genericMatches = compact.matchAll(/([A-Za-zÀ-ÿ0-9'’().,/\-+& ]{2,}?)\s+((?:\d[\s-]*){13})?\s*(\d+[,.]\d{2})\s*(?:€|eur)?\s*(\d{1,4})?(?=\s+[A-Za-zÀ-ÿ0-9'’().,/\-+& ]{2,}?\s+(?:(?:\d[\s-]*){13}\s*)?\d+[,.]\d{2}|\s*$)/gi);
+
+    for (const match of genericMatches) {
+      addRow(match[1], match[2] || "", `${match[3]} €`, match[4] || "");
+    }
+  }
+
+  if (rows.length === 1) {
+    throw new Error("PDF lu, mais aucune ligne produit exploitable n'a été trouvée.");
+  }
+
+  return normalizeTemplateRows(rows);
+}
+
+async function parsePdfFile(file) {
+  if (!globalThis.pdfjsLib) {
+    throw new Error("Le module PDF n'est pas encore chargé. Réessayez dans quelques secondes.");
+  }
+
+  const buffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: buffer, disableWorker: true }).promise;
+  let text = "";
+
+  for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
+    const page = await pdf.getPage(pageNumber);
+    const content = await page.getTextContent();
+    const lines = new Map();
+
+    content.items.forEach((item) => {
+      const value = String(item.str || "").trim();
+      if (!value) return;
+      const x = Math.round(item.transform[4]);
+      const y = Math.round(item.transform[5] / 3) * 3;
+      const line = lines.get(y) || [];
+      line.push({ x, value });
+      lines.set(y, line);
+    });
+
+    text += "\n" + [...lines.entries()]
+      .sort((a, b) => b[0] - a[0])
+      .map(([, line]) => line.sort((a, b) => a.x - b.x).map((item) => item.value).join(" "))
+      .join("\n");
+  }
+
+  return parsePdfOrderText(text);
+}
+
+async function parseOrderFile(file) {
+  if (/\.pdf$/i.test(file.name)) {
+    return parsePdfFile(file);
+  }
+
+  if (globalThis.XLSX && /\.(xlsx|xls)$/i.test(file.name)) {
+    const buffer = await file.arrayBuffer();
+    const workbook = XLSX.read(buffer, { type: "array" });
+    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+    return normalizeTemplateRows(XLSX.utils.sheet_to_json(firstSheet, { header: 1, defval: "" }));
+  }
+
+  const text = await file.text();
+  return normalizeTemplateRows(parseDelimited(text));
+}
+
+function campaignCard(campaign, target) {
+  const count = (campaign.template || []).length;
+  const isAdmin = target === "admin";
+  const completedResponse = !isAdmin ? pharmacyCampaignResponses[campaign.id] : null;
+  const isCompleted = Boolean(completedResponse);
+  const imageMarkup = campaign.imageData
+    ? `<a class="campaign-card-image" href="${campaign.imageData}" target="_blank" rel="noopener" title="Ouvrir l'image"><img src="${campaign.imageData}" alt="Image ${escapeHtml(campaign.title)}"></a>`
+    : "";
+  const statusLabel = campaign.closed ? "Clôturée" : (campaign.type || "Commande");
+  const displayStatusLabel = isCompleted ? "Réalisée" : statusLabel;
+  const summary = campaignResponseSummary(completedResponse);
+  return `
+    <article class="campaign-card ${isCompleted ? "completed" : ""}">
+      ${imageMarkup}
+      <div>
+        <div class="campaign-card-top">
+          <span class="campaign-type ${campaign.closed ? "closed" : ""}">${escapeHtml(displayStatusLabel)}</span>
+          ${isAdmin ? `<button class="delete-campaign-btn" type="button" title="Supprimer la campagne" aria-label="Supprimer ${escapeHtml(campaign.title)}" data-delete-campaign="${escapeHtml(campaign.id)}">&#128465;</button>` : ""}
+        </div>
+        <h3>${escapeHtml(campaign.title)}</h3>
+        <p>${escapeHtml(campaign.description || campaign.pharmacyMessage || "")}</p>
+        ${isCompleted ? `<div class="campaign-done-summary"><strong>Réponse déjà envoyée</strong><span>${escapeHtml(summary)}</span></div>` : ""}
+      </div>
+      <div class="campaign-foot">
+        <span>${isCompleted ? `Réalisée le ${escapeHtml(completedResponse.createdAt || "")}` : `${count} ligne${count > 1 ? "s" : ""}`}</span>
+        <div class="campaign-actions">
+          ${isAdmin ? `<button class="ghost-btn" type="button" data-toggle-closed-campaign="${escapeHtml(campaign.id)}">${campaign.closed ? "Rouvrir" : "Clôturer"}</button>` : ""}
+          ${isCompleted
+            ? `<button class="ghost-btn" type="button" disabled>Déjà répondu</button>`
+            : `<button class="primary-btn" type="button" data-${target}-campaign="${escapeHtml(campaign.id)}">
+                ${target === "admin" ? "Voir le suivi" : "Remplir"}
+              </button>`}
+        </div>
+      </div>
+    </article>
+  `;
+}
+
+function pollCard(poll, target) {
+  const isAdmin = target === "admin";
+  const optionCount = (poll.options || []).length;
+  const responseCount = isAdmin ? (pollResponseCounts[poll.id] || 0) : optionCount;
+  const localAnswer = !isAdmin ? (currentPharmacy ? pharmacyPollAnswers[poll.id] : localAnsweredPolls()[poll.id]) : null;
+  const optionsPreview = (poll.options || []).map((option) => `
+    <div class="whatsapp-poll-option ${localAnswer === option ? "is-answered" : ""}">
+      <span class="whatsapp-poll-circle" aria-hidden="true">${localAnswer === option ? "✓" : ""}</span>
+      <span class="whatsapp-poll-label">${escapeHtml(option)}</span>
+      <span class="whatsapp-poll-count">${localAnswer === option ? "✓" : "0"}</span>
+      <span class="whatsapp-poll-bar" aria-hidden="true"></span>
+    </div>
+  `).join("");
+
+  if (!isAdmin) {
+    return `
+      <article class="whatsapp-poll-card ${localAnswer ? "answered" : ""}" ${localAnswer ? "" : `data-form-poll="${escapeHtml(poll.id)}"`}>
+        <div class="whatsapp-poll-title">${escapeHtml(poll.question)}</div>
+        <div class="whatsapp-poll-options">
+          ${optionsPreview}
+        </div>
+        ${localAnswer
+          ? `<div class="whatsapp-poll-answered">Réponse enregistrée : ${escapeHtml(localAnswer)}</div>`
+          : `<button class="whatsapp-poll-votes" type="button" data-form-poll="${escapeHtml(poll.id)}">Répondre au sondage</button>`}
+      </article>
+    `;
+  }
+
+  return `
+    <article class="campaign-card poll-card">
+      <div>
+        <div class="campaign-card-top">
+          <span class="campaign-type ${poll.closed ? "closed" : ""}">${poll.closed ? "Sondage clôturé" : "Sondage"}</span>
+          <button class="delete-campaign-btn" type="button" title="Supprimer le sondage" aria-label="Supprimer le sondage ${escapeHtml(poll.question)}" data-delete-poll="${escapeHtml(poll.id)}">&#128465;</button>
+        </div>
+        <h3>${escapeHtml(poll.question)}</h3>
+        <p>${escapeHtml(poll.freeTextLabel || "Réponse rapide en un clic.")}</p>
+      </div>
+      <div class="campaign-foot">
+        <span>${responseCount} réponse${responseCount > 1 ? "s" : ""}</span>
+        <div class="campaign-actions">
+          <button class="ghost-btn" type="button" data-toggle-closed-poll="${escapeHtml(poll.id)}">${poll.closed ? "Rouvrir" : "Clôturer"}</button>
+          <button class="primary-btn" type="button" data-${target}-poll="${escapeHtml(poll.id)}">
+            ${isAdmin ? "Voir les résultats" : "Répondre"}
+          </button>
+        </div>
+      </div>
+    </article>
+  `;
+}
+
+function showAdminSection(section) {
+  activeAdminSection = section || "new-campaign";
+  const closedActions = showClosedCampaignsBtn?.closest(".closed-campaign-actions");
+  const showCampaignList = activeAdminSection === "campaigns" || activeAdminSection === "archives";
+  const showPollList = activeAdminSection === "polls" || activeAdminSection === "archives";
+  const showPharmacies = activeAdminSection === "pharmacies";
+
+  createCampaignForm.hidden = activeAdminSection !== "new-campaign";
+  createPollForm.hidden = activeAdminSection !== "new-poll";
+  createPharmacyForm.hidden = !showPharmacies;
+  pharmacyAccountsList.hidden = !showPharmacies;
+  adminCampaignCards.hidden = !showCampaignList;
+  adminPollBlock.hidden = !showPollList;
+  if (closedActions) closedActions.hidden = true;
+
+  adminDashboardNav?.querySelectorAll("[data-admin-section]").forEach((button) => {
+    button.classList.toggle("active", button.dataset.adminSection === activeAdminSection);
+  });
+
+  renderCampaignPickers();
+}
+
+function renderCampaignPickers() {
+  const openCampaigns = campaigns.filter((campaign) => !campaign.closed);
+  const adminCampaigns = campaigns.filter((campaign) => activeAdminSection === "archives" ? campaign.closed : !campaign.closed);
+  const answeredPolls = currentPharmacy ? pharmacyPollAnswers : localAnsweredPolls();
+  const openPolls = polls.filter((poll) => !poll.closed && !answeredPolls[poll.id]);
+  const adminPolls = polls.filter((poll) => activeAdminSection === "archives" ? poll.closed : !poll.closed);
+
+  campaignCards.innerHTML = openCampaigns.length
+    ? openCampaigns.map((campaign) => campaignCard(campaign, "form")).join("")
+    : '<p class="empty-campaigns">Aucune précommande disponible pour le moment.</p>';
+
+  pollCards.innerHTML = openPolls.length
+    ? openPolls.map((poll) => pollCard(poll, "form")).join("")
+    : '<p class="empty-campaigns">Aucun sondage disponible pour le moment.</p>';
+
+  adminCampaignCards.innerHTML = adminCampaigns.length
+    ? adminCampaigns.map((campaign) => campaignCard(campaign, "admin")).join("")
+    : `<p class="empty-campaigns">Aucune campagne ${adminShowingClosedCampaigns ? "clôturée" : "active"}.</p>`;
+
+  adminPollCards.innerHTML = adminPolls.length
+    ? adminPolls.map((poll) => pollCard(poll, "admin")).join("")
+    : '<p class="empty-campaigns">Aucun sondage créé pour le moment.</p>';
+
+  showClosedCampaignsBtn.textContent = adminShowingClosedCampaigns ? "Campagnes actives" : "Campagnes clôturées";
+}
+
+function selectCampaign(campaignId) {
+  if (pharmacyAccessRequired()) {
+    renderPharmacyAccess();
+    return;
+  }
+  selectedCampaign = campaigns.find((campaign) => campaign.id === campaignId) || campaigns[0];
+  selectedPoll = null;
+  currentOrderTemplate = selectedCampaign?.template || [];
+  campaignPicker.hidden = true;
+  heroBand.hidden = true;
+  form.hidden = false;
+  pollForm.hidden = true;
+  responseSuccess.hidden = true;
+  document.querySelector("#formTitle").textContent = "Commande, précommande, confirmation";
+  if (selectedCampaign.pharmacyMessage) {
+    campaignNotice.hidden = false;
+    campaignNotice.textContent = selectedCampaign.pharmacyMessage;
+  } else {
+    campaignNotice.hidden = true;
+    campaignNotice.textContent = "";
+  }
+  refreshCampaignImagePreview(selectedCampaign);
+  formMessage.textContent = "";
+  form.reset();
+  applyCurrentPharmacyToForms();
+  renderOrderTemplate();
+  updateQuantityVisibility();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function selectPoll(pollId) {
+  if (pharmacyAccessRequired()) {
+    renderPharmacyAccess();
+    return;
+  }
+  selectedPoll = polls.find((poll) => poll.id === pollId) || null;
+  if (!selectedPoll) return;
+
+  selectedCampaign = null;
+  campaignPicker.hidden = false;
+  heroBand.hidden = false;
+  form.hidden = true;
+  pollForm.hidden = false;
+  responseSuccess.hidden = true;
+  pollMessage.textContent = "";
+  pollForm.reset();
+  applyCurrentPharmacyToForms();
+  pollQuestionTitle.textContent = selectedPoll.question;
+  pollOptions.innerHTML = (selectedPoll.options || []).map((option, index) => `
+    <label class="poll-choice">
+      <input type="radio" name="pollAnswer" value="${escapeHtml(option)}" ${index === 0 ? "required" : ""}>
+      <span class="poll-choice-mark" aria-hidden="true"></span>
+      <span class="poll-choice-text">${escapeHtml(option)}</span>
+    </label>
+  `).join("");
+  updatePollChoiceSelection();
+
+  const hasFreeText = Boolean(selectedPoll.freeTextLabel);
+  pollFreeTextBlock.hidden = !hasFreeText;
+  pollFreeTextLabel.textContent = selectedPoll.freeTextLabel || "Commentaire";
+  pollFreeText.required = Boolean(selectedPoll.freeTextRequired);
+  pollFreeText.value = "";
+}
+
+function updatePollChoiceSelection() {
+  pollOptions.querySelectorAll(".poll-choice").forEach((choice) => {
+    choice.classList.toggle("is-selected", Boolean(choice.querySelector("input")?.checked));
+  });
+}
+
+function showCampaignPicker() {
+  if (pharmacyAccessRequired()) {
+    selectedCampaign = null;
+    selectedPoll = null;
+    renderPharmacyAccess();
+    return;
+  }
+  selectedCampaign = null;
+  selectedPoll = null;
+  currentOrderTemplate = [];
+  campaignPicker.hidden = false;
+  heroBand.hidden = false;
+  form.hidden = true;
+  pollForm.hidden = true;
+  responseSuccess.hidden = true;
+  campaignNotice.hidden = true;
+  campaignNotice.textContent = "";
+  refreshCampaignImagePreview(null);
+  form.reset();
+  formMessage.textContent = "";
+}
+
+function showSuccessScreen() {
+  form.hidden = true;
+  pollForm.hidden = true;
+  campaignPicker.hidden = false;
+  heroBand.hidden = false;
+  responseSuccess.hidden = false;
+}
+
+async function selectAdminCampaign(campaignId) {
+  selectedAdminCampaign = campaigns.find((campaign) => campaign.id === campaignId) || campaigns[0];
+  selectedAdminPoll = null;
+  currentOrderTemplate = selectedAdminCampaign?.template || [];
+  adminSelectedCampaignName.textContent = selectedAdminCampaign.title;
+  campaignPharmacyMessage.value = selectedAdminCampaign.pharmacyMessage || selectedAdminCampaign.description || "";
+  campaignImageMessage.textContent = "";
+  campaignImageFile.value = "";
+  refreshCampaignImagePreview(selectedAdminCampaign);
+  adminCampaignPicker.hidden = true;
+  adminDetail.hidden = false;
+  adminPollDetail.hidden = true;
+  quantitySummary.hidden = true;
+  quantitySummaryBtn.textContent = "Récap des quantités";
+  renderOrderTemplate();
+  await renderAdmin();
+}
+
+async function selectAdminPoll(pollId) {
+  selectedAdminPoll = polls.find((poll) => poll.id === pollId) || null;
+  if (!selectedAdminPoll) return;
+
+  selectedAdminCampaign = null;
+  adminPollTitle.textContent = selectedAdminPoll.question;
+  adminCampaignPicker.hidden = true;
+  adminDetail.hidden = true;
+  adminPollDetail.hidden = false;
+  await renderPollResults();
+}
+
+async function showAdminCampaignPicker() {
+  selectedAdminCampaign = null;
+  selectedAdminPoll = null;
+  adminShowingClosedCampaigns = false;
+  adminCampaignPicker.hidden = false;
+  adminDetail.hidden = true;
+  adminPollDetail.hidden = true;
+  await refreshPollResponseCounts();
+  showAdminSection(activeAdminSection);
+}
+
+function renderOrderTemplate() {
+  lineCount.textContent = `${currentOrderTemplate.length} ligne${currentOrderTemplate.length > 1 ? "s" : ""}`;
+
+  if (!currentOrderTemplate.length) {
+    orderMessage.style.display = "block";
+    productRows.innerHTML = "";
+    orderTemplateTable.innerHTML = '<tr><td colspan="4" class="empty-state">Aucun bon de commande chargé.</td></tr>';
+    return;
+  }
+
+  orderMessage.style.display = "none";
+  productRows.innerHTML = currentOrderTemplate.map((item) => `
+    <tr class="order-row">
+      <td>${escapeHtml(item.designation)}</td>
+      <td>${escapeHtml(item.cip)}</td>
+      <td>${escapeHtml(item.tarif)}</td>
+      <td>${escapeHtml(item.colisage)}</td>
+      <td>
+        <input
+          type="number"
+          class="product-quantity"
+          min="0"
+          step="1"
+          inputmode="numeric"
+          data-id="${escapeHtml(item.id)}"
+          aria-label="Quantité pour ${escapeHtml(item.designation)}"
+        >
+      </td>
+    </tr>
+  `).join("");
+
+  orderTemplateTable.innerHTML = currentOrderTemplate.map((item) => `
+    <tr>
+      <td>${escapeHtml(item.designation)}</td>
+      <td>${escapeHtml(item.cip)}</td>
+      <td>${escapeHtml(item.tarif)}</td>
+      <td>${escapeHtml(item.colisage)}</td>
+    </tr>
+  `).join("");
+}
+
+function collectProducts() {
+  return [...document.querySelectorAll(".product-quantity")]
+    .map((row) => ({
+      template: currentOrderTemplate.find((item) => item.id === row.dataset.id),
+      quantity: row.value.trim()
+    }))
+    .filter((item) => item.template && Number(item.quantity) > 0)
+    .map((item) => ({
+      designation: item.template.designation,
+      cip: item.template.cip,
+      tarif: item.template.tarif,
+      colisage: item.template.colisage,
+      quantity: item.quantity
+    }));
+}
+
+function resetQuantities() {
+  document.querySelectorAll(".product-quantity").forEach((input) => {
+    input.value = "";
+  });
+}
+
+function updateQuantityVisibility() {
+  const selected = document.querySelector('input[name="interest"]:checked')?.value;
+  quantitySection.style.display = selected === "Pas intéressé" ? "none" : "block";
+}
+
+async function renderAdmin() {
+  if (!adminUnlocked || !selectedAdminCampaign) return;
+
+  const responses = (await getResponses())
+    .filter((item) => item.campaignId === selectedAdminCampaign.id || (!item.campaignId && selectedAdminCampaign.id === "herboristerie"));
+  const interested = responses.filter((item) => item.interest === "Interessé").length;
+
+  document.querySelector("#totalResponses").textContent = responses.length;
+  document.querySelector("#interestedResponses").textContent = interested;
+  document.querySelector("#notInterestedResponses").textContent = responses.length - interested;
+
+  const answeredNames = [...new Set(responses.map((item) => item.pharmacyName).filter(Boolean))];
+  const notInterestedNames = [...new Set(responses
+    .filter((item) => item.interest === "Pas intéressé")
+    .map((item) => item.pharmacyName)
+    .filter(Boolean))];
+
+  answeredPharmacies.innerHTML = answeredNames.length
+    ? answeredNames.map((name) => `<li>${escapeHtml(name)}</li>`).join("")
+    : "<li>Aucune réponse pour le moment.</li>";
+
+  notInterestedPharmacies.innerHTML = notInterestedNames.length
+    ? notInterestedNames.map((name) => `<li>${escapeHtml(name)}</li>`).join("")
+    : "<li>Aucune pharmacie pour le moment.</li>";
+
+  if (!responses.length) {
+    responsesTable.innerHTML = '<tr><td colspan="6" class="empty-state">Aucune réponse enregistrée pour le moment.</td></tr>';
+    return;
+  }
+
+  responsesTable.innerHTML = responses
+    .slice()
+    .reverse()
+    .map((response) => {
+      const products = response.products.length
+        ? response.products.map((item) => {
+            const label = item.designation || item.product || item.cip || "Produit";
+            return `${escapeHtml(label)} : ${escapeHtml(item.quantity || "0")}`;
+          }).join("<br>")
+        : "-";
+
+      return `
+        <tr>
+          <td>
+            <button class="delete-response-btn" type="button" title="Supprimer cette réponse" aria-label="Supprimer la réponse de ${escapeHtml(response.pharmacyName)}" data-delete-response="${escapeHtml(response.id)}">&#128465;</button>
+          </td>
+          <td>${escapeHtml(response.createdAt)}</td>
+          <td><strong>${escapeHtml(response.pharmacyName)}</strong></td>
+          <td>${escapeHtml(response.interest)}</td>
+          <td>${products}</td>
+          <td>${escapeHtml(response.notes || "-")}</td>
+        </tr>
+      `;
+    })
+    .join("");
+
+  renderQuantitySummary(responses);
+}
+
+function renderQuantitySummary(responses = []) {
+  const totals = new Map();
+
+  responses.forEach((response) => {
+    (response.products || []).forEach((product) => {
+      const key = product.cip || product.designation || product.product || "Produit";
+      const existing = totals.get(key) || {
+        designation: product.designation || product.product || "",
+        cip: product.cip || "",
+        tarif: product.tarif || "",
+        colisage: product.colisage || "",
+        quantity: 0
+      };
+
+      existing.quantity += Number(String(product.quantity || "0").replace(",", ".")) || 0;
+      totals.set(key, existing);
+    });
+  });
+
+  const rows = [...totals.values()].filter((row) => row.quantity > 0);
+  if (!rows.length) {
+    quantitySummaryTable.innerHTML = '<tr><td colspan="5" class="empty-state">Aucune quantité commandée pour le moment.</td></tr>';
+    return;
+  }
+
+  quantitySummaryTable.innerHTML = rows
+    .sort((a, b) => a.designation.localeCompare(b.designation, "fr"))
+    .map((row) => `
+      <tr>
+        <td>${escapeHtml(row.designation)}</td>
+        <td>${escapeHtml(row.cip)}</td>
+        <td>${escapeHtml(row.tarif)}</td>
+        <td>${escapeHtml(row.colisage)}</td>
+        <td><strong>${escapeHtml(row.quantity)}</strong></td>
+      </tr>
+    `)
+    .join("");
+}
+
+async function renderPollResults() {
+  if (!adminUnlocked || !selectedAdminPoll) return;
+
+  const responses = (await getPollResponses()).filter((item) => item.pollId === selectedAdminPoll.id);
+  const counts = new Map((selectedAdminPoll.options || []).map((option) => [option, 0]));
+  responses.forEach((response) => {
+    counts.set(response.answer, (counts.get(response.answer) || 0) + 1);
+  });
+
+  const metricCards = [
+    `<div><span>${responses.length}</span><p>Réponse${responses.length > 1 ? "s" : ""}</p></div>`,
+    ...(selectedAdminPoll.options || []).map((option) => `
+      <div>
+        <span>${counts.get(option) || 0}</span>
+        <p>${escapeHtml(option)}</p>
+      </div>
+    `)
+  ];
+  pollResultsSummary.innerHTML = metricCards.join("");
+
+  if (!responses.length) {
+    pollResponsesTable.innerHTML = '<tr><td colspan="4" class="empty-state">Aucune réponse enregistrée pour le moment.</td></tr>';
+    return;
+  }
+
+  pollResponsesTable.innerHTML = responses
+    .slice()
+    .reverse()
+    .map((response) => `
+      <tr>
+        <td>${escapeHtml(response.createdAt)}</td>
+        <td><strong>${escapeHtml(response.pharmacyName)}</strong></td>
+        <td>${escapeHtml(response.answer)}</td>
+        <td>${escapeHtml(response.freeText || "-")}</td>
+      </tr>
+    `)
+    .join("");
+}
+
+async function exportPollToExcel() {
+  if (!selectedAdminPoll) return;
+
+  if (API_AVAILABLE && adminUnlocked) {
+    window.location.href = `/api/poll-export.xls?code=${encodeURIComponent(ADMIN_CODE)}&poll=${encodeURIComponent(selectedAdminPoll.id)}`;
+    adminMessage.textContent = "Export Excel du sondage généré.";
+    return;
+  }
+
+  const responses = (await getPollResponses()).filter((item) => item.pollId === selectedAdminPoll.id);
+  if (!responses.length) {
+    adminMessage.textContent = "Aucune donnée de sondage à exporter.";
+    return;
+  }
+
+  const headings = ["Date", "Pharmacie", "Question", "Réponse", "Commentaire / précision"];
+  const body = responses.map((row) => `
+    <tr>
+      <td>${escapeHtml(row.createdAt)}</td>
+      <td>${escapeHtml(row.pharmacyName)}</td>
+      <td>${escapeHtml(row.pollQuestion)}</td>
+      <td>${escapeHtml(row.answer)}</td>
+      <td>${escapeHtml(row.freeText || "")}</td>
+    </tr>
+  `).join("");
+
+  const workbook = `
+    <html>
+      <head><meta charset="utf-8"></head>
+      <body>
+        <table border="1">
+          <thead><tr>${headings.map((heading) => `<th>${heading}</th>`).join("")}</tr></thead>
+          <tbody>${body}</tbody>
+        </table>
+      </body>
+    </html>
+  `;
+
+  const blob = new Blob([workbook], { type: "application/vnd.ms-excel;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `sondage-soguasphar-${new Date().toISOString().slice(0, 10)}.xls`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+  adminMessage.textContent = "Export Excel du sondage généré.";
+}
+
+async function exportToExcel() {
+  if (API_AVAILABLE && adminUnlocked && selectedAdminCampaign) {
+    window.location.href = `/api/export.xls?code=${encodeURIComponent(ADMIN_CODE)}&campaign=${encodeURIComponent(selectedAdminCampaign.id)}`;
+    adminMessage.textContent = "Export Excel généré.";
+    return;
+  }
+
+  const responses = (await getResponses())
+    .filter((item) => item.campaignId === selectedAdminCampaign?.id || (!item.campaignId && selectedAdminCampaign?.id === "herboristerie"));
+  if (!responses.length) {
+    adminMessage.textContent = "Aucune donnée à exporter.";
+    return;
+  }
+
+  const rows = responses.flatMap((response) => {
+    if (!response.products.length) {
+      return [{
+        date: response.createdAt,
+        pharmacie: response.pharmacyName,
+        statut: response.interest,
+        designation: "",
+        cip: "",
+        tarif: "",
+        colisage: "",
+        quantite: "",
+        commentaire: response.notes || ""
+      }];
+    }
+
+    return response.products.map((item) => ({
+      date: response.createdAt,
+      pharmacie: response.pharmacyName,
+      statut: response.interest,
+      designation: item.designation || item.product || "",
+      cip: item.cip || "",
+      tarif: item.tarif || "",
+      colisage: item.colisage || "",
+      quantite: item.quantity,
+      commentaire: response.notes || ""
+    }));
+  });
+
+  const headings = ["Date", "Pharmacie", "Statut", "Désignation", "CIP", "Tarif", "Colisage", "Quantité", "Commentaire"];
+  const body = rows.map((row) => `
+    <tr>
+      <td>${escapeHtml(row.date)}</td>
+      <td>${escapeHtml(row.pharmacie)}</td>
+      <td>${escapeHtml(row.statut)}</td>
+      <td>${escapeHtml(row.designation)}</td>
+      <td>${escapeHtml(row.cip)}</td>
+      <td>${escapeHtml(row.tarif)}</td>
+      <td>${escapeHtml(row.colisage)}</td>
+      <td>${escapeHtml(row.quantite)}</td>
+      <td>${escapeHtml(row.commentaire)}</td>
+    </tr>
+  `).join("");
+
+  const workbook = `
+    <html>
+      <head><meta charset="utf-8"></head>
+      <body>
+        <table border="1">
+          <thead><tr>${headings.map((heading) => `<th>${heading}</th>`).join("")}</tr></thead>
+          <tbody>${body}</tbody>
+        </table>
+      </body>
+    </html>
+  `;
+
+  const blob = new Blob([workbook], { type: "application/vnd.ms-excel;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `recap-soguasphar-${new Date().toISOString().slice(0, 10)}.xls`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+  adminMessage.textContent = "Export Excel généré.";
+}
+
+document.querySelectorAll(".switch-btn").forEach((button) => {
+  button.addEventListener("click", async () => {
+    document.querySelectorAll(".switch-btn").forEach((item) => item.classList.remove("active"));
+    document.querySelectorAll(".view").forEach((item) => item.classList.remove("active"));
+    button.classList.add("active");
+    document.querySelector(`#${button.dataset.view}`).classList.add("active");
+    await renderAdmin();
+  });
+});
+
+document.querySelectorAll('input[name="interest"]').forEach((input) => {
+  input.addEventListener("change", updateQuantityVisibility);
+});
+
+adminDashboardNav?.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-admin-section]");
+  if (!button) return;
+  showAdminSection(button.dataset.adminSection);
+});
+
+pharmacyLoginForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const password = pharmacyPassword.value.trim();
+  if (!password) {
+    pharmacyLoginMessage.textContent = "Indiquez le mot de passe pharmacie.";
+    return;
+  }
+
+  try {
+    currentPharmacy = await loginPharmacy(password);
+    localStorage.setItem(PHARMACY_SESSION_KEY, JSON.stringify(currentPharmacy));
+    pharmacyPassword.value = "";
+    pharmacyLoginMessage.textContent = "";
+    await refreshPharmacyPollAnswers();
+    await refreshPharmacyCampaignResponses();
+    renderCampaignPickers();
+    showCampaignPicker();
+    renderPharmacyAccess();
+  } catch {
+    pharmacyLoginMessage.textContent = "Mot de passe pharmacie incorrect.";
+  }
+});
+
+logoutPharmacyBtn.addEventListener("click", () => {
+  currentPharmacy = null;
+  pharmacyPollAnswers = {};
+  pharmacyCampaignResponses = {};
+  localStorage.removeItem(PHARMACY_SESSION_KEY);
+  renderCampaignPickers();
+  showCampaignPicker();
+});
+
+campaignCards.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-form-campaign]");
+  if (!button) return;
+  selectCampaign(button.dataset.formCampaign);
+});
+
+pollCards.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-form-poll]");
+  if (!button) return;
+  selectPoll(button.dataset.formPoll);
+});
+
+pollOptions.addEventListener("change", updatePollChoiceSelection);
+
+adminCampaignCards.addEventListener("click", async (event) => {
+  const deleteButton = event.target.closest("[data-delete-campaign]");
+  if (deleteButton) {
+    const campaign = campaigns.find((item) => item.id === deleteButton.dataset.deleteCampaign);
+    if (!campaign) return;
+    const confirmed = confirm(`Supprimer définitivement la campagne "${campaign.title}" ?\n\nCette action supprimera aussi son bon de commande de la liste des campagnes.`);
+    if (!confirmed) return;
+    campaigns = campaigns.filter((item) => item.id !== campaign.id);
+    if (selectedAdminCampaign?.id === campaign.id) selectedAdminCampaign = null;
+    await saveCampaigns(campaigns);
+    renderCampaignPickers();
+    adminMessage.textContent = `Campagne "${campaign.title}" supprimée.`;
+    return;
+  }
+
+  const toggleButton = event.target.closest("[data-toggle-closed-campaign]");
+  if (toggleButton) {
+    const campaign = campaigns.find((item) => item.id === toggleButton.dataset.toggleClosedCampaign);
+    if (!campaign) return;
+    const nextClosed = !campaign.closed;
+    const confirmed = confirm(nextClosed
+      ? `Clôturer la campagne "${campaign.title}" ?\n\nElle ne sera plus visible par les adhérents, mais restera consultable côté admin.`
+      : `Rouvrir la campagne "${campaign.title}" ?\n\nElle redeviendra visible par les adhérents.`);
+    if (!confirmed) return;
+    campaign.closed = nextClosed;
+    campaigns = campaigns.map((item) => item.id === campaign.id ? campaign : item);
+    await saveCampaigns(campaigns);
+    renderCampaignPickers();
+    adminMessage.textContent = nextClosed ? `Campagne "${campaign.title}" clôturée.` : `Campagne "${campaign.title}" rouverte.`;
+    return;
+  }
+
+  const button = event.target.closest("[data-admin-campaign]");
+  if (!button) return;
+  await selectAdminCampaign(button.dataset.adminCampaign);
+});
+
+adminPollCards.addEventListener("click", async (event) => {
+  const deleteButton = event.target.closest("[data-delete-poll]");
+  if (deleteButton) {
+    const poll = polls.find((item) => item.id === deleteButton.dataset.deletePoll);
+    if (!poll) return;
+    const confirmed = confirm(`Supprimer définitivement le sondage "${poll.question}" ?`);
+    if (!confirmed) return;
+    polls = polls.filter((item) => item.id !== poll.id);
+    if (selectedAdminPoll?.id === poll.id) selectedAdminPoll = null;
+    await savePolls(polls);
+    showAdminCampaignPicker();
+    adminMessage.textContent = `Sondage "${poll.question}" supprimé.`;
+    return;
+  }
+
+  const toggleButton = event.target.closest("[data-toggle-closed-poll]");
+  if (toggleButton) {
+    const poll = polls.find((item) => item.id === toggleButton.dataset.toggleClosedPoll);
+    if (!poll) return;
+    const nextClosed = !poll.closed;
+    const confirmed = confirm(nextClosed
+      ? `Clôturer le sondage "${poll.question}" ?\n\nIl ne sera plus visible par les adhérents, mais restera consultable côté admin.`
+      : `Rouvrir le sondage "${poll.question}" ?\n\nIl redeviendra visible par les adhérents.`);
+    if (!confirmed) return;
+    poll.closed = nextClosed;
+    polls = polls.map((item) => item.id === poll.id ? poll : item);
+    await savePolls(polls);
+    renderCampaignPickers();
+    adminMessage.textContent = nextClosed ? `Sondage "${poll.question}" clôturé.` : `Sondage "${poll.question}" rouvert.`;
+    return;
+  }
+
+  const button = event.target.closest("[data-admin-poll]");
+  if (!button) return;
+  await selectAdminPoll(button.dataset.adminPoll);
+});
+
+backToCampaignsBtn.addEventListener("click", showCampaignPicker);
+backToPollsBtn.addEventListener("click", showCampaignPicker);
+backToAdminCampaignsBtn.addEventListener("click", async () => {
+  activeAdminSection = "campaigns";
+  await showAdminCampaignPicker();
+});
+backToAdminPollsBtn.addEventListener("click", async () => {
+  activeAdminSection = "polls";
+  await showAdminCampaignPicker();
+});
+returnToMenuBtn.addEventListener("click", showCampaignPicker);
+
+showClosedCampaignsBtn.addEventListener("click", () => {
+  adminShowingClosedCampaigns = !adminShowingClosedCampaigns;
+  renderCampaignPickers();
+});
+
+saveCampaignMessageBtn.addEventListener("click", async () => {
+  if (!selectedAdminCampaign) return;
+  selectedAdminCampaign.pharmacyMessage = campaignPharmacyMessage.value.trim();
+  selectedAdminCampaign.description = selectedAdminCampaign.pharmacyMessage || selectedAdminCampaign.description || "Précommande à compléter.";
+  campaigns = campaigns.map((campaign) => campaign.id === selectedAdminCampaign.id ? selectedAdminCampaign : campaign);
+  await saveCampaigns(campaigns);
+  renderCampaignPickers();
+  adminMessage.textContent = "Message pharmacie enregistré.";
+});
+
+campaignImageFile.addEventListener("change", async () => {
+  const file = campaignImageFile.files[0];
+  if (!file || !selectedAdminCampaign) return;
+
+  try {
+    campaignImageMessage.textContent = "Préparation de l'image...";
+    selectedAdminCampaign.imageData = await imageFileToDataUrl(file);
+    campaigns = campaigns.map((campaign) => campaign.id === selectedAdminCampaign.id ? selectedAdminCampaign : campaign);
+    await saveCampaigns(campaigns);
+    refreshCampaignImagePreview(selectedAdminCampaign);
+    renderCampaignPickers();
+    campaignImageMessage.textContent = "Image enregistrée.";
+  } catch (error) {
+    campaignImageMessage.textContent = error.message;
+  } finally {
+    campaignImageFile.value = "";
+  }
+});
+
+removeCampaignImageBtn.addEventListener("click", async () => {
+  if (!selectedAdminCampaign) return;
+  const confirmed = selectedAdminCampaign.imageData ? confirm("Retirer l'image de cette commande ?") : true;
+  if (!confirmed) return;
+  selectedAdminCampaign.imageData = "";
+  campaigns = campaigns.map((campaign) => campaign.id === selectedAdminCampaign.id ? selectedAdminCampaign : campaign);
+  await saveCampaigns(campaigns);
+  refreshCampaignImagePreview(selectedAdminCampaign);
+  renderCampaignPickers();
+  campaignImageMessage.textContent = "Image retirée.";
+});
+
+createCampaignForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const title = newCampaignTitle.value.trim();
+  if (!title) {
+    adminMessage.textContent = "Indiquez un nom de précommande.";
+    return;
+  }
+
+  const baseId = slugify(title);
+  let id = baseId;
+  let index = 2;
+  while (campaigns.some((campaign) => campaign.id === id)) {
+    id = `${baseId}-${index}`;
+    index += 1;
+  }
+
+  const campaign = {
+    id,
+    title,
+    type: "Précommande",
+    description: "Nouvelle précommande à paramétrer.",
+    pharmacyMessage: "",
+    imageData: "",
+    closed: false,
+    template: []
+  };
+
+  campaigns = [...campaigns, campaign];
+  await saveCampaigns(campaigns);
+  newCampaignTitle.value = "";
+  showAdminSection("campaigns");
+  adminMessage.textContent = `Précommande "${title}" ajoutée. Ouvrez-la puis importez son bon Excel.`;
+});
+
+createPollForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const question = newPollQuestion.value.trim();
+  const options = newPollOptions.value
+    .split(/\r?\n/)
+    .map((option) => option.trim())
+    .filter(Boolean);
+
+  if (!question) {
+    adminMessage.textContent = "Indiquez la question du sondage.";
+    return;
+  }
+
+  if (options.length < 2) {
+    adminMessage.textContent = "Indiquez au moins deux réponses possibles, une par ligne.";
+    return;
+  }
+
+  const baseId = slugify(question);
+  let id = baseId;
+  let index = 2;
+  while (polls.some((poll) => poll.id === id)) {
+    id = `${baseId}-${index}`;
+    index += 1;
+  }
+
+  const poll = {
+    id,
+    question,
+    type: "Sondage",
+    options,
+    freeTextLabel: newPollFreeLabel.value.trim(),
+    freeTextRequired: newPollFreeRequired.checked,
+    closed: false
+  };
+
+  polls = [...polls, poll];
+  await savePolls(polls);
+  createPollForm.reset();
+  showAdminSection("polls");
+  adminMessage.textContent = `Sondage "${question}" créé.`;
+});
+
+createPharmacyForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const name = newPharmacyName.value.trim();
+  if (!name) {
+    adminMessage.textContent = "Indiquez le nom de la pharmacie.";
+    return;
+  }
+
+  const pharmacy = {
+    id: `pharmacy-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    name,
+    password: generatePharmacyPassword(name),
+    active: true
+  };
+
+  pharmacies = await savePharmacies([...pharmacies, pharmacy]);
+  newPharmacyName.value = "";
+  renderPharmacyAccounts();
+  renderPharmacyAccess();
+  showAdminSection("pharmacies");
+  adminMessage.textContent = `Accès créé pour ${name}. Mot de passe : ${pharmacy.password}`;
+});
+
+pharmacyAccountsList.addEventListener("click", async (event) => {
+  const button = event.target.closest("[data-delete-pharmacy]");
+  if (!button) return;
+  const pharmacy = pharmacies.find((item) => item.id === button.dataset.deletePharmacy);
+  if (!pharmacy) return;
+  const confirmed = confirm(`Supprimer l'accès de ${pharmacy.name} ?`);
+  if (!confirmed) return;
+  pharmacies = await savePharmacies(pharmacies.filter((item) => item.id !== pharmacy.id));
+  if (currentPharmacy?.id === pharmacy.id) {
+    currentPharmacy = null;
+    localStorage.removeItem(PHARMACY_SESSION_KEY);
+  }
+  renderPharmacyAccounts();
+  renderPharmacyAccess();
+  adminMessage.textContent = `Accès supprimé pour ${pharmacy.name}.`;
+});
+
+orderFile.addEventListener("change", async () => {
+  const file = orderFile.files[0];
+  if (!file) return;
+
+  try {
+    const rows = await parseOrderFile(file);
+    if (selectedAdminCampaign) {
+      selectedAdminCampaign.template = rows;
+      campaigns = campaigns.map((campaign) => campaign.id === selectedAdminCampaign.id ? selectedAdminCampaign : campaign);
+      await saveCampaigns(campaigns);
+    } else {
+      await saveOrderTemplate(rows);
+    }
+    currentOrderTemplate = rows;
+    renderOrderTemplate();
+    renderCampaignPickers();
+    orderAdminMessage.textContent = `${rows.length} lignes importées dans le bon de commande.`;
+  } catch (error) {
+    orderAdminMessage.textContent = error.message;
+  } finally {
+    orderFile.value = "";
+  }
+});
+
+downloadTemplateBtn.addEventListener("click", () => {
+  const workbook = `
+    <html>
+      <head><meta charset="utf-8"></head>
+      <body>
+        <table border="1">
+          <thead>
+            <tr><th>Désignation</th><th>CIP</th><th>Tarif</th><th>Colisage</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Exemple produit</td><td>3400000000000</td><td>12,50</td><td>6</td></tr>
+          </tbody>
+        </table>
+      </body>
+    </html>
+  `;
+  const blob = new Blob([workbook], { type: "application/vnd.ms-excel;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "modele-bon-commande-soguasphar.xls";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+});
+
+pollForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (!selectedPoll) {
+    pollMessage.textContent = "Veuillez choisir un sondage avant d'envoyer une réponse.";
+    return;
+  }
+
+  const selectedAnswer = pollForm.querySelector('input[name="pollAnswer"]:checked')?.value || "";
+  const pharmacyName = pollPharmacyName.value.trim();
+  const freeText = pollFreeText.value.trim();
+
+  if (!pharmacyName || !selectedAnswer) {
+    pollMessage.textContent = "Le nom de la pharmacie et la réponse sont obligatoires.";
+    return;
+  }
+
+  if (selectedPoll.freeTextRequired && !freeText) {
+    pollMessage.textContent = "Merci de remplir le champ demandé.";
+    return;
+  }
+
+  await appendPollResponse({
+    id: createId(),
+    pollId: selectedPoll.id,
+    pollQuestion: selectedPoll.question,
+    createdAt: new Date().toLocaleString("fr-FR"),
+    pharmacyId: currentPharmacy?.id || "",
+    pharmacyName,
+    answer: selectedAnswer,
+    freeText
+  });
+
+  saveLocalAnsweredPoll(selectedPoll.id, selectedAnswer);
+  if (currentPharmacy?.id) {
+    pharmacyPollAnswers[selectedPoll.id] = selectedAnswer;
+  }
+  renderCampaignPickers();
+  pollForm.reset();
+  await renderPollResults();
+  showSuccessScreen();
+});
+
+form.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (!selectedCampaign) {
+    formMessage.textContent = "Veuillez choisir une commande avant d'envoyer une réponse.";
+    return;
+  }
+
+  const formData = new FormData(form);
+  const pharmacyName = String(formData.get("pharmacyName") || "").trim();
+  const interest = String(formData.get("interest") || "").trim();
+
+  if (!pharmacyName || !interest) {
+    formMessage.textContent = "Le nom de la pharmacie et la réponse sont obligatoires.";
+    return;
+  }
+
+  const response = {
+    id: createId(),
+    campaignId: selectedCampaign.id,
+    campaignTitle: selectedCampaign.title,
+    createdAt: new Date().toLocaleString("fr-FR"),
+    pharmacyId: currentPharmacy?.id || "",
+    pharmacyName,
+    interest,
+    products: interest === "Pas intéressé" ? [] : collectProducts(),
+    notes: String(formData.get("notes") || "").trim()
+  };
+
+  await appendResponse(response);
+  pharmacyCampaignResponses[selectedCampaign.id] = response;
+  renderCampaignPickers();
+  preserveSubmitMessage = true;
+  form.reset();
+  resetQuantities();
+  updateQuantityVisibility();
+  await renderAdmin();
+  showSuccessScreen();
+});
+
+form.addEventListener("reset", () => {
+  setTimeout(() => {
+    resetQuantities();
+    updateQuantityVisibility();
+    if (preserveSubmitMessage) {
+      preserveSubmitMessage = false;
+    } else {
+      formMessage.textContent = "";
+    }
+  });
+});
+
+adminLogin.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const code = document.querySelector("#adminCode").value.trim();
+  if (code !== ADMIN_CODE) {
+    adminMessage.textContent = "Code administrateur incorrect.";
+    return;
+  }
+
+  adminUnlocked = true;
+  adminPanel.hidden = true;
+  document.querySelector(".admin-layout").classList.add("unlocked");
+  adminContent.hidden = false;
+  adminContent.classList.remove("locked");
+  pharmacies = await getPharmacies(true);
+  renderPharmacyAccounts();
+  await showAdminCampaignPicker();
+  adminMessage.textContent = "Accès administrateur ouvert.";
+});
+
+exportExcelBtn.addEventListener("click", exportToExcel);
+exportPollExcelBtn.addEventListener("click", exportPollToExcel);
+
+responsesTable.addEventListener("click", async (event) => {
+  const button = event.target.closest("[data-delete-response]");
+  if (!button) return;
+  const row = button.closest("tr");
+  const pharmacy = row?.children[2]?.textContent?.trim() || "cette pharmacie";
+  const confirmed = confirm(`Supprimer la réponse de ${pharmacy} ?`);
+  if (!confirmed) return;
+  try {
+    await deleteResponse(button.dataset.deleteResponse);
+    await renderAdmin();
+    adminMessage.textContent = `Réponse de ${pharmacy} supprimée.`;
+  } catch (error) {
+    adminMessage.textContent = "Suppression impossible. Redémarrez le site puis réessayez.";
+  }
+});
+
+quantitySummaryBtn.addEventListener("click", () => {
+  quantitySummary.hidden = !quantitySummary.hidden;
+  quantitySummaryBtn.textContent = quantitySummary.hidden ? "Récap des quantités" : "Masquer le récap";
+});
+
+async function init() {
+  campaigns = await getCampaigns();
+  polls = await getPolls();
+  const pharmacyInfo = await getPharmacies(false);
+  if (pharmacyInfo && typeof pharmacyInfo.count === "number" && pharmacyInfo.count === 0) {
+    pharmacies = [];
+  } else if (adminUnlocked) {
+    pharmacies = await getPharmacies(true);
+  } else {
+    pharmacies = new Array(pharmacyInfo.count || 0).fill(null);
+  }
+  await refreshPharmacyPollAnswers();
+  await refreshPharmacyCampaignResponses();
+  renderCampaignPickers();
+  showCampaignPicker();
+  await showAdminCampaignPicker();
+  renderPharmacyAccess();
+}
+
+init();

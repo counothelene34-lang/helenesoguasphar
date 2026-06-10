@@ -1,0 +1,12 @@
+# Données locales sensibles / générées
+data/*.json
+liste_mots_de_passe_pharmacies.csv
+
+# Environnement local
+node_modules/
+.env
+*.log
+
+# Fichiers système
+Thumbs.db
+.DS_Store

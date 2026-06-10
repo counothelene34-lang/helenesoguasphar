@@ -1,0 +1,423 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SOGUASPHAR - Commande pharmacies</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
+  <script type="module">
+    import * as pdfjsLib from "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.min.mjs";
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.worker.min.mjs";
+    window.pdfjsLib = pdfjsLib;
+  </script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand" aria-label="SOGUASPHAR">
+      <img class="brand-logo" src="logo-soguasphar.png" alt="SOGUASPHAR">
+    </div>
+    <nav class="view-switch" aria-label="Changer de vue">
+      <button class="switch-btn active" data-view="formView" type="button">Formulaire</button>
+      <button class="switch-btn" data-view="adminView" type="button">Administration</button>
+    </nav>
+  </header>
+
+  <main>
+    <section id="formView" class="view active" aria-labelledby="formTitle">
+      <section id="pharmacyGate" class="pharmacy-gate" hidden>
+        <div class="pharmacy-gate-card">
+          <p class="eyebrow">Accès pharmacie</p>
+          <h2>Identifiez votre pharmacie</h2>
+          <p>Entrez le mot de passe transmis par SOGUASPHAR pour accéder aux commandes et sondages.</p>
+          <form id="pharmacyLoginForm">
+            <label for="pharmacyPassword">Mot de passe pharmacie</label>
+            <input id="pharmacyPassword" type="password" autocomplete="current-password" placeholder="Mot de passe">
+            <button class="primary-btn" type="submit">Entrer</button>
+          </form>
+          <p id="pharmacyLoginMessage" class="status-message" role="status"></p>
+        </div>
+      </section>
+
+      <div id="pharmacySessionBar" class="pharmacy-session-bar" hidden>
+        <strong id="currentPharmacyName"></strong>
+        <button id="logoutPharmacyBtn" class="ghost-btn" type="button">Changer de pharmacie</button>
+      </div>
+
+      <div class="hero-band">
+        <div class="hero-copy">
+          <h1 id="formTitle">Commande, précommande, confirmation</h1>
+        </div>
+      </div>
+
+      <section id="campaignPicker" class="campaign-picker" aria-labelledby="campaignPickerTitle">
+        <div class="picker-head">
+          <h2 id="campaignPickerTitle">Choisissez une commande à remplir</h2>
+          <p>Sélectionnez la commande ou précommande concernée, puis indiquez vos quantités souhaitées. Si vous ne souhaitez pas participer, vous pouvez simplement répondre pas intéressé dans le formulaire merci.</p>
+        </div>
+        <div id="campaignCards" class="campaign-grid" aria-live="polite"></div>
+        <div class="poll-picker-block">
+          <h2>Sondages disponibles</h2>
+          <p>Répondez en un clic aux questions proposées par SOGUASPHAR.</p>
+          <div id="pollCards" class="campaign-grid" aria-live="polite"></div>
+        </div>
+      </section>
+
+      <form id="requestForm" class="form-shell">
+        <button id="backToCampaignsBtn" class="back-strong-btn" type="button">← Retour au menu</button>
+        <section id="campaignNotice" class="campaign-notice" hidden></section>
+        <section id="campaignImageBlock" class="campaign-image-block" hidden>
+          <a id="campaignImageLink" href="#" target="_blank" rel="noopener">
+            <img id="campaignImage" alt="">
+          </a>
+        </section>
+        <section class="question-block">
+          <label for="pharmacyName">Nom de la pharmacie <span aria-hidden="true">*</span></label>
+          <input id="pharmacyName" name="pharmacyName" type="text" autocomplete="organization" required placeholder="Ex. Pharmacie du Centre">
+        </section>
+
+        <section class="question-block">
+          <span class="field-title">Votre réponse <span aria-hidden="true">*</span></span>
+          <div class="radio-list">
+            <label>
+              <input type="radio" name="interest" value="Interessé" required>
+              <span>Intéressé, je souhaite indiquer des quantités</span>
+            </label>
+            <label>
+              <input type="radio" name="interest" value="Pas intéressé" required>
+              <span>Pas intéressé</span>
+            </label>
+          </div>
+        </section>
+
+        <section id="quantitySection" class="question-block">
+          <div class="section-head">
+            <div>
+              <span class="field-title">Bon de commande</span>
+              <p>Renseignez uniquement les quantités souhaitées.</p>
+            </div>
+            <span id="lineCount" class="line-count">0 ligne</span>
+          </div>
+          <div id="orderMessage" class="inline-message">Aucun bon de commande chargé pour le moment.</div>
+          <div class="order-wrap">
+            <table class="order-table">
+              <thead>
+                <tr>
+                  <th>Désignation</th>
+                  <th>CIP</th>
+                  <th>Tarif</th>
+                  <th>Colisage</th>
+                  <th>Quantité</th>
+                </tr>
+              </thead>
+              <tbody id="productRows"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="question-block">
+          <label for="notes">Commentaire ou demande particulière</label>
+          <textarea id="notes" name="notes" rows="4" placeholder="Précision de livraison, préférence, contrainte, autre demande..."></textarea>
+        </section>
+
+        <div class="form-actions">
+          <button class="primary-btn" type="submit">Envoyer la réponse</button>
+          <button class="text-btn" type="reset">Réinitialiser</button>
+        </div>
+        <p id="formMessage" class="status-message" role="status"></p>
+      </form>
+
+      <form id="pollForm" class="form-shell poll-shell" hidden>
+        <button id="backToPollsBtn" class="back-strong-btn" type="button">← Retour au menu</button>
+        <section class="question-block poll-identity-block">
+          <label for="pollPharmacyName">Nom de la pharmacie <span aria-hidden="true">*</span></label>
+          <input id="pollPharmacyName" name="pollPharmacyName" type="text" autocomplete="organization" required placeholder="Ex. Pharmacie du Centre">
+        </section>
+        <section class="question-block poll-question-block">
+          <div class="poll-message-head">
+            <span class="poll-kicker">Sondage SOGUASPHAR</span>
+            <span class="poll-choice-hint">1 choix possible</span>
+          </div>
+          <span id="pollQuestionTitle" class="field-title poll-question-title">Question</span>
+          <div id="pollOptions" class="radio-list poll-choice-list"></div>
+        </section>
+        <section id="pollFreeTextBlock" class="question-block poll-free-block" hidden>
+          <label id="pollFreeTextLabel" for="pollFreeText">Commentaire</label>
+          <textarea id="pollFreeText" name="pollFreeText" rows="3"></textarea>
+        </section>
+        <div class="form-actions poll-actions">
+          <button class="primary-btn poll-submit-btn" type="submit">Valider mon choix</button>
+        </div>
+        <p id="pollMessage" class="status-message" role="status"></p>
+      </form>
+
+      <section id="responseSuccess" class="success-screen" hidden>
+        <div class="success-mark">✓</div>
+        <h2>Réponse enregistrée</h2>
+        <p>Merci, votre réponse a bien été transmise.</p>
+        <button id="returnToMenuBtn" class="primary-btn" type="button">Revenir au menu</button>
+      </section>
+    </section>
+
+    <section id="adminView" class="view" aria-labelledby="adminTitle">
+      <div class="admin-layout">
+        <aside class="admin-panel">
+          <p class="eyebrow">Espace administrateur</p>
+          <h1 id="adminTitle">Récapitulatif</h1>
+          <p>Accès réservé aux personnes disposant du code administrateur.</p>
+
+          <form id="adminLogin" class="admin-login">
+            <label for="adminCode">Code administrateur</label>
+            <input id="adminCode" type="password" autocomplete="current-password" placeholder="Saisir le code">
+            <button class="primary-btn" type="submit">Ouvrir le récap</button>
+          </form>
+          <p id="adminMessage" class="status-message" role="status"></p>
+        </aside>
+
+        <section id="adminContent" class="admin-content locked" aria-live="polite" hidden>
+          <section id="adminCampaignPicker" class="campaign-picker admin-campaign-picker" aria-labelledby="adminCampaignTitle">
+            <div class="picker-head">
+              <h2 id="adminCampaignTitle">Choisir une campagne à suivre</h2>
+              <p>Sélectionnez une commande pour voir les réponses, les pharmacies pas intéressées et l'export Excel associé.</p>
+            </div>
+            <div id="adminDashboardNav" class="admin-dashboard-nav" aria-label="Menu administrateur">
+              <button class="admin-dashboard-btn active" type="button" data-admin-section="new-campaign">Nouvelle campagne précommande</button>
+              <button class="admin-dashboard-btn" type="button" data-admin-section="new-poll">Nouveau sondage</button>
+              <button class="admin-dashboard-btn" type="button" data-admin-section="campaigns">Campagnes en cours</button>
+              <button class="admin-dashboard-btn" type="button" data-admin-section="polls">Sondages en cours</button>
+              <button class="admin-dashboard-btn" type="button" data-admin-section="pharmacies">Pharmacies</button>
+              <button class="admin-dashboard-btn" type="button" data-admin-section="archives">Archivés</button>
+            </div>
+            <form id="createCampaignForm" class="create-campaign-form">
+              <label for="newCampaignTitle">Nouvelle précommande</label>
+              <div class="create-campaign-row">
+                <input id="newCampaignTitle" type="text" placeholder="Ex. Précommande solaire, calendrier, herboristerie..." autocomplete="off">
+                <button class="primary-btn" type="submit">Ajouter</button>
+              </div>
+            </form>
+            <form id="createPollForm" class="create-campaign-form">
+              <label for="newPollQuestion">Nouveau sondage</label>
+              <input id="newPollQuestion" type="text" placeholder="Ex. Présence à l'assemblée générale du ..." autocomplete="off">
+              <label for="newPollOptions">Réponses possibles</label>
+              <textarea id="newPollOptions" rows="3" placeholder="Oui présent(e)&#10;Non pas présent(e)"></textarea>
+              <label for="newPollFreeLabel">Champ libre visible par la pharmacie</label>
+              <input id="newPollFreeLabel" type="text" placeholder="Ex. Nom de la ou les personnes présentes">
+              <label class="checkbox-line">
+                <input id="newPollFreeRequired" type="checkbox">
+                <span>Rendre ce champ obligatoire</span>
+              </label>
+              <button class="primary-btn" type="submit">Créer le sondage</button>
+            </form>
+            <form id="createPharmacyForm" class="create-campaign-form">
+              <label for="newPharmacyName">Nouvel accès pharmacie</label>
+              <div class="create-campaign-row">
+                <input id="newPharmacyName" type="text" placeholder="Ex. Pharmacie du Centre" autocomplete="off">
+                <button class="primary-btn" type="submit">Créer l'accès</button>
+              </div>
+              <p class="form-help">Un mot de passe est généré automatiquement.</p>
+            </form>
+            <div id="pharmacyAccountsList" class="pharmacy-accounts-list"></div>
+            <div class="closed-campaign-actions">
+              <button id="showClosedCampaignsBtn" class="ghost-btn" type="button">Campagnes clôturées</button>
+            </div>
+            <div id="adminCampaignCards" class="campaign-grid" aria-live="polite"></div>
+            <div class="poll-picker-block">
+              <h2>Sondages</h2>
+              <div id="adminPollCards" class="campaign-grid" aria-live="polite"></div>
+            </div>
+          </section>
+
+          <div id="adminDetail" hidden>
+          <button id="backToAdminCampaignsBtn" class="back-strong-btn" type="button">← Retour aux commandes</button>
+          <div class="selected-campaign-title">
+            <p class="eyebrow">Campagne sélectionnée</p>
+            <h2 id="adminSelectedCampaignName">Commande</h2>
+          </div>
+
+          <section class="admin-message-editor">
+            <label for="campaignPharmacyMessage">Message visible par les pharmacies</label>
+            <textarea id="campaignPharmacyMessage" rows="3" placeholder="Ex. Merci de répondre avant vendredi. Livraison prévue semaine prochaine."></textarea>
+            <button id="saveCampaignMessageBtn" class="primary-btn" type="button">Enregistrer le message</button>
+          </section>
+
+          <section class="admin-message-editor">
+            <label for="campaignImageFile">Image visible sur la commande</label>
+            <div class="upload-actions">
+              <label class="file-btn" for="campaignImageFile">Choisir une image</label>
+              <input id="campaignImageFile" type="file" accept="image/*">
+              <button id="removeCampaignImageBtn" class="ghost-btn" type="button">Retirer l'image</button>
+            </div>
+            <div id="campaignImageAdminPreview" class="campaign-image-admin-preview" hidden>
+              <a id="campaignImageAdminLink" href="#" target="_blank" rel="noopener">
+                <img id="campaignImageAdmin" alt="">
+              </a>
+            </div>
+            <p id="campaignImageMessage" class="status-message" role="status"></p>
+          </section>
+
+          <div class="metrics">
+            <div>
+              <span id="totalResponses">0</span>
+              <p>réponses</p>
+            </div>
+            <div>
+              <span id="interestedResponses">0</span>
+              <p>intéressées</p>
+            </div>
+            <div>
+              <span id="notInterestedResponses">0</span>
+              <p>pas intéressées</p>
+            </div>
+          </div>
+
+          <section class="admin-overview">
+            <div>
+              <h2>Vue d'ensemble</h2>
+              <p>Suivi rapide des pharmacies ayant répondu.</p>
+            </div>
+            <div class="overview-grid">
+              <div class="overview-box">
+                <h3>Pharmacies ayant répondu</h3>
+                <ul id="answeredPharmacies">
+                  <li>Aucune réponse pour le moment.</li>
+                </ul>
+              </div>
+              <div class="overview-box">
+                <h3>Pas intéressées</h3>
+                <ul id="notInterestedPharmacies">
+                  <li>Aucune pharmacie pour le moment.</li>
+                </ul>
+              </div>
+            </div>
+          </section>
+
+          <section class="admin-upload">
+            <div>
+              <h2>Bon de commande</h2>
+              <p>Importer un fichier Excel ou PDF. Pour Excel, les colonnes attendues sont : désignation, CIP, tarif, colisage.</p>
+            </div>
+            <div class="upload-actions">
+              <label class="file-btn" for="orderFile">Importer Excel / PDF</label>
+              <input id="orderFile" type="file" accept=".xlsx,.xls,.csv,.tsv,.txt,.pdf">
+              <button id="downloadTemplateBtn" class="ghost-btn" type="button">Modèle Excel</button>
+            </div>
+            <p id="orderAdminMessage" class="status-message" role="status"></p>
+            <div class="table-wrap compact">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Désignation</th>
+                    <th>CIP</th>
+                    <th>Tarif</th>
+                    <th>Colisage</th>
+                  </tr>
+                </thead>
+                <tbody id="orderTemplateTable">
+                  <tr>
+                    <td colspan="4" class="empty-state">Aucun bon de commande chargé.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <div class="table-toolbar">
+            <div>
+              <h2>Détail des commandes</h2>
+              <p>Le détail complet est disponible via l'export Excel.</p>
+            </div>
+            <div class="toolbar-actions">
+              <button id="exportExcelBtn" class="primary-btn" type="button">Exporter Excel</button>
+              <button id="quantitySummaryBtn" class="ghost-btn" type="button">Récap des quantités</button>
+            </div>
+          </div>
+
+          <section id="quantitySummary" class="quantity-summary" hidden>
+            <div>
+              <h2>Récap des quantités commandées</h2>
+              <p>Total cumulé par produit pour la campagne sélectionnée.</p>
+            </div>
+            <div class="table-wrap compact">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Désignation</th>
+                    <th>CIP</th>
+                    <th>Tarif</th>
+                    <th>Colisage</th>
+                    <th>Quantité totale</th>
+                  </tr>
+                </thead>
+                <tbody id="quantitySummaryTable">
+                  <tr>
+                    <td colspan="5" class="empty-state">Aucune quantité commandée pour le moment.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th></th>
+                  <th>Date</th>
+                  <th>Pharmacie</th>
+                  <th>Statut</th>
+                  <th>Produits / quantités</th>
+                  <th>Commentaire</th>
+                </tr>
+              </thead>
+              <tbody id="responsesTable">
+                <tr>
+                  <td colspan="6" class="empty-state">Aucune réponse enregistrée pour le moment.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          </div>
+
+          <div id="adminPollDetail" hidden>
+            <button id="backToAdminPollsBtn" class="back-strong-btn" type="button">← Retour aux sondages</button>
+            <div class="selected-campaign-title">
+              <p class="eyebrow">Sondage sélectionné</p>
+              <h2 id="adminPollTitle">Sondage</h2>
+            </div>
+            <div id="pollResultsSummary" class="metrics"></div>
+            <div class="table-toolbar">
+              <div>
+                <h2>Réponses au sondage</h2>
+                <p>Suivi des pharmacies ayant répondu et export Excel.</p>
+              </div>
+              <button id="exportPollExcelBtn" class="primary-btn" type="button">Exporter Excel</button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Pharmacie</th>
+                    <th>Réponse</th>
+                    <th>Commentaire / précision</th>
+                  </tr>
+                </thead>
+                <tbody id="pollResponsesTable">
+                  <tr>
+                    <td colspan="4" class="empty-state">Aucune réponse enregistrée pour le moment.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
