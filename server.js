@@ -136,8 +136,75 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
+function responseOwnerKey(response) {
+  return `${response.campaignId || "herboristerie"}|${response.pharmacyId || String(response.pharmacyName || "").trim().toLowerCase()}`;
+}
+
+function latestResponses(responses = []) {
+  const byOwner = new Map();
+  responses.forEach((item) => {
+    const key = responseOwnerKey(item);
+    const previous = byOwner.get(key);
+    if (!previous) {
+      byOwner.set(key, item);
+      return;
+    }
+
+    const previousDate = Date.parse(previous.updatedAt || previous.createdAt || "") || 0;
+    const nextDate = Date.parse(item.updatedAt || item.createdAt || "") || 0;
+    if (nextDate >= previousDate) byOwner.set(key, item);
+  });
+  return [...byOwner.values()];
+}
+
+function productKey(product) {
+  return String(product?.cip || product?.designation || product?.product || product?.id || "").trim().toLowerCase();
+}
+
+function parseColisageMinimum(value) {
+  const match = String(value || "").replace(",", ".").match(/\d+(?:\.\d+)?/);
+  return match ? Number(match[0]) : 0;
+}
+
+function colisageErrorMessage(minimum) {
+  return minimum ? `Veuillez inscrire au minimum le colisage indiqué (${minimum} unités).` : "Inscrire le colisage minimum.";
+}
+
+function normalizeResponseProducts(products, campaignId) {
+  const campaign = readOrders().find((order) => order.id === campaignId);
+  const templateByKey = new Map((campaign?.template || []).map((product) => [productKey(product), product]));
+
+  return Array.isArray(products) ? products.map((product) => {
+    const normalized = {
+      designation: String(product.designation || product.product || "").trim(),
+      cip: String(product.cip || "").trim(),
+      tarif: String(product.tarif || "").trim(),
+      colisage: String(product.colisage || "").trim(),
+      quantity: String(product.quantity || "").trim()
+    };
+    const template = templateByKey.get(productKey(normalized));
+    return template ? {
+      ...normalized,
+      designation: normalized.designation || String(template.designation || "").trim(),
+      cip: normalized.cip || String(template.cip || "").trim(),
+      tarif: normalized.tarif || String(template.tarif || "").trim(),
+      colisage: String(template.colisage || normalized.colisage || "").trim()
+    } : normalized;
+  }) : [];
+}
+
+function validateProductsAgainstColisage(products = []) {
+  const invalidProduct = products.find((product) => {
+    const quantity = Number(String(product.quantity || "").replace(",", "."));
+    const minimum = parseColisageMinimum(product.colisage);
+    return quantity > 0 && minimum > 0 && quantity < minimum;
+  });
+
+  return invalidProduct ? colisageErrorMessage(parseColisageMinimum(invalidProduct.colisage)) : "";
+}
+
 function rowsForExport(responses) {
-  return responses.flatMap((item) => {
+  return latestResponses(responses).flatMap((item) => {
     if (!item.products || !item.products.length) {
       return [{ ...item, designation: "", cip: "", tarif: "", colisage: "", quantity: "" }];
     }
@@ -154,10 +221,11 @@ function rowsForExport(responses) {
 }
 
 function sendExcel(response, responses) {
-  const headings = ["Date", "Pharmacie", "Statut", "Désignation", "CIP", "Tarif", "Colisage", "Quantité", "Commentaire"];
+  const headings = ["Date", "Modifié le", "Pharmacie", "Statut", "Désignation", "CIP", "Tarif", "Colisage", "Quantité", "Commentaire"];
   const rows = rowsForExport(responses).map((row) => `
     <tr>
       <td>${escapeHtml(row.createdAt)}</td>
+      <td>${escapeHtml(row.updatedAt || "")}</td>
       <td>${escapeHtml(row.pharmacyName)}</td>
       <td>${escapeHtml(row.interest)}</td>
       <td>${escapeHtml(row.designation)}</td>
@@ -252,14 +320,14 @@ const server = http.createServer(async (request, response) => {
         sendJson(response, 401, { error: "Code administrateur incorrect" });
         return;
       }
-      sendJson(response, 200, readResponses());
+      sendJson(response, 200, latestResponses(readResponses()));
       return;
     }
 
     if (url.pathname === "/api/pharmacy-responses" && request.method === "GET") {
       const pharmacyId = url.searchParams.get("pharmacyId");
       const pharmacyName = String(url.searchParams.get("pharmacyName") || "").trim().toLowerCase();
-      const responses = readResponses().filter((item) => {
+      const responses = latestResponses(readResponses()).filter((item) => {
         if (pharmacyId && item.pharmacyId === pharmacyId) return true;
         return pharmacyName && String(item.pharmacyName || "").trim().toLowerCase() === pharmacyName;
       });
@@ -440,20 +508,21 @@ const server = http.createServer(async (request, response) => {
         campaignId: String(item.campaignId || "herboristerie"),
         campaignTitle: String(item.campaignTitle || "Herboristerie"),
         createdAt: String(item.createdAt || new Date().toLocaleString("fr-FR")),
+        updatedAt: String(item.updatedAt || ""),
         pharmacyId: String(item.pharmacyId || "").trim(),
         pharmacyName: String(item.pharmacyName || "").trim(),
         interest: String(item.interest || "").trim(),
-        products: Array.isArray(item.products) ? item.products.map((product) => ({
-          designation: String(product.designation || product.product || "").trim(),
-          cip: String(product.cip || "").trim(),
-          tarif: String(product.tarif || "").trim(),
-          colisage: String(product.colisage || "").trim(),
-          quantity: String(product.quantity || "").trim()
-        })) : [],
+        products: normalizeResponseProducts(item.products, String(item.campaignId || "herboristerie")),
         notes: String(item.notes || "").trim()
       })) : [];
-      writeResponses(responses);
-      sendJson(response, 200, responses);
+      const invalid = responses.map((item) => validateProductsAgainstColisage(item.products)).find(Boolean);
+      if (invalid) {
+        sendJson(response, 400, { error: invalid });
+        return;
+      }
+      const latest = latestResponses(responses);
+      writeResponses(latest);
+      sendJson(response, 200, latest);
       return;
     }
 
@@ -494,25 +563,38 @@ const server = http.createServer(async (request, response) => {
     if (url.pathname === "/api/responses" && request.method === "POST") {
       const payload = JSON.parse(await readBody(request));
       const responses = readResponses();
-      responses.push({
+      const campaignId = String(payload.campaignId || "herboristerie");
+      const products = normalizeResponseProducts(payload.products, campaignId);
+      const invalid = validateProductsAgainstColisage(products);
+      if (invalid) {
+        sendJson(response, 400, { error: invalid });
+        return;
+      }
+
+      const incoming = {
         id: String(payload.id || Date.now()),
-        campaignId: String(payload.campaignId || "herboristerie"),
+        campaignId,
         campaignTitle: String(payload.campaignTitle || "Herboristerie"),
         createdAt: String(payload.createdAt || new Date().toLocaleString("fr-FR")),
+        updatedAt: String(payload.updatedAt || ""),
         pharmacyId: String(payload.pharmacyId || "").trim(),
         pharmacyName: String(payload.pharmacyName || "").trim(),
         interest: String(payload.interest || "").trim(),
-        products: Array.isArray(payload.products) ? payload.products.map((product) => ({
-          designation: String(product.designation || product.product || "").trim(),
-          cip: String(product.cip || "").trim(),
-          tarif: String(product.tarif || "").trim(),
-          colisage: String(product.colisage || "").trim(),
-          quantity: String(product.quantity || "").trim()
-        })) : [],
+        products,
         notes: String(payload.notes || "").trim()
-      });
-      writeResponses(responses);
-      sendJson(response, 201, responses);
+      };
+      const existing = responses.find((item) => responseOwnerKey(item) === responseOwnerKey(incoming));
+      const now = new Date().toLocaleString("fr-FR");
+      const savedResponse = {
+        ...incoming,
+        id: existing?.id || incoming.id,
+        createdAt: existing?.createdAt || incoming.createdAt || now,
+        updatedAt: existing ? now : ""
+      };
+      const updatedResponses = responses.filter((item) => responseOwnerKey(item) !== responseOwnerKey(savedResponse));
+      updatedResponses.push(savedResponse);
+      writeResponses(updatedResponses);
+      sendJson(response, 201, savedResponse);
       return;
     }
 
@@ -564,8 +646,8 @@ const server = http.createServer(async (request, response) => {
       }
       const campaignId = url.searchParams.get("campaign");
       const responses = campaignId
-        ? readResponses().filter((item) => item.campaignId === campaignId || (!item.campaignId && campaignId === "herboristerie"))
-        : readResponses();
+        ? latestResponses(readResponses()).filter((item) => item.campaignId === campaignId || (!item.campaignId && campaignId === "herboristerie"))
+        : latestResponses(readResponses());
       sendExcel(response, responses);
       return;
     }

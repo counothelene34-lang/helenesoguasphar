@@ -227,7 +227,16 @@ async function requestJson(url, options = {}) {
   });
 
   if (!response.ok) {
-    throw new Error(`Erreur serveur ${response.status}`);
+    let message = `Erreur serveur ${response.status}`;
+    try {
+      const payload = await response.json();
+      if (payload?.error) message = payload.error;
+    } catch {
+      // Keep the generic server error if the response is not JSON.
+    }
+    const error = new Error(message);
+    error.status = response.status;
+    throw error;
   }
 
   return response.json();
@@ -361,7 +370,7 @@ async function refreshPharmacyCampaignResponses() {
       responses = localResponses().filter((response) => response.pharmacyName === currentPharmacy.name);
     }
 
-    responses.forEach((response) => {
+    latestResponses(responses).forEach((response) => {
       if (!response.campaignId) return;
       pharmacyCampaignResponses[response.campaignId] = response;
     });
@@ -409,14 +418,15 @@ async function saveOrderTemplate(template) {
 }
 
 async function getResponses() {
-  if (!API_AVAILABLE) return localResponses();
+  if (!API_AVAILABLE) return latestResponses(localResponses());
 
   try {
-    return await requestJson("/api/responses", {
+    const responses = await requestJson("/api/responses", {
       headers: adminUnlocked ? { "X-Admin-Code": ADMIN_CODE } : {}
     });
+    return latestResponses(responses);
   } catch {
-    return localResponses();
+    return latestResponses(localResponses());
   }
 }
 
@@ -427,14 +437,16 @@ async function appendResponse(response) {
         method: "POST",
         body: JSON.stringify(response)
       });
-    } catch {
+    } catch (error) {
+      if (error.status === 400) throw error;
       // Fallback for direct preview servers without API routes.
     }
   }
 
-  const responses = [...localResponses(), response];
+  const responses = localResponses().filter((item) => responseOwnerKey(item) !== responseOwnerKey(response));
+  responses.push(response);
   saveLocalResponses(responses);
-  return responses;
+  return response;
 }
 
 async function clearResponses() {
@@ -548,6 +560,40 @@ function campaignResponseSummary(response) {
   }
 
   return `Commande : ${productSummary}${extraCount}.${notes}`;
+}
+
+function responseOwnerKey(response) {
+  return `${response.campaignId || "herboristerie"}|${response.pharmacyId || String(response.pharmacyName || "").trim().toLowerCase()}`;
+}
+
+function latestResponses(responses = []) {
+  const byOwner = new Map();
+  responses.forEach((response) => {
+    const key = responseOwnerKey(response);
+    const previous = byOwner.get(key);
+    if (!previous) {
+      byOwner.set(key, response);
+      return;
+    }
+
+    const previousDate = Date.parse(previous.updatedAt || previous.createdAt || "") || 0;
+    const nextDate = Date.parse(response.updatedAt || response.createdAt || "") || 0;
+    if (nextDate >= previousDate) byOwner.set(key, response);
+  });
+  return [...byOwner.values()];
+}
+
+function productKey(product) {
+  return product?.cip || product?.designation || product?.product || product?.id || "";
+}
+
+function parseColisageMinimum(value) {
+  const match = String(value || "").replace(",", ".").match(/\d+(?:\.\d+)?/);
+  return match ? Number(match[0]) : 0;
+}
+
+function colisageErrorMessage(minimum) {
+  return minimum ? `Veuillez inscrire au minimum le colisage indiqué (${minimum} unités).` : "Inscrire le colisage minimum.";
 }
 
 function refreshCampaignImagePreview(campaign) {
@@ -976,6 +1022,9 @@ function campaignCard(campaign, target) {
   const statusLabel = campaign.closed ? "Clôturée" : (campaign.type || "Commande");
   const displayStatusLabel = isCompleted ? "Réalisée" : statusLabel;
   const summary = campaignResponseSummary(completedResponse);
+  const completedDate = completedResponse?.updatedAt
+    ? `Modifiée le ${escapeHtml(completedResponse.updatedAt)}`
+    : `Réalisée le ${escapeHtml(completedResponse?.createdAt || "")}`;
   const cardAction = !isAdmin && !isCompleted
     ? `data-form-campaign="${escapeHtml(campaign.id)}" role="button" tabindex="0"`
     : "";
@@ -992,11 +1041,11 @@ function campaignCard(campaign, target) {
         ${isCompleted ? `<div class="campaign-done-summary"><strong>Réponse déjà envoyée</strong><span>${escapeHtml(summary)}</span></div>` : ""}
       </div>
       <div class="campaign-foot">
-        <span>${isCompleted ? `Réalisée le ${escapeHtml(completedResponse.createdAt || "")}` : `${count} ligne${count > 1 ? "s" : ""}`}</span>
+        <span>${isCompleted ? completedDate : `${count} ligne${count > 1 ? "s" : ""}`}</span>
         <div class="campaign-actions">
           ${isAdmin ? `<button class="ghost-btn" type="button" data-toggle-closed-campaign="${escapeHtml(campaign.id)}">${campaign.closed ? "Rouvrir" : "Clôturer"}</button>` : ""}
           ${isCompleted
-            ? `<button class="ghost-btn" type="button" disabled>Déjà répondu</button>`
+            ? `<button class="primary-btn" type="button" data-form-campaign="${escapeHtml(campaign.id)}">Modifier ma commande</button>`
             : `<button class="primary-btn" type="button" data-${target}-campaign="${escapeHtml(campaign.id)}">
                 ${target === "admin" ? "Voir le suivi" : "Remplir"}
               </button>`}
@@ -1154,6 +1203,7 @@ function selectCampaign(campaignId) {
   form.reset();
   applyCurrentPharmacyToForms();
   renderOrderTemplate();
+  prefillCampaignResponse(pharmacyCampaignResponses[selectedCampaign.id]);
   updateQuantityVisibility();
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
@@ -1285,8 +1335,10 @@ function renderOrderTemplate() {
   }
 
   orderMessage.style.display = "none";
-  productRows.innerHTML = currentOrderTemplate.map((item) => `
-    <tr class="order-row">
+  productRows.innerHTML = currentOrderTemplate.map((item) => {
+    const colisageMinimum = parseColisageMinimum(item.colisage);
+    return `
+    <tr class="order-row" data-line-id="${escapeHtml(item.id)}">
       <td>${escapeHtml(item.designation)}</td>
       <td>${escapeHtml(item.cip)}</td>
       <td>${escapeHtml(item.tarif)}</td>
@@ -1299,11 +1351,13 @@ function renderOrderTemplate() {
           step="1"
           inputmode="numeric"
           data-id="${escapeHtml(item.id)}"
+          data-min-colisage="${escapeHtml(colisageMinimum)}"
           aria-label="Quantité pour ${escapeHtml(item.designation)}"
         >
       </td>
     </tr>
-  `).join("");
+  `;
+  }).join("");
 
   orderTemplateTable.innerHTML = currentOrderTemplate.map((item) => `
     <tr>
@@ -1331,9 +1385,51 @@ function collectProducts() {
     }));
 }
 
+function prefillCampaignResponse(response) {
+  if (!response) return;
+
+  const interestInput = [...form.querySelectorAll('input[name="interest"]')]
+    .find((input) => input.value === (response.interest || ""));
+  if (interestInput) interestInput.checked = true;
+  document.querySelector("#notes").value = response.notes || "";
+
+  const quantitiesByKey = new Map();
+  (response.products || []).forEach((product) => {
+    quantitiesByKey.set(productKey(product), product.quantity || "");
+  });
+
+  currentOrderTemplate.forEach((template) => {
+    const input = [...productRows.querySelectorAll(".product-quantity")]
+      .find((item) => item.dataset.id === template.id);
+    if (!input) return;
+    input.value = quantitiesByKey.get(productKey(template)) || "";
+    validateQuantityInput(input);
+  });
+}
+
+function validateQuantityInput(input) {
+  const quantity = Number(String(input.value || "").replace(",", "."));
+  const minimum = Number(input.dataset.minColisage || "0");
+  const invalid = input.value.trim() && minimum > 0 && quantity > 0 && quantity < minimum;
+  const message = invalid ? colisageErrorMessage(minimum) : "";
+  input.setCustomValidity(message);
+  input.classList.toggle("is-invalid", Boolean(invalid));
+  return message;
+}
+
+function validateColisageQuantities() {
+  const invalidInput = [...document.querySelectorAll(".product-quantity")]
+    .find((input) => validateQuantityInput(input));
+  if (!invalidInput) return "";
+  invalidInput.reportValidity();
+  return invalidInput.validationMessage || "Inscrire le colisage minimum.";
+}
+
 function resetQuantities() {
   document.querySelectorAll(".product-quantity").forEach((input) => {
     input.value = "";
+    input.setCustomValidity("");
+    input.classList.remove("is-invalid");
   });
 }
 
@@ -1383,12 +1479,16 @@ async function renderAdmin() {
           }).join("<br>")
         : "-";
 
+      const modifiedLabel = response.updatedAt
+        ? `<br><span class="updated-at">Modifié le : ${escapeHtml(response.updatedAt)}</span>`
+        : "";
+
       return `
         <tr>
           <td>
             <button class="delete-response-btn" type="button" title="Supprimer cette réponse" aria-label="Supprimer la réponse de ${escapeHtml(response.pharmacyName)}" data-delete-response="${escapeHtml(response.id)}">&#128465;</button>
           </td>
-          <td>${escapeHtml(response.createdAt)}</td>
+          <td>${escapeHtml(response.createdAt)}${modifiedLabel}</td>
           <td><strong>${escapeHtml(response.pharmacyName)}</strong></td>
           <td>${escapeHtml(response.interest)}</td>
           <td>${products}</td>
@@ -1547,6 +1647,7 @@ async function exportToExcel() {
     if (!response.products.length) {
       return [{
         date: response.createdAt,
+        updatedAt: response.updatedAt || "",
         pharmacie: response.pharmacyName,
         statut: response.interest,
         designation: "",
@@ -1560,6 +1661,7 @@ async function exportToExcel() {
 
     return response.products.map((item) => ({
       date: response.createdAt,
+      updatedAt: response.updatedAt || "",
       pharmacie: response.pharmacyName,
       statut: response.interest,
       designation: item.designation || item.product || "",
@@ -1571,10 +1673,11 @@ async function exportToExcel() {
     }));
   });
 
-  const headings = ["Date", "Pharmacie", "Statut", "Désignation", "CIP", "Tarif", "Colisage", "Quantité", "Commentaire"];
+  const headings = ["Date", "Modifié le", "Pharmacie", "Statut", "Désignation", "CIP", "Tarif", "Colisage", "Quantité", "Commentaire"];
   const body = rows.map((row) => `
     <tr>
       <td>${escapeHtml(row.date)}</td>
+      <td>${escapeHtml(row.updatedAt)}</td>
       <td>${escapeHtml(row.pharmacie)}</td>
       <td>${escapeHtml(row.statut)}</td>
       <td>${escapeHtml(row.designation)}</td>
@@ -1645,6 +1748,16 @@ document.addEventListener("keydown", (event) => {
 
 document.querySelectorAll('input[name="interest"]').forEach((input) => {
   input.addEventListener("change", updateQuantityVisibility);
+});
+
+productRows?.addEventListener("input", (event) => {
+  const input = event.target.closest(".product-quantity");
+  if (input) validateQuantityInput(input);
+});
+
+productRows?.addEventListener("change", (event) => {
+  const input = event.target.closest(".product-quantity");
+  if (input) validateQuantityInput(input);
 });
 
 adminDashboardNav?.addEventListener("click", (event) => {
@@ -2178,11 +2291,22 @@ form.addEventListener("submit", async (event) => {
     return;
   }
 
+  if (interest !== "Pas intéressé") {
+    const colisageError = validateColisageQuantities();
+    if (colisageError) {
+      formMessage.textContent = colisageError;
+      return;
+    }
+  }
+
+  const existingResponse = pharmacyCampaignResponses[selectedCampaign.id];
+  const now = new Date().toLocaleString("fr-FR");
   const response = {
-    id: createId(),
+    id: existingResponse?.id || createId(),
     campaignId: selectedCampaign.id,
     campaignTitle: selectedCampaign.title,
-    createdAt: new Date().toLocaleString("fr-FR"),
+    createdAt: existingResponse?.createdAt || now,
+    updatedAt: existingResponse ? now : "",
     pharmacyId: currentPharmacy?.id || "",
     pharmacyName,
     interest,
@@ -2190,8 +2314,15 @@ form.addEventListener("submit", async (event) => {
     notes: String(formData.get("notes") || "").trim()
   };
 
-  await appendResponse(response);
-  pharmacyCampaignResponses[selectedCampaign.id] = response;
+  let savedResponse;
+  try {
+    savedResponse = await appendResponse(response);
+  } catch (error) {
+    formMessage.textContent = error.message || "Enregistrement impossible. Merci de vérifier les quantités.";
+    return;
+  }
+
+  pharmacyCampaignResponses[selectedCampaign.id] = savedResponse || response;
   renderCampaignPickers();
   preserveSubmitMessage = true;
   form.reset();
