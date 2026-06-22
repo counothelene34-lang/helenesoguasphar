@@ -1,0 +1,27 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: soguasphar-preco
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      ADMIN_CODE: ${ADMIN_CODE:-SOGUASPHAR2026}
+    volumes:
+      # Persistance des données fichiers (commandes, sondages, pharmacies…)
+      - ./data:/app/data
+    networks:
+      - web
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=web"
+      - "traefik.http.routers.preco.rule=Host(`preco.soguasphar.fr`)"
+      - "traefik.http.routers.preco.entrypoints=websecure"
+      - "traefik.http.routers.preco.tls.certresolver=le"
+      - "traefik.http.services.preco.loadbalancer.server.port=3000"
+
+networks:
+  web:
+    external: true

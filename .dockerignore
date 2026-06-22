@@ -1,0 +1,8 @@
+.git
+.gitignore
+data
+node_modules
+demarrer-site.bat
+Dockerfile
+docker-compose.yml
+.env
