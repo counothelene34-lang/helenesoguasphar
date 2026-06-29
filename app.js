@@ -357,7 +357,11 @@ async function refreshPharmacyPollAnswers() {
   if (!API_AVAILABLE || !currentPharmacy?.id) return;
 
   try {
-    const responses = await requestJson(`/api/pharmacy-poll-responses?pharmacyId=${encodeURIComponent(currentPharmacy.id)}`);
+    const params = new URLSearchParams({
+      pharmacyId: currentPharmacy.id,
+      pharmacyName: currentPharmacy.name || ""
+    });
+    const responses = await requestJson(`/api/pharmacy-poll-responses?${params.toString()}`);
     responses.forEach((response) => {
       pharmacyPollAnswers[response.pollId] = response.answer;
     });
@@ -510,7 +514,7 @@ async function refreshPollResponseCounts() {
 
   responses.forEach((response) => {
     if (!response.pollId) return;
-    const pharmacyKey = response.pharmacyId || response.pharmacyName || response.id;
+    const pharmacyKey = responsePharmacyCountKey(response) || response.id;
     const pollPharmacies = countsByPoll.get(response.pollId) || new Set();
     pollPharmacies.add(pharmacyKey);
     countsByPoll.set(response.pollId, pollPharmacies);
@@ -556,15 +560,58 @@ function escapeHtml(value) {
 }
 
 function pharmacyNameKey(name) {
-  return String(name || "").trim().toLowerCase();
+  return String(name || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+function activePharmacies() {
+  return pharmacies
+    .filter((pharmacy) => pharmacy && pharmacy.active !== false && pharmacy.name);
 }
 
 function activePharmacyNames() {
-  return pharmacies
-    .filter((pharmacy) => pharmacy && pharmacy.active !== false && pharmacy.name)
+  return activePharmacies()
     .map((pharmacy) => String(pharmacy.name).trim())
     .filter(Boolean)
     .sort((a, b) => a.localeCompare(b, "fr"));
+}
+
+function pharmacyIdentityKeys(pharmacy) {
+  return [
+    pharmacy?.id ? `id:${String(pharmacy.id).trim()}` : "",
+    pharmacy?.name ? `name:${pharmacyNameKey(pharmacy.name)}` : ""
+  ].filter(Boolean);
+}
+
+function responseIdentityKeys(response) {
+  return [
+    response?.pharmacyId ? `id:${String(response.pharmacyId).trim()}` : "",
+    response?.pharmacyName ? `name:${pharmacyNameKey(response.pharmacyName)}` : ""
+  ].filter(Boolean);
+}
+
+function responseMatchesPharmacy(response, pharmacy) {
+  const responseKeys = new Set(responseIdentityKeys(response));
+  return pharmacyIdentityKeys(pharmacy).some((key) => responseKeys.has(key));
+}
+
+function pharmacyNamesForResponses(responses = []) {
+  return activePharmacies()
+    .filter((pharmacy) => responses.some((response) => responseMatchesPharmacy(response, pharmacy)))
+    .map((pharmacy) => String(pharmacy.name).trim())
+    .filter(Boolean)
+    .sort((a, b) => a.localeCompare(b, "fr"));
+}
+
+function responsePharmacyCountKey(response) {
+  const matchedPharmacy = activePharmacies()
+    .find((pharmacy) => responseMatchesPharmacy(response, pharmacy));
+  if (matchedPharmacy?.id) return `id:${String(matchedPharmacy.id).trim()}`;
+  return response.pharmacyId ? `id:${String(response.pharmacyId).trim()}` : `name:${pharmacyNameKey(response.pharmacyName)}`;
 }
 
 function pharmacyListMarkup(names, emptyMessage) {
@@ -573,9 +620,12 @@ function pharmacyListMarkup(names, emptyMessage) {
     : `<li>${escapeHtml(emptyMessage)}</li>`;
 }
 
-function unansweredNamesFor(answeredNames) {
-  const answeredKeys = new Set(answeredNames.map(pharmacyNameKey));
-  return activePharmacyNames().filter((name) => !answeredKeys.has(pharmacyNameKey(name)));
+function unansweredNamesForResponses(responses = []) {
+  return activePharmacies()
+    .filter((pharmacy) => !responses.some((response) => responseMatchesPharmacy(response, pharmacy)))
+    .map((pharmacy) => String(pharmacy.name).trim())
+    .filter(Boolean)
+    .sort((a, b) => a.localeCompare(b, "fr"));
 }
 
 function campaignIsNotInterested(response) {
@@ -604,7 +654,7 @@ function campaignResponseSummary(response) {
 }
 
 function responseOwnerKey(response) {
-  return `${response.campaignId || "herboristerie"}|${response.pharmacyId || String(response.pharmacyName || "").trim().toLowerCase()}`;
+  return `${response.campaignId || "herboristerie"}|${response.pharmacyId || pharmacyNameKey(response.pharmacyName)}`;
 }
 
 function latestResponses(responses = []) {
@@ -1503,15 +1553,10 @@ async function renderAdmin() {
 
   const responses = (await getResponses())
     .filter((item) => item.campaignId === selectedAdminCampaign.id || (!item.campaignId && selectedAdminCampaign.id === "herboristerie"));
-  const answeredNames = [...new Set(responses.map((item) => item.pharmacyName).filter(Boolean))]
-    .sort((a, b) => a.localeCompare(b, "fr"));
-  const notInterestedNames = [...new Set(responses
-    .filter(campaignIsNotInterested)
-    .map((item) => item.pharmacyName)
-    .filter(Boolean))]
-    .sort((a, b) => a.localeCompare(b, "fr"));
+  const answeredNames = pharmacyNamesForResponses(responses);
+  const notInterestedNames = pharmacyNamesForResponses(responses.filter(campaignIsNotInterested));
   const interested = responses.filter(campaignIsInterested).length;
-  const unansweredNames = unansweredNamesFor(answeredNames);
+  const unansweredNames = unansweredNamesForResponses(responses);
 
   document.querySelector("#totalResponses").textContent = responses.length;
   document.querySelector("#interestedResponses").textContent = interested;
@@ -1607,9 +1652,8 @@ async function renderPollResults() {
     counts.set(response.answer, (counts.get(response.answer) || 0) + 1);
   });
 
-  const pollAnsweredNames = [...new Set(responses.map((item) => item.pharmacyName).filter(Boolean))]
-    .sort((a, b) => a.localeCompare(b, "fr"));
-  const pollUnansweredNames = unansweredNamesFor(pollAnsweredNames);
+  const pollAnsweredNames = pharmacyNamesForResponses(responses);
+  const pollUnansweredNames = unansweredNamesForResponses(responses);
 
   if (pollAnsweredPharmacies) {
     pollAnsweredPharmacies.innerHTML = pharmacyListMarkup(pollAnsweredNames, "Aucune réponse pour le moment.");

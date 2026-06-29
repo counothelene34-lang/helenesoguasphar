@@ -140,18 +140,58 @@ function normalizeLookup(value) {
   return String(value || "")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
     .trim()
     .toLowerCase();
 }
 
-function responseOwnerKey(response) {
-  return `${response.campaignId || "herboristerie"}|${response.pharmacyId || String(response.pharmacyName || "").trim().toLowerCase()}`;
+function responsePharmacyOwnerKey(response, pharmacies = readPharmacies()) {
+  const responseId = String(response?.pharmacyId || "").trim();
+  const responseName = normalizeLookup(response?.pharmacyName);
+  const matchedPharmacy = pharmacies.find((pharmacy) => {
+    if (!pharmacy || pharmacy.active === false) return false;
+    const pharmacyId = String(pharmacy.id || "").trim();
+    const pharmacyName = normalizeLookup(pharmacy.name);
+    return (responseId && pharmacyId && responseId === pharmacyId)
+      || (responseName && pharmacyName && responseName === pharmacyName);
+  });
+
+  if (matchedPharmacy?.id) return `id:${String(matchedPharmacy.id).trim()}`;
+  if (responseId) return `id:${responseId}`;
+  return `name:${responseName}`;
+}
+
+function responseOwnerKey(response, pharmacies = readPharmacies()) {
+  return `${response.campaignId || "herboristerie"}|${responsePharmacyOwnerKey(response, pharmacies)}`;
 }
 
 function latestResponses(responses = []) {
+  const pharmacies = readPharmacies();
   const byOwner = new Map();
   responses.forEach((item) => {
-    const key = responseOwnerKey(item);
+    const key = responseOwnerKey(item, pharmacies);
+    const previous = byOwner.get(key);
+    if (!previous) {
+      byOwner.set(key, item);
+      return;
+    }
+
+    const previousDate = Date.parse(previous.updatedAt || previous.createdAt || "") || 0;
+    const nextDate = Date.parse(item.updatedAt || item.createdAt || "") || 0;
+    if (nextDate >= previousDate) byOwner.set(key, item);
+  });
+  return [...byOwner.values()];
+}
+
+function pollResponseOwnerKey(response, pharmacies = readPharmacies()) {
+  return `${response.pollId || ""}|${responsePharmacyOwnerKey(response, pharmacies)}`;
+}
+
+function latestPollResponses(responses = []) {
+  const pharmacies = readPharmacies();
+  const byOwner = new Map();
+  responses.forEach((item) => {
+    const key = pollResponseOwnerKey(item, pharmacies);
     const previous = byOwner.get(key);
     if (!previous) {
       byOwner.set(key, item);
@@ -334,10 +374,10 @@ const server = http.createServer(async (request, response) => {
 
     if (url.pathname === "/api/pharmacy-responses" && request.method === "GET") {
       const pharmacyId = url.searchParams.get("pharmacyId");
-      const pharmacyName = String(url.searchParams.get("pharmacyName") || "").trim().toLowerCase();
+      const pharmacyName = normalizeLookup(url.searchParams.get("pharmacyName"));
       const responses = latestResponses(readResponses()).filter((item) => {
         if (pharmacyId && item.pharmacyId === pharmacyId) return true;
-        return pharmacyName && String(item.pharmacyName || "").trim().toLowerCase() === pharmacyName;
+        return pharmacyName && normalizeLookup(item.pharmacyName) === pharmacyName;
       });
       sendJson(response, 200, responses);
       return;
@@ -531,7 +571,7 @@ const server = http.createServer(async (request, response) => {
         sendJson(response, 401, { error: "Code administrateur incorrect" });
         return;
       }
-      sendJson(response, 200, readPollResponses());
+      sendJson(response, 200, latestPollResponses(readPollResponses()));
       return;
     }
 
@@ -577,20 +617,26 @@ const server = http.createServer(async (request, response) => {
         pollId: String(item.pollId || ""),
         pollQuestion: String(item.pollQuestion || "").trim(),
         createdAt: String(item.createdAt || new Date().toLocaleString("fr-FR")),
+        updatedAt: String(item.updatedAt || ""),
         pharmacyId: String(item.pharmacyId || "").trim(),
         pharmacyName: String(item.pharmacyName || "").trim(),
         answer: String(item.answer || "").trim(),
         freeText: String(item.freeText || "").trim()
       })) : [];
-      writePollResponses(responses);
-      sendJson(response, 200, responses);
+      const latest = latestPollResponses(responses);
+      writePollResponses(latest);
+      sendJson(response, 200, latest);
       return;
     }
 
     if (url.pathname === "/api/pharmacy-poll-responses" && request.method === "GET") {
       const pharmacyId = url.searchParams.get("pharmacyId");
-      const responses = readPollResponses()
-        .filter((item) => item.pharmacyId === pharmacyId)
+      const pharmacyName = normalizeLookup(url.searchParams.get("pharmacyName"));
+      const responses = latestPollResponses(readPollResponses())
+        .filter((item) => {
+          if (pharmacyId && item.pharmacyId === pharmacyId) return true;
+          return pharmacyName && normalizeLookup(item.pharmacyName) === pharmacyName;
+        })
         .map((item) => ({
           pollId: item.pollId,
           answer: item.answer
@@ -622,7 +668,8 @@ const server = http.createServer(async (request, response) => {
         products,
         notes: String(payload.notes || "").trim()
       };
-      const existing = responses.find((item) => responseOwnerKey(item) === responseOwnerKey(incoming));
+      const pharmacies = readPharmacies();
+      const existing = responses.find((item) => responseOwnerKey(item, pharmacies) === responseOwnerKey(incoming, pharmacies));
       const now = new Date().toLocaleString("fr-FR");
       const savedResponse = {
         ...incoming,
@@ -630,7 +677,7 @@ const server = http.createServer(async (request, response) => {
         createdAt: existing?.createdAt || incoming.createdAt || now,
         updatedAt: existing ? now : ""
       };
-      const updatedResponses = responses.filter((item) => responseOwnerKey(item) !== responseOwnerKey(savedResponse));
+      const updatedResponses = responses.filter((item) => responseOwnerKey(item, pharmacies) !== responseOwnerKey(savedResponse, pharmacies));
       updatedResponses.push(savedResponse);
       writeResponses(updatedResponses);
       sendJson(response, 201, savedResponse);
@@ -640,18 +687,30 @@ const server = http.createServer(async (request, response) => {
     if (url.pathname === "/api/poll-responses" && request.method === "POST") {
       const payload = JSON.parse(await readBody(request));
       const responses = readPollResponses();
-      responses.push({
+      const incoming = {
         id: String(payload.id || Date.now()),
         pollId: String(payload.pollId || ""),
         pollQuestion: String(payload.pollQuestion || "").trim(),
         createdAt: String(payload.createdAt || new Date().toLocaleString("fr-FR")),
+        updatedAt: String(payload.updatedAt || ""),
         pharmacyId: String(payload.pharmacyId || "").trim(),
         pharmacyName: String(payload.pharmacyName || "").trim(),
         answer: String(payload.answer || "").trim(),
         freeText: String(payload.freeText || "").trim()
-      });
-      writePollResponses(responses);
-      sendJson(response, 201, responses);
+      };
+      const pharmacies = readPharmacies();
+      const existing = responses.find((item) => pollResponseOwnerKey(item, pharmacies) === pollResponseOwnerKey(incoming, pharmacies));
+      const now = new Date().toLocaleString("fr-FR");
+      const savedResponse = {
+        ...incoming,
+        id: existing?.id || incoming.id,
+        createdAt: existing?.createdAt || incoming.createdAt || now,
+        updatedAt: existing ? now : ""
+      };
+      const updatedResponses = responses.filter((item) => pollResponseOwnerKey(item, pharmacies) !== pollResponseOwnerKey(savedResponse, pharmacies));
+      updatedResponses.push(savedResponse);
+      writePollResponses(updatedResponses);
+      sendJson(response, 201, latestPollResponses(updatedResponses));
       return;
     }
 
@@ -698,8 +757,8 @@ const server = http.createServer(async (request, response) => {
       }
       const pollId = url.searchParams.get("poll");
       const responses = pollId
-        ? readPollResponses().filter((item) => item.pollId === pollId)
-        : readPollResponses();
+        ? latestPollResponses(readPollResponses()).filter((item) => item.pollId === pollId)
+        : latestPollResponses(readPollResponses());
       sendPollExcel(response, responses);
       return;
     }
