@@ -136,6 +136,14 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
+function normalizeLookup(value) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+}
+
 function responseOwnerKey(response) {
   return `${response.campaignId || "herboristerie"}|${response.pharmacyId || String(response.pharmacyName || "").trim().toLowerCase()}`;
 }
@@ -372,10 +380,39 @@ const server = http.createServer(async (request, response) => {
         name: String(pharmacy.name || "").trim(),
         password: String(pharmacy.password || "").trim(),
         active: pharmacy.active !== false,
-        mustChangePassword: pharmacy.mustChangePassword !== false
+        mustChangePassword: pharmacy.mustChangePassword !== false,
+        passwordResetRequested: Boolean(pharmacy.passwordResetRequested),
+        passwordResetRequestedAt: String(pharmacy.passwordResetRequestedAt || "").trim()
       })).filter((pharmacy) => pharmacy.name && pharmacy.password) : [];
       writePharmacies(pharmacies);
       sendJson(response, 200, pharmacies);
+      return;
+    }
+
+    if (url.pathname === "/api/pharmacy-password-reset-request" && request.method === "POST") {
+      const payload = JSON.parse(await readBody(request));
+      const pharmacyName = normalizeLookup(payload.pharmacyName);
+      if (!pharmacyName) {
+        sendJson(response, 400, { error: "Indiquez le nom de la pharmacie." });
+        return;
+      }
+
+      const pharmacies = readPharmacies();
+      const pharmacy = pharmacies.find((item) => item.active !== false && normalizeLookup(item.name) === pharmacyName)
+        || pharmacies.find((item) => {
+          const name = normalizeLookup(item.name);
+          return item.active !== false && (name.includes(pharmacyName) || pharmacyName.includes(name));
+        });
+      if (pharmacy) {
+        const updatedPharmacies = pharmacies.map((item) => item.id === pharmacy.id ? {
+          ...item,
+          passwordResetRequested: true,
+          passwordResetRequestedAt: new Date().toLocaleString("fr-FR")
+        } : item);
+        writePharmacies(updatedPharmacies);
+      }
+
+      sendJson(response, 200, { ok: true });
       return;
     }
 
@@ -416,7 +453,9 @@ const server = http.createServer(async (request, response) => {
       const updatedPharmacies = pharmacies.map((item) => item.id === pharmacy.id ? {
         ...item,
         password: newPassword,
-        mustChangePassword: false
+        mustChangePassword: false,
+        passwordResetRequested: false,
+        passwordResetRequestedAt: ""
       } : item);
       writePharmacies(updatedPharmacies);
       sendJson(response, 200, { id: pharmacy.id, name: pharmacy.name, mustChangePassword: false });

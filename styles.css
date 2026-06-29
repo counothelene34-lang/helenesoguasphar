@@ -311,8 +311,43 @@ main::before {
   width: 100%;
 }
 
+.password-field {
+  position: relative;
+}
+
+.password-field input {
+  padding-right: 88px;
+}
+
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  min-height: 34px;
+  padding: 0 12px;
+  color: var(--green-dark);
+  background: var(--green-soft);
+  border: 1px solid #c7ead9;
+  border-radius: 8px;
+  font-weight: 800;
+  transform: translateY(-50%);
+  cursor: pointer;
+}
+
 .pharmacy-gate-card .primary-btn {
   margin-top: 12px;
+}
+
+.link-btn {
+  display: inline-flex;
+  margin-top: 12px;
+  padding: 0;
+  color: var(--green-dark);
+  background: transparent;
+  border: 0;
+  font-weight: 800;
+  text-decoration: underline;
+  cursor: pointer;
 }
 
 .pharmacy-password-change {
@@ -321,8 +356,19 @@ main::before {
   margin-top: 14px;
 }
 
-.pharmacy-password-change[hidden] {
+.pharmacy-password-change[hidden],
+.forgot-password-form[hidden] {
   display: none !important;
+}
+
+.forgot-password-form {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 14px;
+  background: var(--soft);
+  border: 1px solid var(--line);
+  border-radius: 10px;
 }
 
 .pharmacy-session-bar {
@@ -339,8 +385,46 @@ main::before {
 }
 
 .pharmacy-accounts-list {
-  width: min(760px, 100%);
+  width: min(980px, 100%);
   margin: 14px auto 0;
+}
+
+.admin-alert {
+  margin-bottom: 12px;
+  padding: 12px 14px;
+  color: #7a3f00;
+  background: #fff7e6;
+  border: 1px solid #f6d58c;
+  border-radius: 10px;
+  font-weight: 800;
+}
+
+.request-badge {
+  display: inline-flex;
+  margin-bottom: 4px;
+  padding: 5px 8px;
+  color: #7a3f00;
+  background: #fff0c9;
+  border: 1px solid #f6d58c;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.needs-reset {
+  background: #fffaf0 !important;
+}
+
+.pharmacy-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.small-btn {
+  min-height: 34px;
+  padding: 6px 10px;
+  font-size: 13px;
 }
 
 .form-help {

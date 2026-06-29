@@ -10,6 +10,10 @@ const form = document.querySelector("#requestForm");
 const pharmacyGate = document.querySelector("#pharmacyGate");
 const pharmacyLoginForm = document.querySelector("#pharmacyLoginForm");
 const pharmacyPassword = document.querySelector("#pharmacyPassword");
+const togglePharmacyPassword = document.querySelector("#togglePharmacyPassword");
+const forgotPharmacyPasswordBtn = document.querySelector("#forgotPharmacyPasswordBtn");
+const forgotPharmacyPasswordForm = document.querySelector("#forgotPharmacyPasswordForm");
+const forgotPharmacyName = document.querySelector("#forgotPharmacyName");
 const pharmacyPasswordChangeForm = document.querySelector("#pharmacyPasswordChangeForm");
 const newPharmacyPassword = document.querySelector("#newPharmacyPassword");
 const confirmPharmacyPassword = document.querySelector("#confirmPharmacyPassword");
@@ -338,6 +342,13 @@ async function changePharmacyPassword(pharmacyId, oldPassword, newPassword) {
   return requestJson("/api/pharmacy-password", {
     method: "PUT",
     body: JSON.stringify({ pharmacyId, oldPassword, newPassword })
+  });
+}
+
+async function requestPharmacyPasswordReset(pharmacyName) {
+  return requestJson("/api/pharmacy-password-reset-request", {
+    method: "POST",
+    body: JSON.stringify({ pharmacyName })
   });
 }
 
@@ -683,12 +694,15 @@ function renderPharmacyAccess() {
   if (pendingPasswordPharmacy) {
     pharmacyLoginForm.hidden = true;
     pharmacyPasswordChangeForm.hidden = false;
+    forgotPharmacyPasswordBtn.hidden = true;
+    forgotPharmacyPasswordForm.hidden = true;
     pharmacyGate.querySelector("h2").textContent = "Créez votre mot de passe";
     pharmacyGate.querySelector(".pharmacy-gate-card > p:not(.eyebrow):not(.status-message)").textContent =
       `Première connexion pour ${pendingPasswordPharmacy.name}. Choisissez un nouveau mot de passe personnel.`;
   } else {
     pharmacyLoginForm.hidden = false;
     pharmacyPasswordChangeForm.hidden = true;
+    forgotPharmacyPasswordBtn.hidden = false;
     pharmacyGate.querySelector("h2").textContent = "Identifiez votre pharmacie";
     pharmacyGate.querySelector(".pharmacy-gate-card > p:not(.eyebrow):not(.status-message)").textContent =
       "Entrez le mot de passe transmis par SOGUASPHAR pour accéder aux commandes et sondages.";
@@ -720,19 +734,35 @@ function renderPharmacyAccounts() {
     return;
   }
 
+  const resetRequestCount = pharmacies.filter((pharmacy) => pharmacy.passwordResetRequested).length;
+  const resetNotice = resetRequestCount
+    ? `<p class="admin-alert">${resetRequestCount} demande${resetRequestCount > 1 ? "s" : ""} de réinitialisation de mot de passe en attente.</p>`
+    : "";
+
   pharmacyAccountsList.innerHTML = `
+    ${resetNotice}
     <div class="table-wrap compact">
       <table>
-        <thead><tr><th>Pharmacie</th><th>Mot de passe actuel</th><th>Statut</th><th>Action</th></tr></thead>
+        <thead><tr><th>Pharmacie</th><th>Mot de passe actuel</th><th>Statut</th><th>Demande</th><th>Action</th></tr></thead>
         <tbody>
-          ${pharmacies.map((pharmacy) => `
-            <tr>
-              <td><strong>${escapeHtml(pharmacy.name)}</strong></td>
-              <td><code>${escapeHtml(pharmacy.password)}</code></td>
-              <td>${pharmacy.mustChangePassword === false ? "Personnalisé" : "À changer"}</td>
-              <td><button class="delete-response-btn" type="button" data-delete-pharmacy="${escapeHtml(pharmacy.id)}" aria-label="Supprimer ${escapeHtml(pharmacy.name)}">&#128465;</button></td>
-            </tr>
-          `).join("")}
+          ${pharmacies.map((pharmacy) => {
+            const resetRequested = Boolean(pharmacy.passwordResetRequested);
+            const requestDate = pharmacy.passwordResetRequestedAt ? `<small>${escapeHtml(pharmacy.passwordResetRequestedAt)}</small>` : "";
+            const requestLabel = resetRequested ? `<span class="request-badge">Réinitialisation demandée</span>${requestDate}` : "-";
+            const resetButton = resetRequested ? `<button class="ghost-btn small-btn" type="button" data-reset-pharmacy-password="${escapeHtml(pharmacy.id)}">Réinitialiser</button>` : "";
+            return `
+              <tr class="${resetRequested ? "needs-reset" : ""}">
+                <td><strong>${escapeHtml(pharmacy.name)}</strong></td>
+                <td><code>${escapeHtml(pharmacy.password)}</code></td>
+                <td>${pharmacy.mustChangePassword === false ? "Personnalisé" : "À changer"}</td>
+                <td>${requestLabel}</td>
+                <td class="pharmacy-actions">
+                  ${resetButton}
+                  <button class="delete-response-btn" type="button" data-delete-pharmacy="${escapeHtml(pharmacy.id)}" aria-label="Supprimer ${escapeHtml(pharmacy.name)}">&#128465;</button>
+                </td>
+              </tr>
+            `;
+          }).join("")}
         </tbody>
       </table>
     </div>
@@ -1806,6 +1836,38 @@ adminDashboardNav?.addEventListener("click", (event) => {
   showAdminSection(button.dataset.adminSection);
 });
 
+togglePharmacyPassword?.addEventListener("click", () => {
+  const isPassword = pharmacyPassword.type === "password";
+  pharmacyPassword.type = isPassword ? "text" : "password";
+  togglePharmacyPassword.textContent = isPassword ? "Masquer" : "Voir";
+  togglePharmacyPassword.setAttribute("aria-label", isPassword ? "Masquer le mot de passe" : "Afficher le mot de passe");
+});
+
+forgotPharmacyPasswordBtn?.addEventListener("click", () => {
+  forgotPharmacyPasswordForm.hidden = !forgotPharmacyPasswordForm.hidden;
+  if (!forgotPharmacyPasswordForm.hidden) {
+    forgotPharmacyName.focus();
+  }
+});
+
+forgotPharmacyPasswordForm?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const pharmacyName = forgotPharmacyName.value.trim();
+  if (!pharmacyName) {
+    pharmacyLoginMessage.textContent = "Indiquez le nom de votre pharmacie.";
+    return;
+  }
+
+  try {
+    await requestPharmacyPasswordReset(pharmacyName);
+    forgotPharmacyPasswordForm.reset();
+    forgotPharmacyPasswordForm.hidden = true;
+    pharmacyLoginMessage.textContent = "Demande transmise. L'administrateur pourra réinitialiser votre mot de passe.";
+  } catch (error) {
+    pharmacyLoginMessage.textContent = error.message || "Impossible de transmettre la demande. Réessayez.";
+  }
+});
+
 pharmacyLoginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const password = pharmacyPassword.value.trim();
@@ -2208,7 +2270,9 @@ createPharmacyForm.addEventListener("submit", async (event) => {
     name,
     password: generatePharmacyPassword(name),
     active: true,
-    mustChangePassword: true
+    mustChangePassword: true,
+    passwordResetRequested: false,
+    passwordResetRequestedAt: ""
   };
 
   pharmacies = await savePharmacies([...pharmacies, pharmacy]);
@@ -2220,6 +2284,25 @@ createPharmacyForm.addEventListener("submit", async (event) => {
 });
 
 pharmacyAccountsList.addEventListener("click", async (event) => {
+  const resetButton = event.target.closest("[data-reset-pharmacy-password]");
+  if (resetButton) {
+    const pharmacy = pharmacies.find((item) => item.id === resetButton.dataset.resetPharmacyPassword);
+    if (!pharmacy) return;
+    const newPassword = generatePharmacyPassword(pharmacy.name);
+    const confirmed = confirm(`Réinitialiser le mot de passe de ${pharmacy.name} ?`);
+    if (!confirmed) return;
+    pharmacies = await savePharmacies(pharmacies.map((item) => item.id === pharmacy.id ? {
+      ...item,
+      password: newPassword,
+      mustChangePassword: true,
+      passwordResetRequested: false,
+      passwordResetRequestedAt: ""
+    } : item));
+    renderPharmacyAccounts();
+    adminMessage.textContent = `Mot de passe réinitialisé pour ${pharmacy.name} : ${newPassword}`;
+    return;
+  }
+
   const button = event.target.closest("[data-delete-pharmacy]");
   if (!button) return;
   const pharmacy = pharmacies.find((item) => item.id === button.dataset.deletePharmacy);

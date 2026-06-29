@@ -35,8 +35,17 @@
           <p>Entrez le mot de passe transmis par SOGUASPHAR pour accéder aux commandes et sondages.</p>
           <form id="pharmacyLoginForm">
             <label for="pharmacyPassword">Mot de passe pharmacie</label>
-            <input id="pharmacyPassword" type="password" autocomplete="current-password" placeholder="Mot de passe">
+            <div class="password-field">
+              <input id="pharmacyPassword" type="password" autocomplete="current-password" placeholder="Mot de passe">
+              <button id="togglePharmacyPassword" class="password-toggle" type="button" aria-label="Afficher le mot de passe">Voir</button>
+            </div>
             <button class="primary-btn" type="submit">Entrer</button>
+          </form>
+          <button id="forgotPharmacyPasswordBtn" class="link-btn" type="button">Mot de passe oublié ?</button>
+          <form id="forgotPharmacyPasswordForm" class="forgot-password-form" hidden>
+            <label for="forgotPharmacyName">Nom de la pharmacie</label>
+            <input id="forgotPharmacyName" type="text" autocomplete="organization" placeholder="Ex. Pharmacie du Centre">
+            <button class="ghost-btn" type="submit">Demander une réinitialisation</button>
           </form>
           <form id="pharmacyPasswordChangeForm" class="pharmacy-password-change" hidden>
             <label for="newPharmacyPassword">Nouveau mot de passe</label>
