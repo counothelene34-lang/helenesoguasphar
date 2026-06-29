@@ -544,6 +544,36 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
+function pharmacyNameKey(name) {
+  return String(name || "").trim().toLowerCase();
+}
+
+function activePharmacyNames() {
+  return pharmacies
+    .filter((pharmacy) => pharmacy && pharmacy.active !== false && pharmacy.name)
+    .map((pharmacy) => String(pharmacy.name).trim())
+    .filter(Boolean)
+    .sort((a, b) => a.localeCompare(b, "fr"));
+}
+
+function pharmacyListMarkup(names, emptyMessage) {
+  return names.length
+    ? names.map((name) => `<li>${escapeHtml(name)}</li>`).join("")
+    : `<li>${escapeHtml(emptyMessage)}</li>`;
+}
+
+function unansweredNamesFor(answeredNames) {
+  const answeredKeys = new Set(answeredNames.map(pharmacyNameKey));
+  return activePharmacyNames().filter((name) => !answeredKeys.has(pharmacyNameKey(name)));
+}
+
+function campaignIsNotInterested(response) {
+  return String(response.interest || "").trim().toLowerCase().includes("pas int");
+}
+
+function campaignIsInterested(response) {
+  return !campaignIsNotInterested(response);
+}
 function campaignResponseSummary(response) {
   if (!response) return "";
   if (String(response.interest || "").toLowerCase().includes("pas int")) {
@@ -1443,26 +1473,24 @@ async function renderAdmin() {
 
   const responses = (await getResponses())
     .filter((item) => item.campaignId === selectedAdminCampaign.id || (!item.campaignId && selectedAdminCampaign.id === "herboristerie"));
-  const interested = responses.filter((item) => item.interest === "Interessé").length;
+  const answeredNames = [...new Set(responses.map((item) => item.pharmacyName).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, "fr"));
+  const notInterestedNames = [...new Set(responses
+    .filter(campaignIsNotInterested)
+    .map((item) => item.pharmacyName)
+    .filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, "fr"));
+  const interested = responses.filter(campaignIsInterested).length;
+  const unansweredNames = unansweredNamesFor(answeredNames);
 
   document.querySelector("#totalResponses").textContent = responses.length;
   document.querySelector("#interestedResponses").textContent = interested;
-  document.querySelector("#notInterestedResponses").textContent = responses.length - interested;
+  document.querySelector("#notInterestedResponses").textContent = notInterestedNames.length;
+  document.querySelector("#unansweredResponses").textContent = unansweredNames.length;
 
-  const answeredNames = [...new Set(responses.map((item) => item.pharmacyName).filter(Boolean))];
-  const notInterestedNames = [...new Set(responses
-    .filter((item) => item.interest === "Pas intéressé")
-    .map((item) => item.pharmacyName)
-    .filter(Boolean))];
-
-  answeredPharmacies.innerHTML = answeredNames.length
-    ? answeredNames.map((name) => `<li>${escapeHtml(name)}</li>`).join("")
-    : "<li>Aucune réponse pour le moment.</li>";
-
-  notInterestedPharmacies.innerHTML = notInterestedNames.length
-    ? notInterestedNames.map((name) => `<li>${escapeHtml(name)}</li>`).join("")
-    : "<li>Aucune pharmacie pour le moment.</li>";
-
+  answeredPharmacies.innerHTML = pharmacyListMarkup(answeredNames, "Aucune réponse pour le moment.");
+  notInterestedPharmacies.innerHTML = pharmacyListMarkup(notInterestedNames, "Aucune pharmacie pour le moment.");
+  unansweredPharmacies.innerHTML = pharmacyListMarkup(unansweredNames, "Toutes les pharmacies actives ont répondu.");
   if (!responses.length) {
     responsesTable.innerHTML = '<tr><td colspan="6" class="empty-state">Aucune réponse enregistrée pour le moment.</td></tr>';
     return;
@@ -1549,8 +1577,20 @@ async function renderPollResults() {
     counts.set(response.answer, (counts.get(response.answer) || 0) + 1);
   });
 
+  const pollAnsweredNames = [...new Set(responses.map((item) => item.pharmacyName).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, "fr"));
+  const pollUnansweredNames = unansweredNamesFor(pollAnsweredNames);
+
+  if (pollAnsweredPharmacies) {
+    pollAnsweredPharmacies.innerHTML = pharmacyListMarkup(pollAnsweredNames, "Aucune réponse pour le moment.");
+  }
+
+  if (pollUnansweredPharmacies) {
+    pollUnansweredPharmacies.innerHTML = pharmacyListMarkup(pollUnansweredNames, "Toutes les pharmacies actives ont répondu.");
+  }
   const metricCards = [
     `<div><span>${responses.length}</span><p>Réponse${responses.length > 1 ? "s" : ""}</p></div>`,
+    `<div><span>${pollUnansweredNames.length}</span><p>sans réponse</p></div>`,
     ...(selectedAdminPoll.options || []).map((option) => `
       <div>
         <span>${counts.get(option) || 0}</span>

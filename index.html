@@ -293,6 +293,10 @@
               <span id="notInterestedResponses">0</span>
               <p>pas intéressées</p>
             </div>
+            <div>
+              <span id="unansweredResponses">0</span>
+              <p>sans réponse</p>
+            </div>
           </div>
 
           <section class="admin-overview">
@@ -311,6 +315,12 @@
                 <h3>Pas intéressées</h3>
                 <ul id="notInterestedPharmacies">
                   <li>Aucune pharmacie pour le moment.</li>
+                </ul>
+              </div>
+              <div class="overview-box alert-box">
+                <h3>N'ont pas répondu</h3>
+                <ul id="unansweredPharmacies">
+                  <li>Aucune pharmacie à relancer.</li>
                 </ul>
               </div>
             </div>
@@ -410,6 +420,26 @@
               <h2 id="adminPollTitle">Sondage</h2>
             </div>
             <div id="pollResultsSummary" class="metrics"></div>
+            <section class="admin-overview poll-overview">
+              <div>
+                <h2>Vue d'ensemble</h2>
+                <p>Suivi rapide des pharmacies pour ce sondage.</p>
+              </div>
+              <div class="overview-grid two-columns">
+                <div class="overview-box">
+                  <h3>Pharmacies ayant répondu</h3>
+                  <ul id="pollAnsweredPharmacies">
+                    <li>Aucune réponse pour le moment.</li>
+                  </ul>
+                </div>
+                <div class="overview-box alert-box">
+                  <h3>N'ont pas répondu</h3>
+                  <ul id="pollUnansweredPharmacies">
+                    <li>Aucune pharmacie à relancer.</li>
+                  </ul>
+                </div>
+              </div>
+            </section>
             <div class="table-toolbar">
               <div>
                 <h2>Réponses au sondage</h2>
