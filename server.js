@@ -11,6 +11,8 @@ const ORDER_TEMPLATE_FILE = path.join(DATA_DIR, "order-template.json");
 const ORDERS_FILE = path.join(DATA_DIR, "orders.json");
 const POLLS_FILE = path.join(DATA_DIR, "polls.json");
 const POLL_RESPONSES_FILE = path.join(DATA_DIR, "poll-responses.json");
+const INFO_FORMS_FILE = path.join(DATA_DIR, "info-forms.json");
+const INFO_RESPONSES_FILE = path.join(DATA_DIR, "info-responses.json");
 const PHARMACIES_FILE = path.join(DATA_DIR, "pharmacies.json");
 
 const MIME_TYPES = {
@@ -27,6 +29,8 @@ function ensureDataFile() {
   if (!fs.existsSync(ORDERS_FILE)) fs.writeFileSync(ORDERS_FILE, "[]", "utf8");
   if (!fs.existsSync(POLLS_FILE)) fs.writeFileSync(POLLS_FILE, "[]", "utf8");
   if (!fs.existsSync(POLL_RESPONSES_FILE)) fs.writeFileSync(POLL_RESPONSES_FILE, "[]", "utf8");
+  if (!fs.existsSync(INFO_FORMS_FILE)) fs.writeFileSync(INFO_FORMS_FILE, "[]", "utf8");
+  if (!fs.existsSync(INFO_RESPONSES_FILE)) fs.writeFileSync(INFO_RESPONSES_FILE, "[]", "utf8");
   if (!fs.existsSync(PHARMACIES_FILE)) fs.writeFileSync(PHARMACIES_FILE, "[]", "utf8");
 }
 
@@ -95,6 +99,37 @@ function readPollResponses() {
 function writePollResponses(responses) {
   ensureDataFile();
   fs.writeFileSync(POLL_RESPONSES_FILE, JSON.stringify(responses, null, 2), "utf8");
+}
+
+function defaultInfoForms() {
+  return [{
+    id: "fiche-pharmacie-2026",
+    title: "Mise à jour du site internet SOGUASPHAR : informations pharmacies",
+    intro: "Merci de noter vos coordonnées, réseaux sociaux, horaires et services proposés.",
+    type: "Fiche pharmacie",
+    closed: false
+  }];
+}
+
+function readInfoForms() {
+  ensureDataFile();
+  const forms = JSON.parse(fs.readFileSync(INFO_FORMS_FILE, "utf8") || "[]");
+  return forms.length ? forms : defaultInfoForms();
+}
+
+function writeInfoForms(forms) {
+  ensureDataFile();
+  fs.writeFileSync(INFO_FORMS_FILE, JSON.stringify(forms, null, 2), "utf8");
+}
+
+function readInfoResponses() {
+  ensureDataFile();
+  return JSON.parse(fs.readFileSync(INFO_RESPONSES_FILE, "utf8") || "[]");
+}
+
+function writeInfoResponses(responses) {
+  ensureDataFile();
+  fs.writeFileSync(INFO_RESPONSES_FILE, JSON.stringify(responses, null, 2), "utf8");
 }
 
 function readPharmacies() {
@@ -203,6 +238,67 @@ function latestPollResponses(responses = []) {
     if (nextDate >= previousDate) byOwner.set(key, item);
   });
   return [...byOwner.values()];
+}
+
+function infoResponseOwnerKey(response, pharmacies = readPharmacies()) {
+  return `${response.formId || ""}|${responsePharmacyOwnerKey(response, pharmacies)}`;
+}
+
+function latestInfoResponses(responses = []) {
+  const pharmacies = readPharmacies();
+  const byOwner = new Map();
+  responses.forEach((item) => {
+    const key = infoResponseOwnerKey(item, pharmacies);
+    const previous = byOwner.get(key);
+    if (!previous) {
+      byOwner.set(key, item);
+      return;
+    }
+
+    const previousDate = Date.parse(previous.updatedAt || previous.createdAt || "") || 0;
+    const nextDate = Date.parse(item.updatedAt || item.createdAt || "") || 0;
+    if (nextDate >= previousDate) byOwner.set(key, item);
+  });
+  return [...byOwner.values()];
+}
+
+function normalizeProfileHours(hours) {
+  return Array.isArray(hours) ? hours.map((row) => ({
+    day: String(row.day || "").trim(),
+    closed: Boolean(row.closed),
+    split: Boolean(row.split),
+    open: String(row.open || "").trim(),
+    close: String(row.close || "").trim(),
+    morningOpen: String(row.morningOpen || "").trim(),
+    morningClose: String(row.morningClose || "").trim(),
+    afternoonOpen: String(row.afternoonOpen || "").trim(),
+    afternoonClose: String(row.afternoonClose || "").trim()
+  })).filter((row) => row.day) : [];
+}
+
+function normalizeInfoResponse(item) {
+  return {
+    id: String(item.id || Date.now()),
+    formId: String(item.formId || "fiche-pharmacie-2026"),
+    formTitle: String(item.formTitle || "Mise à jour du site internet SOGUASPHAR : informations pharmacies").trim(),
+    createdAt: String(item.createdAt || new Date().toLocaleString("fr-FR")),
+    updatedAt: String(item.updatedAt || ""),
+    pharmacyId: String(item.pharmacyId || "").trim(),
+    pharmacyName: String(item.pharmacyName || "").trim(),
+    address: String(item.address || "").trim(),
+    postalCode: String(item.postalCode || "").trim(),
+    city: String(item.city || "").trim(),
+    ownerEmail: String(item.ownerEmail || item.email || "").trim(),
+    teamEmail: String(item.teamEmail || "").trim(),
+    facebook: String(item.facebook || "").trim(),
+    instagram: String(item.instagram || "").trim(),
+    linkedin: String(item.linkedin || "").trim(),
+    website: String(item.website || "").trim(),
+    hours: normalizeProfileHours(item.hours),
+    services: Array.isArray(item.services) ? item.services.map((service) => String(service || "").trim()).filter(Boolean) : [],
+    otherServices: String(item.otherServices || "").trim(),
+    notes: String(item.notes || "").trim()
+  };
 }
 
 function productKey(product) {
@@ -335,6 +431,58 @@ function sendPollExcel(response, responses) {
   response.end(workbook);
 }
 
+function formatProfileHours(hours = []) {
+  return (Array.isArray(hours) ? hours : []).map((row) => {
+    if (row.closed) return `${row.day} : fermé`;
+    if (row.split) {
+      return `${row.day} : ${row.morningOpen || "--:--"}-${row.morningClose || "--:--"} / ${row.afternoonOpen || "--:--"}-${row.afternoonClose || "--:--"}`;
+    }
+    return `${row.day} : ${row.open || "--:--"}-${row.close || "--:--"}`;
+  }).join("\n");
+}
+
+function sendInfoExcel(response, responses) {
+  const headings = ["Date", "Modifié le", "Pharmacie", "Adresse", "Code postal", "Ville", "Mail titulaire", "Mail équipe", "Facebook", "Instagram", "LinkedIn", "Site internet", "Horaires", "Services", "Autres services", "Commentaire"];
+  const rows = latestInfoResponses(responses).map((row) => `
+    <tr>
+      <td>${escapeHtml(row.createdAt)}</td>
+      <td>${escapeHtml(row.updatedAt || "")}</td>
+      <td>${escapeHtml(row.pharmacyName)}</td>
+      <td>${escapeHtml(row.address)}</td>
+      <td>${escapeHtml(row.postalCode)}</td>
+      <td>${escapeHtml(row.city)}</td>
+      <td>${escapeHtml(row.ownerEmail)}</td>
+      <td>${escapeHtml(row.teamEmail)}</td>
+      <td>${escapeHtml(row.facebook)}</td>
+      <td>${escapeHtml(row.instagram)}</td>
+      <td>${escapeHtml(row.linkedin)}</td>
+      <td>${escapeHtml(row.website)}</td>
+      <td>${escapeHtml(formatProfileHours(row.hours))}</td>
+      <td>${escapeHtml((row.services || []).join(", "))}</td>
+      <td>${escapeHtml(row.otherServices)}</td>
+      <td>${escapeHtml(row.notes)}</td>
+    </tr>
+  `).join("");
+
+  const workbook = `
+    <html>
+      <head><meta charset="utf-8"></head>
+      <body>
+        <table border="1">
+          <thead><tr>${headings.map((heading) => `<th>${heading}</th>`).join("")}</tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </body>
+    </html>
+  `;
+
+  response.writeHead(200, {
+    "Content-Type": "application/vnd.ms-excel; charset=utf-8",
+    "Content-Disposition": `attachment; filename="fiches-pharmacies-soguasphar-${new Date().toISOString().slice(0, 10)}.xls"`
+  });
+  response.end(workbook);
+}
+
 function serveStatic(request, response, pathname) {
   const fileName = pathname === "/" ? "index.html" : pathname.slice(1);
   const filePath = path.resolve(ROOT, fileName);
@@ -395,6 +543,30 @@ const server = http.createServer(async (request, response) => {
 
     if (url.pathname === "/api/polls" && request.method === "GET") {
       sendJson(response, 200, readPolls());
+      return;
+    }
+
+    if (url.pathname === "/api/info-forms" && request.method === "GET") {
+      sendJson(response, 200, readInfoForms());
+      return;
+    }
+
+    if (url.pathname === "/api/info-forms" && request.method === "PUT") {
+      if (request.headers["x-admin-code"] !== ADMIN_CODE) {
+        sendJson(response, 401, { error: "Code administrateur incorrect" });
+        return;
+      }
+
+      const payload = JSON.parse(await readBody(request));
+      const forms = Array.isArray(payload) ? payload.map((item) => ({
+        id: String(item.id || Date.now()),
+        title: String(item.title || "").trim(),
+        type: String(item.type || "Fiche pharmacie").trim(),
+        intro: String(item.intro || "").trim(),
+        closed: Boolean(item.closed)
+      })).filter((item) => item.id && item.title) : [];
+      writeInfoForms(forms);
+      sendJson(response, 200, forms);
       return;
     }
 
@@ -575,6 +747,15 @@ const server = http.createServer(async (request, response) => {
       return;
     }
 
+    if (url.pathname === "/api/info-responses" && request.method === "GET") {
+      if (request.headers["x-admin-code"] !== ADMIN_CODE) {
+        sendJson(response, 401, { error: "Code administrateur incorrect" });
+        return;
+      }
+      sendJson(response, 200, latestInfoResponses(readInfoResponses()));
+      return;
+    }
+
     if (url.pathname === "/api/responses" && request.method === "PUT") {
       if (request.headers["x-admin-code"] !== ADMIN_CODE) {
         sendJson(response, 401, { error: "Code administrateur incorrect" });
@@ -629,6 +810,20 @@ const server = http.createServer(async (request, response) => {
       return;
     }
 
+    if (url.pathname === "/api/info-responses" && request.method === "PUT") {
+      if (request.headers["x-admin-code"] !== ADMIN_CODE) {
+        sendJson(response, 401, { error: "Code administrateur incorrect" });
+        return;
+      }
+
+      const payload = JSON.parse(await readBody(request));
+      const responses = Array.isArray(payload) ? payload.map(normalizeInfoResponse) : [];
+      const latest = latestInfoResponses(responses);
+      writeInfoResponses(latest);
+      sendJson(response, 200, latest);
+      return;
+    }
+
     if (url.pathname === "/api/pharmacy-poll-responses" && request.method === "GET") {
       const pharmacyId = url.searchParams.get("pharmacyId");
       const pharmacyName = normalizeLookup(url.searchParams.get("pharmacyName"));
@@ -641,6 +836,18 @@ const server = http.createServer(async (request, response) => {
           pollId: item.pollId,
           answer: item.answer
         }));
+      sendJson(response, 200, responses);
+      return;
+    }
+
+    if (url.pathname === "/api/pharmacy-info-responses" && request.method === "GET") {
+      const pharmacyId = url.searchParams.get("pharmacyId");
+      const pharmacyName = normalizeLookup(url.searchParams.get("pharmacyName"));
+      const responses = latestInfoResponses(readInfoResponses())
+        .filter((item) => {
+          if (pharmacyId && item.pharmacyId === pharmacyId) return true;
+          return pharmacyName && normalizeLookup(item.pharmacyName) === pharmacyName;
+        });
       sendJson(response, 200, responses);
       return;
     }
@@ -714,6 +921,26 @@ const server = http.createServer(async (request, response) => {
       return;
     }
 
+    if (url.pathname === "/api/info-responses" && request.method === "POST") {
+      const payload = JSON.parse(await readBody(request));
+      const responses = readInfoResponses();
+      const incoming = normalizeInfoResponse(payload);
+      const pharmacies = readPharmacies();
+      const existing = responses.find((item) => infoResponseOwnerKey(item, pharmacies) === infoResponseOwnerKey(incoming, pharmacies));
+      const now = new Date().toLocaleString("fr-FR");
+      const savedResponse = {
+        ...incoming,
+        id: existing?.id || incoming.id,
+        createdAt: existing?.createdAt || incoming.createdAt || now,
+        updatedAt: existing ? now : ""
+      };
+      const updatedResponses = responses.filter((item) => infoResponseOwnerKey(item, pharmacies) !== infoResponseOwnerKey(savedResponse, pharmacies));
+      updatedResponses.push(savedResponse);
+      writeInfoResponses(updatedResponses);
+      sendJson(response, 201, savedResponse);
+      return;
+    }
+
     if (url.pathname === "/api/responses" && request.method === "DELETE") {
       if (request.headers["x-admin-code"] !== ADMIN_CODE) {
         sendJson(response, 401, { error: "Code administrateur incorrect" });
@@ -760,6 +987,20 @@ const server = http.createServer(async (request, response) => {
         ? latestPollResponses(readPollResponses()).filter((item) => item.pollId === pollId)
         : latestPollResponses(readPollResponses());
       sendPollExcel(response, responses);
+      return;
+    }
+
+    if (url.pathname === "/api/info-export.xls" && request.method === "GET") {
+      if (url.searchParams.get("code") !== ADMIN_CODE) {
+        response.writeHead(401);
+        response.end("Code administrateur incorrect");
+        return;
+      }
+      const formId = url.searchParams.get("form");
+      const responses = formId
+        ? latestInfoResponses(readInfoResponses()).filter((item) => item.formId === formId)
+        : latestInfoResponses(readInfoResponses());
+      sendInfoExcel(response, responses);
       return;
     }
 

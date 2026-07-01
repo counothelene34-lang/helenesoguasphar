@@ -75,10 +75,15 @@
           <p>Sélectionnez la commande ou précommande concernée, puis indiquez vos quantités souhaitées. Si vous ne souhaitez pas participer, vous pouvez simplement répondre pas intéressé dans le formulaire merci.</p>
         </div>
         <div id="campaignCards" class="campaign-grid" aria-live="polite"></div>
-        <div class="poll-picker-block">
+        <div class="poll-picker-block survey-picker-block">
           <h2>Sondages disponibles</h2>
           <p>Répondez en un clic aux questions proposées par SOGUASPHAR.</p>
           <div id="pollCards" class="campaign-grid" aria-live="polite"></div>
+        </div>
+        <div class="poll-picker-block info-picker-block">
+          <h2>Mise à jour des informations pharmacie</h2>
+          <p>Complétez ou corrigez les coordonnées, horaires, réseaux sociaux et services proposés par votre pharmacie.</p>
+          <div id="infoCards" class="campaign-grid" aria-live="polite"></div>
         </div>
       </section>
 
@@ -175,6 +180,77 @@
         <p id="pollMessage" class="status-message" role="status"></p>
       </form>
 
+      <form id="profileUpdateForm" class="form-shell profile-update-shell" hidden>
+        <button id="backToInfoFormsBtn" class="back-strong-btn" type="button">← Retour au menu</button>
+        <section class="question-block profile-intro-block">
+          <span class="poll-kicker">Fiche pharmacie SOGUASPHAR</span>
+          <h2 id="profileFormTitle">Mise à jour du site internet SOGUASPHAR : informations pharmacies</h2>
+          <p id="profileFormIntro">Merci de noter vos coordonnées, réseaux sociaux, horaires et services proposés.</p>
+        </section>
+        <section class="question-block">
+          <label for="profilePharmacyName">Nom de la pharmacie <span aria-hidden="true">*</span></label>
+          <input id="profilePharmacyName" type="text" autocomplete="organization" required placeholder="Ex. Pharmacie du Centre">
+        </section>
+        <section class="profile-grid-fields">
+          <label class="wide-field">Adresse
+            <input id="profileAddress" type="text" autocomplete="street-address" placeholder="Numéro et voie">
+          </label>
+          <label>Code postal
+            <input id="profilePostalCode" type="text" inputmode="numeric" autocomplete="postal-code" placeholder="97100">
+          </label>
+          <label>Ville
+            <input id="profileCity" type="text" autocomplete="address-level2" placeholder="Ville">
+          </label>
+          <label>Adresse mail du titulaire
+            <input id="profileOwnerEmail" type="email" autocomplete="email" placeholder="titulaire@pharmacie.fr">
+          </label>
+          <label>Adresse mail de l'équipe
+            <input id="profileTeamEmail" type="email" placeholder="equipe@pharmacie.fr">
+          </label>
+          <label>Lien Facebook
+            <input id="profileFacebook" type="url" placeholder="https://facebook.com/...">
+          </label>
+          <label>Lien Instagram
+            <input id="profileInstagram" type="url" placeholder="https://instagram.com/...">
+          </label>
+          <label>Lien LinkedIn
+            <input id="profileLinkedin" type="url" placeholder="https://linkedin.com/...">
+          </label>
+          <label>Site internet
+            <input id="profileWebsite" type="url" placeholder="https://www...">
+          </label>
+        </section>
+        <section class="question-block">
+          <div class="section-head">
+            <div>
+              <span class="field-title">Horaires d'ouverture</span>
+              <p>Indiquez les horaires jour par jour. Cochez "coupure" si la pharmacie ferme entre midi et deux.</p>
+            </div>
+          </div>
+          <div id="profileHoursGrid" class="hours-grid"></div>
+        </section>
+        <section class="question-block">
+          <div class="section-head">
+            <div>
+              <span class="field-title">Services proposés dans la pharmacie</span>
+              <p>Cochez uniquement les services réellement disponibles.</p>
+            </div>
+          </div>
+          <div id="profileServicesGrid" class="services-grid"></div>
+          <label class="other-services-label" for="profileOtherServices">Autres services proposés dans la pharmacie</label>
+          <textarea id="profileOtherServices" rows="3" placeholder="Ajoutez les services non présents dans la liste"></textarea>
+        </section>
+        <section class="question-block">
+          <label for="profileNotes">Commentaire complémentaire</label>
+          <textarea id="profileNotes" rows="3" placeholder="Toute précision utile pour SOGUASPHAR"></textarea>
+        </section>
+        <div class="form-actions">
+          <button class="primary-btn" type="submit">Envoyer la mise à jour</button>
+          <button class="text-btn" type="reset">Réinitialiser</button>
+        </div>
+        <p id="profileMessage" class="status-message" role="status"></p>
+      </form>
+
       <section id="responseSuccess" class="success-screen" hidden>
         <div class="success-mark">✓</div>
         <h2>Réponse enregistrée</h2>
@@ -207,8 +283,10 @@
             <div id="adminDashboardNav" class="admin-dashboard-nav" aria-label="Menu administrateur">
               <button class="admin-dashboard-btn active" type="button" data-admin-section="new-campaign">Nouvelle campagne précommande</button>
               <button class="admin-dashboard-btn" type="button" data-admin-section="new-poll">Nouveau sondage</button>
+              <button class="admin-dashboard-btn" type="button" data-admin-section="new-info">Nouvelle fiche pharmacie</button>
               <button class="admin-dashboard-btn" type="button" data-admin-section="campaigns">Campagnes en cours</button>
               <button class="admin-dashboard-btn" type="button" data-admin-section="polls">Sondages en cours</button>
+              <button class="admin-dashboard-btn" type="button" data-admin-section="info-forms">Fiches pharmacies</button>
               <button class="admin-dashboard-btn" type="button" data-admin-section="pharmacies">Pharmacies</button>
               <button class="admin-dashboard-btn" type="button" data-admin-section="archives">Archivés</button>
             </div>
@@ -232,6 +310,13 @@
               </label>
               <button class="primary-btn" type="submit">Créer le sondage</button>
             </form>
+            <form id="createInfoForm" class="create-campaign-form">
+              <label for="newInfoTitle">Nouvelle mise à jour fiche pharmacie</label>
+              <input id="newInfoTitle" type="text" placeholder="Ex. Mise à jour du site internet SOGUASPHAR : informations pharmacies" autocomplete="off">
+              <label for="newInfoIntro">Message visible par la pharmacie</label>
+              <textarea id="newInfoIntro" rows="3" placeholder="Merci de noter vos coordonnées, réseaux sociaux, horaires et services proposés."></textarea>
+              <button class="primary-btn" type="submit">Créer la demande</button>
+            </form>
             <form id="createPharmacyForm" class="create-campaign-form">
               <label for="newPharmacyName">Nouvel accès pharmacie</label>
               <div class="create-campaign-row">
@@ -248,6 +333,10 @@
             <div class="poll-picker-block">
               <h2>Sondages</h2>
               <div id="adminPollCards" class="campaign-grid" aria-live="polite"></div>
+            </div>
+            <div class="poll-picker-block info-picker-block" id="adminInfoBlock">
+              <h2>Fiches pharmacies</h2>
+              <div id="adminInfoCards" class="campaign-grid" aria-live="polite"></div>
             </div>
           </section>
 
@@ -469,6 +558,61 @@
                 <tbody id="pollResponsesTable">
                   <tr>
                     <td colspan="4" class="empty-state">Aucune réponse enregistrée pour le moment.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div id="adminInfoDetail" hidden>
+            <button id="backToAdminInfoBtn" class="back-strong-btn" type="button">← Retour aux fiches pharmacies</button>
+            <div class="selected-campaign-title">
+              <p class="eyebrow">Mise à jour sélectionnée</p>
+              <h2 id="adminInfoTitle">Fiche pharmacie</h2>
+            </div>
+            <div id="infoResultsSummary" class="metrics"></div>
+            <section class="admin-overview poll-overview">
+              <div>
+                <h2>Vue d'ensemble</h2>
+                <p>Suivi des pharmacies ayant transmis leur fiche à jour.</p>
+              </div>
+              <div class="overview-grid two-columns">
+                <div class="overview-box">
+                  <h3>Pharmacies ayant répondu</h3>
+                  <ul id="infoAnsweredPharmacies">
+                    <li>Aucune réponse pour le moment.</li>
+                  </ul>
+                </div>
+                <div class="overview-box alert-box">
+                  <h3>N'ont pas répondu</h3>
+                  <ul id="infoUnansweredPharmacies">
+                    <li>Aucune pharmacie à relancer.</li>
+                  </ul>
+                </div>
+              </div>
+            </section>
+            <div class="table-toolbar">
+              <div>
+                <h2>Données reçues</h2>
+                <p>Coordonnées, réseaux sociaux, horaires et services déclarés.</p>
+              </div>
+              <button id="exportInfoExcelBtn" class="primary-btn" type="button">Exporter Excel</button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Pharmacie</th>
+                    <th>Coordonnées</th>
+                    <th>Réseaux / site</th>
+                    <th>Horaires</th>
+                    <th>Services</th>
+                  </tr>
+                </thead>
+                <tbody id="infoResponsesTable">
+                  <tr>
+                    <td colspan="6" class="empty-state">Aucune fiche reçue pour le moment.</td>
                   </tr>
                 </tbody>
               </table>

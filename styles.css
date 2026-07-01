@@ -636,6 +636,192 @@ main::before {
   margin: 0;
 }
 
+.profile-update-shell {
+  max-width: 980px;
+}
+
+.profile-intro-block h2 {
+  margin: 10px 0 8px;
+  font-size: clamp(2rem, 4vw, 3.1rem);
+  line-height: 1.05;
+}
+
+.profile-intro-block p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 1.08rem;
+}
+
+.profile-grid-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  padding: 28px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, .86);
+  box-shadow: var(--soft-shadow);
+}
+
+.profile-grid-fields label {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.profile-grid-fields input,
+.profile-grid-fields textarea {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid #c8d8d0;
+  border-radius: 8px;
+  padding: 14px 16px;
+  font: inherit;
+  color: var(--ink);
+  background: rgba(255, 255, 255, .92);
+}
+
+.info-form-card .campaign-done-summary {
+  border-color: rgba(0, 135, 68, .25);
+  background: rgba(229, 249, 238, .85);
+}
+
+.info-form-card {
+  min-height: 0;
+  justify-content: start;
+  gap: 16px;
+}
+
+.info-form-card .campaign-foot {
+  margin-top: 0;
+}
+
+.info-form-card h3 {
+  font-size: clamp(22px, 2.2vw, 30px);
+  line-height: 1.16;
+}
+
+.info-form-card .campaign-foot strong {
+  font-size: 18px;
+  line-height: 1.15;
+}
+
+.profile-grid-fields .wide-field {
+  grid-column: 1 / -1;
+}
+
+.hours-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.hours-row {
+  display: grid;
+  grid-template-columns: minmax(92px, .8fr) minmax(90px, .8fr) repeat(2, minmax(120px, 1fr)) minmax(92px, .8fr);
+  gap: 10px;
+  align-items: end;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, .88);
+}
+
+.hours-row strong {
+  align-self: center;
+}
+
+.hours-row label,
+.split-hours label,
+.closed-day,
+.split-day {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.closed-day,
+.split-day {
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  align-self: center;
+}
+
+.hours-row input[type="time"] {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid #c8d8d0;
+  border-radius: 8px;
+  padding: 10px;
+  font: inherit;
+}
+
+.split-hours {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(0, 135, 68, .16);
+}
+
+.services-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.services-category {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 18px;
+  background: rgba(255, 255, 255, .9);
+}
+
+.services-category legend {
+  padding: 0 8px;
+  color: var(--green-dark);
+  font-weight: 900;
+}
+
+.services-options {
+  display: grid;
+  gap: 10px;
+}
+
+.services-options label {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  align-items: start;
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.services-options input {
+  margin-top: 4px;
+}
+
+.other-services-label {
+  display: block;
+  margin-top: 18px;
+  font-weight: 900;
+}
+
+#profileOtherServices {
+  width: 100%;
+  margin-top: 8px;
+  border: 1px solid #c8d8d0;
+  border-radius: 8px;
+  padding: 14px 16px;
+  font: inherit;
+  resize: vertical;
+}
+
 @media (min-width: 1180px) {
   #campaignPicker {
     display: grid;
@@ -664,6 +850,19 @@ main::before {
     padding: 0;
     overflow-y: auto;
     border-top: 0;
+  }
+
+  #campaignPicker > .info-picker-block {
+    position: sticky;
+    top: 118px;
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    max-height: calc(100vh - 140px);
+    overflow-y: auto;
+  }
+
+  #campaignPicker > .survey-picker-block {
+    display: none;
   }
 
   #campaignPicker > .poll-picker-block > h2,
@@ -2018,6 +2217,16 @@ main,
     grid-template-columns: 1fr;
   }
 
+  .profile-grid-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .hours-row,
+  .split-hours,
+  .services-grid {
+    grid-template-columns: 1fr;
+  }
+
   .create-campaign-row {
     grid-template-columns: 1fr;
   }
@@ -2143,6 +2352,7 @@ main,
 
   .image-preview-modal,
   .poll-shell,
+  .profile-update-shell,
   .success-screen {
     padding: 12px;
   }

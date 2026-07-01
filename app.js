@@ -2,6 +2,8 @@ const STORAGE_KEY = "soguasphar_pharmacy_requests";
 const ORDER_TEMPLATE_KEY = "soguasphar_order_template";
 const POLL_RESPONSES_KEY = "soguasphar_poll_responses";
 const POLL_ANSWERED_KEY = "soguasphar_answered_polls";
+const INFO_FORMS_KEY = "soguasphar_info_forms_preview";
+const INFO_RESPONSES_KEY = "soguasphar_info_responses_preview";
 const ADMIN_CODE = "SOGUASPHAR2026";
 const API_AVAILABLE = location.protocol === "http:" || location.protocol === "https:";
 const PHARMACY_SESSION_KEY = "soguasphar_current_pharmacy";
@@ -25,6 +27,7 @@ const heroBand = document.querySelector(".hero-band");
 const campaignPicker = document.querySelector("#campaignPicker");
 const campaignCards = document.querySelector("#campaignCards");
 const pollCards = document.querySelector("#pollCards");
+const infoCards = document.querySelector("#infoCards");
 const backToCampaignsBtn = document.querySelector("#backToCampaignsBtn");
 const campaignNotice = document.querySelector("#campaignNotice");
 const responseSuccess = document.querySelector("#responseSuccess");
@@ -38,6 +41,25 @@ const pollFreeTextBlock = document.querySelector("#pollFreeTextBlock");
 const pollFreeTextLabel = document.querySelector("#pollFreeTextLabel");
 const pollFreeText = document.querySelector("#pollFreeText");
 const pollMessage = document.querySelector("#pollMessage");
+const profileUpdateForm = document.querySelector("#profileUpdateForm");
+const backToInfoFormsBtn = document.querySelector("#backToInfoFormsBtn");
+const profileFormTitle = document.querySelector("#profileFormTitle");
+const profileFormIntro = document.querySelector("#profileFormIntro");
+const profilePharmacyName = document.querySelector("#profilePharmacyName");
+const profileAddress = document.querySelector("#profileAddress");
+const profilePostalCode = document.querySelector("#profilePostalCode");
+const profileCity = document.querySelector("#profileCity");
+const profileOwnerEmail = document.querySelector("#profileOwnerEmail");
+const profileTeamEmail = document.querySelector("#profileTeamEmail");
+const profileFacebook = document.querySelector("#profileFacebook");
+const profileInstagram = document.querySelector("#profileInstagram");
+const profileLinkedin = document.querySelector("#profileLinkedin");
+const profileWebsite = document.querySelector("#profileWebsite");
+const profileHoursGrid = document.querySelector("#profileHoursGrid");
+const profileServicesGrid = document.querySelector("#profileServicesGrid");
+const profileOtherServices = document.querySelector("#profileOtherServices");
+const profileNotes = document.querySelector("#profileNotes");
+const profileMessage = document.querySelector("#profileMessage");
 const formMessage = document.querySelector("#formMessage");
 const productRows = document.querySelector("#productRows");
 const quantitySection = document.querySelector("#quantitySection");
@@ -58,12 +80,25 @@ const newPollQuestion = document.querySelector("#newPollQuestion");
 const newPollOptions = document.querySelector("#newPollOptions");
 const newPollFreeLabel = document.querySelector("#newPollFreeLabel");
 const newPollFreeRequired = document.querySelector("#newPollFreeRequired");
+const createInfoForm = document.querySelector("#createInfoForm");
+const newInfoTitle = document.querySelector("#newInfoTitle");
+const newInfoIntro = document.querySelector("#newInfoIntro");
 const createPharmacyForm = document.querySelector("#createPharmacyForm");
 const newPharmacyName = document.querySelector("#newPharmacyName");
 const pharmacyAccountsList = document.querySelector("#pharmacyAccountsList");
 const showClosedCampaignsBtn = document.querySelector("#showClosedCampaignsBtn");
 const adminPollCards = document.querySelector("#adminPollCards");
 const adminPollBlock = adminCampaignPicker.querySelector(".poll-picker-block");
+const adminInfoBlock = document.querySelector("#adminInfoBlock");
+const adminInfoCards = document.querySelector("#adminInfoCards");
+const adminInfoDetail = document.querySelector("#adminInfoDetail");
+const backToAdminInfoBtn = document.querySelector("#backToAdminInfoBtn");
+const adminInfoTitle = document.querySelector("#adminInfoTitle");
+const infoResultsSummary = document.querySelector("#infoResultsSummary");
+const infoAnsweredPharmacies = document.querySelector("#infoAnsweredPharmacies");
+const infoUnansweredPharmacies = document.querySelector("#infoUnansweredPharmacies");
+const infoResponsesTable = document.querySelector("#infoResponsesTable");
+const exportInfoExcelBtn = document.querySelector("#exportInfoExcelBtn");
 const adminPollDetail = document.querySelector("#adminPollDetail");
 const backToAdminPollsBtn = document.querySelector("#backToAdminPollsBtn");
 const adminPollTitle = document.querySelector("#adminPollTitle");
@@ -112,6 +147,8 @@ let preserveSubmitMessage = false;
 let adminUnlocked = false;
 let campaigns = [];
 let polls = [];
+let infoForms = [];
+let infoResponses = [];
 let pharmacies = [];
 let currentPharmacy = JSON.parse(localStorage.getItem(PHARMACY_SESSION_KEY) || "null");
 let pendingPasswordPharmacy = null;
@@ -120,8 +157,10 @@ let pharmacyPollAnswers = {};
 let pharmacyCampaignResponses = {};
 let selectedCampaign = null;
 let selectedPoll = null;
+let selectedInfoForm = null;
 let selectedAdminCampaign = null;
 let selectedAdminPoll = null;
+let selectedAdminInfoForm = null;
 let currentOrderTemplate = [];
 let adminShowingClosedCampaigns = false;
 let pollResponseCounts = {};
@@ -136,6 +175,10 @@ const ADMIN_SECTIONS = {
     title: "Créer un sondage",
     intro: "Renseignez la question, les réponses possibles et le champ libre si nécessaire."
   },
+  "new-info": {
+    title: "Créer une mise à jour fiche pharmacie",
+    intro: "Préparez une demande structurée pour récupérer les coordonnées, horaires, réseaux sociaux et services."
+  },
   campaigns: {
     title: "Campagnes en cours",
     intro: "Retrouvez les précommandes actives, leur suivi et leurs exports."
@@ -143,6 +186,10 @@ const ADMIN_SECTIONS = {
   polls: {
     title: "Sondages en cours",
     intro: "Consultez les sondages actifs et les réponses reçues."
+  },
+  "info-forms": {
+    title: "Fiches pharmacies en cours",
+    intro: "Suivez les mises à jour de données transmises par les pharmacies."
   },
   pharmacies: {
     title: "Accès pharmacies",
@@ -153,6 +200,80 @@ const ADMIN_SECTIONS = {
     intro: "Retrouvez les campagnes et sondages clôturés, avec possibilité de les rouvrir."
   }
 };
+
+const PROFILE_DAYS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
+
+const PROFILE_SERVICE_CATEGORIES = [
+  {
+    category: "Services divers",
+    services: [
+      "Livraison à domicile",
+      "Paiement à distance VAD",
+      "Scan ordonnance",
+      "Click and collect",
+      "Site ecommerce",
+      "PDA",
+      "Drive",
+      "La carte de fidélité SOGUASCARD",
+      "Téléconsultation",
+      "Préparation magistrale"
+    ]
+  },
+  {
+    category: "Matériel médical, contention et orthopédie",
+    services: [
+      "Vente et location de matériel médical",
+      "Location de tire-lait",
+      "Contention",
+      "Orthopédie de série",
+      "Orthopédie : attelles thermoformées",
+      "Chaussures de confort et orthopédiques",
+      "Spécialité vétérinaire",
+      "Semelle orthopédique"
+    ]
+  },
+  {
+    category: "Prothèses",
+    services: [
+      "Prothèses mammaires",
+      "Prothèses capillaires"
+    ]
+  },
+  {
+    category: "Nouvelles missions : vaccinations",
+    services: [
+      "Vaccination grippe",
+      "Vaccination covid",
+      "Autres vaccinations à partir de 11 ans (HPV, dTcP, pneumocoque, méningite...)",
+      "Suivi du statut vaccinal du patient et prescription des vaccins"
+    ]
+  },
+  {
+    category: "Nouvelles missions : entretiens, BPM et bilans de prévention",
+    services: [
+      "Entretien femmes enceintes",
+      "Entretien antalgiques opioïdes",
+      "Entretien anticoagulants AOD",
+      "Entretien asthme",
+      "Entretien anticancéreux",
+      "BPM - Bilan partagé de médication",
+      "Bilan de prévention pour les différentes tranches d'âge",
+      "Entretien diététique et nutrition"
+    ]
+  },
+  {
+    category: "Nouvelles missions : TROD et kits",
+    services: [
+      "TROD covid",
+      "TROD angine",
+      "Prescription suite au TROD angine +",
+      "TROD cystite",
+      "Prescription suite au TROD cystite +",
+      "TROD dengue",
+      "Kit cancer colorectal"
+    ]
+  }
+];
 
 function localResponses() {
   return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
@@ -176,6 +297,141 @@ function localPolls() {
 
 function saveLocalPolls(nextPolls) {
   localStorage.setItem("soguasphar_polls", JSON.stringify(nextPolls));
+}
+
+function localInfoForms() {
+  const saved = JSON.parse(localStorage.getItem(INFO_FORMS_KEY) || "[]");
+  if (saved.length) return saved;
+
+  return [{
+    id: "fiche-pharmacie-2026",
+    title: "Mise à jour du site internet SOGUASPHAR : informations pharmacies",
+    intro: "Merci de noter vos coordonnées, réseaux sociaux, horaires et services proposés.",
+    type: "Fiche pharmacie",
+    closed: false
+  }];
+}
+
+function saveLocalInfoForms(nextForms) {
+  localStorage.setItem(INFO_FORMS_KEY, JSON.stringify(nextForms));
+}
+
+function localInfoResponses() {
+  return JSON.parse(localStorage.getItem(INFO_RESPONSES_KEY) || "[]");
+}
+
+function saveLocalInfoResponses(nextResponses) {
+  localStorage.setItem(INFO_RESPONSES_KEY, JSON.stringify(nextResponses));
+}
+
+async function getInfoForms() {
+  if (API_AVAILABLE) {
+    try {
+      const remoteForms = await requestJson("/api/info-forms");
+      if (Array.isArray(remoteForms)) return remoteForms;
+    } catch {
+      // Fallback for preview servers without info form API.
+    }
+  }
+
+  return localInfoForms();
+}
+
+async function saveInfoForms(nextForms) {
+  if (API_AVAILABLE) {
+    try {
+      const savedForms = await requestJson("/api/info-forms", {
+        method: "PUT",
+        headers: { "X-Admin-Code": ADMIN_CODE },
+        body: JSON.stringify(nextForms)
+      });
+      saveLocalInfoForms(savedForms);
+      return savedForms;
+    } catch {
+      // Fallback for preview servers without info form API.
+    }
+  }
+
+  saveLocalInfoForms(nextForms);
+  return nextForms;
+}
+
+async function getInfoResponses() {
+  if (!API_AVAILABLE) return localInfoResponses();
+
+  try {
+    return await requestJson("/api/info-responses", {
+      headers: adminUnlocked ? { "X-Admin-Code": ADMIN_CODE } : {}
+    });
+  } catch {
+    return localInfoResponses();
+  }
+}
+
+async function saveInfoResponses(nextResponses) {
+  if (API_AVAILABLE) {
+    try {
+      const savedResponses = await requestJson("/api/info-responses", {
+        method: "PUT",
+        headers: { "X-Admin-Code": ADMIN_CODE },
+        body: JSON.stringify(nextResponses)
+      });
+      saveLocalInfoResponses(savedResponses);
+      return savedResponses;
+    } catch {
+      // Fallback for preview servers without info response API.
+    }
+  }
+
+  saveLocalInfoResponses(nextResponses);
+  return nextResponses;
+}
+
+async function refreshPharmacyInfoResponses() {
+  if (!currentPharmacy) return;
+
+  try {
+    if (API_AVAILABLE) {
+      const params = new URLSearchParams({
+        pharmacyId: currentPharmacy.id || "",
+        pharmacyName: currentPharmacy.name || ""
+      });
+      const responses = await requestJson(`/api/pharmacy-info-responses?${params.toString()}`);
+      const localOthers = localInfoResponses().filter((item) => !responses.some((remote) => remote.id === item.id));
+      infoResponses = [...localOthers, ...responses];
+      return;
+    }
+  } catch {
+    // Fallback to local preview data.
+  }
+
+  infoResponses = localInfoResponses();
+}
+
+async function appendInfoResponse(response) {
+  if (API_AVAILABLE) {
+    try {
+      return await requestJson("/api/info-responses", {
+        method: "POST",
+        body: JSON.stringify(response)
+      });
+    } catch {
+      // Fallback for preview servers without info form API.
+    }
+  }
+
+  const existing = localInfoResponses().find((item) => item.formId === response.formId && responseOwnerKey(item) === responseOwnerKey(response));
+  const savedResponse = {
+    ...response,
+    id: existing?.id || response.id,
+    createdAt: existing?.createdAt || response.createdAt,
+    updatedAt: existing ? new Date().toLocaleString("fr-FR") : ""
+  };
+  const responses = localInfoResponses()
+    .filter((item) => !(item.formId === savedResponse.formId && responseOwnerKey(item) === responseOwnerKey(savedResponse)))
+    .concat(savedResponse);
+  saveLocalInfoResponses(responses);
+  return savedResponse;
 }
 
 function localPollResponses() {
@@ -614,6 +870,95 @@ function responsePharmacyCountKey(response) {
   return response.pharmacyId ? `id:${String(response.pharmacyId).trim()}` : `name:${pharmacyNameKey(response.pharmacyName)}`;
 }
 
+function renderProfileHoursFields(hours = []) {
+  if (!profileHoursGrid) return;
+  const byDay = new Map((Array.isArray(hours) ? hours : []).map((item) => [item.day, item]));
+  profileHoursGrid.innerHTML = PROFILE_DAYS.map((day) => {
+    const row = byDay.get(day) || {};
+    const split = Boolean(row.split);
+    return `
+      <div class="hours-row" data-hours-day="${escapeHtml(day)}">
+        <strong>${escapeHtml(day)}</strong>
+        <label class="closed-day">
+          <input type="checkbox" data-hours-closed ${row.closed ? "checked" : ""}>
+          <span>Fermé</span>
+        </label>
+        <label>Ouverture
+          <input type="time" data-hours-open value="${escapeHtml(row.open || "")}" ${row.closed ? "disabled" : ""}>
+        </label>
+        <label>Fermeture
+          <input type="time" data-hours-close value="${escapeHtml(row.close || "")}" ${row.closed ? "disabled" : ""}>
+        </label>
+        <label class="split-day">
+          <input type="checkbox" data-hours-split ${split ? "checked" : ""} ${row.closed ? "disabled" : ""}>
+          <span>Coupure</span>
+        </label>
+        <div class="split-hours" ${split ? "" : "hidden"}>
+          <label>Matin début
+            <input type="time" data-hours-morning-open value="${escapeHtml(row.morningOpen || "")}" ${row.closed ? "disabled" : ""}>
+          </label>
+          <label>Matin fin
+            <input type="time" data-hours-morning-close value="${escapeHtml(row.morningClose || "")}" ${row.closed ? "disabled" : ""}>
+          </label>
+          <label>Après-midi début
+            <input type="time" data-hours-afternoon-open value="${escapeHtml(row.afternoonOpen || "")}" ${row.closed ? "disabled" : ""}>
+          </label>
+          <label>Après-midi fin
+            <input type="time" data-hours-afternoon-close value="${escapeHtml(row.afternoonClose || "")}" ${row.closed ? "disabled" : ""}>
+          </label>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function renderProfileServiceFields(selectedServices = []) {
+  if (!profileServicesGrid) return;
+  const selected = new Set(Array.isArray(selectedServices) ? selectedServices : []);
+  profileServicesGrid.innerHTML = PROFILE_SERVICE_CATEGORIES.map((group) => `
+    <fieldset class="services-category">
+      <legend>${escapeHtml(group.category)}</legend>
+      <div class="services-options">
+        ${group.services.map((service) => `
+          <label>
+            <input type="checkbox" name="profileService" value="${escapeHtml(service)}" ${selected.has(service) ? "checked" : ""}>
+            <span>${escapeHtml(service)}</span>
+          </label>
+        `).join("")}
+      </div>
+    </fieldset>
+  `).join("");
+}
+
+function collectProfileHours() {
+  return Array.from(profileHoursGrid?.querySelectorAll("[data-hours-day]") || []).map((row) => ({
+    day: row.dataset.hoursDay,
+    closed: Boolean(row.querySelector("[data-hours-closed]")?.checked),
+    split: Boolean(row.querySelector("[data-hours-split]")?.checked),
+    open: row.querySelector("[data-hours-open]")?.value || "",
+    close: row.querySelector("[data-hours-close]")?.value || "",
+    morningOpen: row.querySelector("[data-hours-morning-open]")?.value || "",
+    morningClose: row.querySelector("[data-hours-morning-close]")?.value || "",
+    afternoonOpen: row.querySelector("[data-hours-afternoon-open]")?.value || "",
+    afternoonClose: row.querySelector("[data-hours-afternoon-close]")?.value || ""
+  }));
+}
+
+function collectProfileServices() {
+  return Array.from(profileServicesGrid?.querySelectorAll('input[name="profileService"]:checked') || [])
+    .map((input) => input.value);
+}
+
+function formatProfileHours(hours = []) {
+  return (Array.isArray(hours) ? hours : []).map((row) => {
+    if (row.closed) return `${row.day} : fermé`;
+    if (row.split) {
+      return `${row.day} : ${row.morningOpen || "--:--"}-${row.morningClose || "--:--"} / ${row.afternoonOpen || "--:--"}-${row.afternoonClose || "--:--"}`;
+    }
+    return `${row.day} : ${row.open || "--:--"}-${row.close || "--:--"}`;
+  }).join("\n");
+}
+
 function pharmacyListMarkup(names, emptyMessage) {
   return names.length
     ? names.map((name) => `<li>${escapeHtml(name)}</li>`).join("")
@@ -763,6 +1108,7 @@ function renderPharmacyAccess() {
     campaignPicker.hidden = true;
     form.hidden = true;
     pollForm.hidden = true;
+    profileUpdateForm.hidden = true;
     responseSuccess.hidden = true;
   }
 }
@@ -775,6 +1121,8 @@ function applyCurrentPharmacyToForms() {
   pharmacyInput.readOnly = true;
   pollPharmacyName.value = name;
   pollPharmacyName.readOnly = true;
+  profilePharmacyName.value = name;
+  profilePharmacyName.readOnly = true;
 }
 
 function renderPharmacyAccounts() {
@@ -1237,22 +1585,57 @@ function pollCard(poll, target) {
   `;
 }
 
+function infoFormCard(infoForm, target) {
+  const isAdmin = target === "admin";
+  const responses = infoResponses.filter((response) => response.formId === infoForm.id);
+  const responseCount = pharmacyNamesForResponses(responses).length;
+  const currentResponse = !isAdmin && currentPharmacy
+    ? responses.find((response) => responseMatchesPharmacy(response, currentPharmacy))
+    : null;
+  const statusLabel = infoForm.closed ? "Clôturée" : "Fiche pharmacie";
+  const actionAttr = isAdmin ? `data-admin-info="${escapeHtml(infoForm.id)}"` : `data-info-form="${escapeHtml(infoForm.id)}"`;
+
+  return `
+    <article class="campaign-card info-form-card ${currentResponse ? "completed" : ""} clickable" ${actionAttr} role="button" tabindex="0">
+      <div>
+        <div class="campaign-card-top">
+          <span class="campaign-type ${infoForm.closed ? "closed" : ""}">${statusLabel}</span>
+          ${isAdmin ? `<button class="delete-campaign-btn" type="button" title="Supprimer la demande" aria-label="Supprimer ${escapeHtml(infoForm.title)}" data-delete-info="${escapeHtml(infoForm.id)}">&#128465;</button>` : ""}
+        </div>
+        <h3>${escapeHtml(infoForm.title)}</h3>
+        <p>${escapeHtml(infoForm.intro || "Mettez à jour les informations de votre pharmacie.")}</p>
+        ${currentResponse ? `<div class="campaign-done-summary"><strong>Fiche déjà transmise</strong><span>Vous pouvez la modifier si nécessaire.</span></div>` : ""}
+      </div>
+      <div class="campaign-foot">
+        <strong>${isAdmin ? `${responseCount} réponse${responseCount > 1 ? "s" : ""}` : "Coordonnées, horaires, services"}</strong>
+        <div class="campaign-actions">
+          ${isAdmin ? `<button class="ghost-btn" type="button" data-toggle-closed-info="${escapeHtml(infoForm.id)}">${infoForm.closed ? "Rouvrir" : "Clôturer"}</button>` : ""}
+          <button class="primary-btn" type="button" ${actionAttr}>${isAdmin ? "Voir le suivi" : (currentResponse ? "Modifier ma fiche" : "Remplir")}</button>
+        </div>
+      </div>
+    </article>
+  `;
+}
+
 function showAdminSection(section) {
   activeAdminSection = section || "new-campaign";
   const sectionCopy = ADMIN_SECTIONS[activeAdminSection] || ADMIN_SECTIONS["new-campaign"];
   const closedActions = showClosedCampaignsBtn?.closest(".closed-campaign-actions");
   const showCampaignList = activeAdminSection === "campaigns" || activeAdminSection === "archives";
   const showPollList = activeAdminSection === "polls" || activeAdminSection === "archives";
+  const showInfoList = activeAdminSection === "info-forms" || activeAdminSection === "archives";
   const showPharmacies = activeAdminSection === "pharmacies";
 
   adminCampaignTitle.textContent = sectionCopy.title;
   adminSectionIntro.textContent = sectionCopy.intro;
   createCampaignForm.hidden = activeAdminSection !== "new-campaign";
   createPollForm.hidden = activeAdminSection !== "new-poll";
+  createInfoForm.hidden = activeAdminSection !== "new-info";
   createPharmacyForm.hidden = !showPharmacies;
   pharmacyAccountsList.hidden = !showPharmacies;
   adminCampaignCards.hidden = !showCampaignList;
   adminPollBlock.hidden = !showPollList;
+  adminInfoBlock.hidden = !showInfoList;
   if (closedActions) closedActions.hidden = true;
 
   adminDashboardNav?.querySelectorAll("[data-admin-section]").forEach((button) => {
@@ -1267,6 +1650,8 @@ function renderCampaignPickers() {
   const adminCampaigns = campaigns.filter((campaign) => activeAdminSection === "archives" ? campaign.closed : !campaign.closed);
   const openPolls = polls.filter((poll) => !poll.closed);
   const adminPolls = polls.filter((poll) => activeAdminSection === "archives" ? poll.closed : !poll.closed);
+  const openInfoForms = infoForms.filter((infoForm) => !infoForm.closed);
+  const adminInfoForms = infoForms.filter((infoForm) => activeAdminSection === "archives" ? infoForm.closed : !infoForm.closed);
 
   campaignCards.innerHTML = openCampaigns.length
     ? openCampaigns.map((campaign) => campaignCard(campaign, "form")).join("")
@@ -1276,6 +1661,10 @@ function renderCampaignPickers() {
     ? openPolls.map((poll) => pollCard(poll, "form")).join("")
     : '<p class="empty-campaigns">Aucun sondage disponible pour le moment.</p>';
 
+  infoCards.innerHTML = openInfoForms.length
+    ? openInfoForms.map((infoForm) => infoFormCard(infoForm, "form")).join("")
+    : '<p class="empty-campaigns">Aucune mise à jour de fiche pharmacie disponible pour le moment.</p>';
+
   adminCampaignCards.innerHTML = adminCampaigns.length
     ? adminCampaigns.map((campaign) => campaignCard(campaign, "admin")).join("")
     : `<p class="empty-campaigns">Aucune campagne ${adminShowingClosedCampaigns ? "clôturée" : "active"}.</p>`;
@@ -1283,6 +1672,10 @@ function renderCampaignPickers() {
   adminPollCards.innerHTML = adminPolls.length
     ? adminPolls.map((poll) => pollCard(poll, "admin")).join("")
     : '<p class="empty-campaigns">Aucun sondage créé pour le moment.</p>';
+
+  adminInfoCards.innerHTML = adminInfoForms.length
+    ? adminInfoForms.map((infoForm) => infoFormCard(infoForm, "admin")).join("")
+    : '<p class="empty-campaigns">Aucune mise à jour fiche pharmacie créée pour le moment.</p>';
 
   showClosedCampaignsBtn.textContent = adminShowingClosedCampaigns ? "Campagnes actives" : "Campagnes clôturées";
 }
@@ -1294,11 +1687,13 @@ function selectCampaign(campaignId) {
   }
   selectedCampaign = campaigns.find((campaign) => campaign.id === campaignId) || campaigns[0];
   selectedPoll = null;
+  selectedInfoForm = null;
   currentOrderTemplate = selectedCampaign?.template || [];
   campaignPicker.hidden = true;
   heroBand.hidden = true;
   form.hidden = false;
   pollForm.hidden = true;
+  profileUpdateForm.hidden = true;
   responseSuccess.hidden = true;
   document.querySelector("#formTitle").textContent = "Commande, précommande, confirmation";
   if (selectedCampaign.pharmacyMessage) {
@@ -1324,6 +1719,7 @@ function selectPoll(pollId) {
     return;
   }
   selectedPoll = polls.find((poll) => poll.id === pollId) || null;
+  selectedInfoForm = null;
   if (!selectedPoll) return;
 
   selectedCampaign = null;
@@ -1331,11 +1727,54 @@ function selectPoll(pollId) {
   heroBand.hidden = false;
   form.hidden = true;
   pollForm.hidden = true;
+  profileUpdateForm.hidden = true;
   responseSuccess.hidden = true;
   renderCampaignPickers();
   const openedCard = Array.from(pollCards.querySelectorAll("[data-inline-poll-form]"))
     .find((item) => item.dataset.inlinePollForm === selectedPoll.id);
   openedCard?.closest(".whatsapp-poll-card")?.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+function selectInfoForm(infoFormId) {
+  if (pharmacyAccessRequired()) {
+    renderPharmacyAccess();
+    return;
+  }
+
+  selectedInfoForm = infoForms.find((infoForm) => infoForm.id === infoFormId) || null;
+  if (!selectedInfoForm) return;
+
+  const previousResponse = infoResponses.find((response) => response.formId === selectedInfoForm.id && currentPharmacy && responseMatchesPharmacy(response, currentPharmacy));
+
+  selectedCampaign = null;
+  selectedPoll = null;
+  campaignPicker.hidden = true;
+  heroBand.hidden = true;
+  form.hidden = true;
+  pollForm.hidden = true;
+  profileUpdateForm.hidden = false;
+  responseSuccess.hidden = true;
+
+  profileUpdateForm.reset();
+  profileFormTitle.textContent = selectedInfoForm.title;
+  profileFormIntro.textContent = selectedInfoForm.intro || "Merci de noter vos coordonnées, réseaux sociaux, horaires et services proposés.";
+  profilePharmacyName.value = previousResponse?.pharmacyName || currentPharmacy?.name || "";
+  profilePharmacyName.readOnly = Boolean(currentPharmacy?.name);
+  profileAddress.value = previousResponse?.address || "";
+  profilePostalCode.value = previousResponse?.postalCode || "";
+  profileCity.value = previousResponse?.city || "";
+  profileOwnerEmail.value = previousResponse?.ownerEmail || previousResponse?.email || "";
+  profileTeamEmail.value = previousResponse?.teamEmail || "";
+  profileFacebook.value = previousResponse?.facebook || "";
+  profileInstagram.value = previousResponse?.instagram || "";
+  profileLinkedin.value = previousResponse?.linkedin || "";
+  profileWebsite.value = previousResponse?.website || "";
+  renderProfileHoursFields(previousResponse?.hours || []);
+  renderProfileServiceFields(previousResponse?.services || []);
+  profileOtherServices.value = previousResponse?.otherServices || "";
+  profileNotes.value = previousResponse?.notes || "";
+  profileMessage.textContent = "";
+  profileUpdateForm.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function updatePollChoiceSelection() {
@@ -1366,16 +1805,19 @@ function showCampaignPicker() {
   if (pharmacyAccessRequired()) {
     selectedCampaign = null;
     selectedPoll = null;
+    selectedInfoForm = null;
     renderPharmacyAccess();
     return;
   }
   selectedCampaign = null;
   selectedPoll = null;
+  selectedInfoForm = null;
   currentOrderTemplate = [];
   campaignPicker.hidden = false;
   heroBand.hidden = false;
   form.hidden = true;
   pollForm.hidden = true;
+  profileUpdateForm.hidden = true;
   responseSuccess.hidden = true;
   campaignNotice.hidden = true;
   campaignNotice.textContent = "";
@@ -1387,6 +1829,7 @@ function showCampaignPicker() {
 function showSuccessScreen() {
   form.hidden = true;
   pollForm.hidden = true;
+  profileUpdateForm.hidden = true;
   campaignPicker.hidden = false;
   heroBand.hidden = false;
   responseSuccess.hidden = false;
@@ -1416,21 +1859,41 @@ async function selectAdminPoll(pollId) {
   if (!selectedAdminPoll) return;
 
   selectedAdminCampaign = null;
+  selectedAdminInfoForm = null;
   adminPollTitle.textContent = selectedAdminPoll.question;
   adminCampaignPicker.hidden = true;
   adminDetail.hidden = true;
   adminPollDetail.hidden = false;
+  adminInfoDetail.hidden = true;
   await renderPollResults();
+}
+
+async function selectAdminInfoForm(infoFormId) {
+  selectedAdminInfoForm = infoForms.find((infoForm) => infoForm.id === infoFormId) || null;
+  if (!selectedAdminInfoForm) return;
+
+  selectedAdminCampaign = null;
+  selectedAdminPoll = null;
+  adminInfoTitle.textContent = selectedAdminInfoForm.title;
+  adminCampaignPicker.hidden = true;
+  adminDetail.hidden = true;
+  adminPollDetail.hidden = true;
+  adminInfoDetail.hidden = false;
+  infoResponses = await getInfoResponses();
+  renderInfoResults();
 }
 
 async function showAdminCampaignPicker() {
   selectedAdminCampaign = null;
   selectedAdminPoll = null;
+  selectedAdminInfoForm = null;
   adminShowingClosedCampaigns = false;
   adminCampaignPicker.hidden = false;
   adminDetail.hidden = true;
   adminPollDetail.hidden = true;
+  adminInfoDetail.hidden = true;
   await refreshPollResponseCounts();
+  if (adminUnlocked) infoResponses = await getInfoResponses();
   showAdminSection(activeAdminSection);
 }
 
@@ -1693,6 +2156,55 @@ async function renderPollResults() {
     .join("");
 }
 
+function renderInfoResults() {
+  if (!adminUnlocked || !selectedAdminInfoForm) return;
+
+  const responses = infoResponses.filter((item) => item.formId === selectedAdminInfoForm.id);
+  const answeredNames = pharmacyNamesForResponses(responses);
+  const unansweredNames = unansweredNamesForResponses(responses);
+
+  infoAnsweredPharmacies.innerHTML = pharmacyListMarkup(answeredNames, "Aucune réponse pour le moment.");
+  infoUnansweredPharmacies.innerHTML = pharmacyListMarkup(unansweredNames, "Toutes les pharmacies actives ont répondu.");
+  infoResultsSummary.innerHTML = [
+    `<div><span>${responses.length}</span><p>fiche${responses.length > 1 ? "s" : ""} reçue${responses.length > 1 ? "s" : ""}</p></div>`,
+    `<div><span>${answeredNames.length}</span><p>pharmacie${answeredNames.length > 1 ? "s" : ""} à jour</p></div>`,
+    `<div><span>${unansweredNames.length}</span><p>sans réponse</p></div>`
+  ].join("");
+
+  if (!responses.length) {
+    infoResponsesTable.innerHTML = '<tr><td colspan="6" class="empty-state">Aucune fiche reçue pour le moment.</td></tr>';
+    return;
+  }
+
+  infoResponsesTable.innerHTML = responses
+    .slice()
+    .reverse()
+    .map((response) => `
+      <tr>
+        <td>${escapeHtml(response.createdAt || "")}</td>
+        <td><strong>${escapeHtml(response.pharmacyName || "")}</strong></td>
+        <td>
+          ${escapeHtml(response.address || "-")}<br>
+          ${escapeHtml(response.postalCode || "")} ${escapeHtml(response.city || "")}<br>
+          Titulaire : <strong>${escapeHtml(response.ownerEmail || response.email || "-")}</strong><br>
+          Équipe : <strong>${escapeHtml(response.teamEmail || "-")}</strong>
+        </td>
+        <td>
+          Facebook : ${escapeHtml(response.facebook || "-")}<br>
+          Instagram : ${escapeHtml(response.instagram || "-")}<br>
+          LinkedIn : ${escapeHtml(response.linkedin || "-")}<br>
+          Site : ${escapeHtml(response.website || "-")}
+        </td>
+        <td>${escapeHtml(formatProfileHours(response.hours || []) || "-").replaceAll("\n", "<br>")}</td>
+        <td>
+          ${(response.services || []).map((service) => `• ${escapeHtml(service)}`).join("<br>") || "-"}
+          ${response.otherServices ? `<br><strong>Autres :</strong> ${escapeHtml(response.otherServices)}` : ""}
+        </td>
+      </tr>
+    `)
+    .join("");
+}
+
 async function exportPollToExcel() {
   if (!selectedAdminPoll) return;
 
@@ -1741,6 +2253,65 @@ async function exportPollToExcel() {
   link.remove();
   URL.revokeObjectURL(url);
   adminMessage.textContent = "Export Excel du sondage généré.";
+}
+
+function exportInfoToExcel() {
+  if (!selectedAdminInfoForm) return;
+  if (API_AVAILABLE && adminUnlocked) {
+    window.location.href = `/api/info-export.xls?code=${encodeURIComponent(ADMIN_CODE)}&form=${encodeURIComponent(selectedAdminInfoForm.id)}`;
+    adminMessage.textContent = "Export Excel des fiches pharmacies généré.";
+    return;
+  }
+
+  const responses = infoResponses.filter((item) => item.formId === selectedAdminInfoForm.id);
+  if (!responses.length) {
+    adminMessage.textContent = "Aucune fiche pharmacie à exporter.";
+    return;
+  }
+
+  const headings = ["Date", "Pharmacie", "Adresse", "Code postal", "Ville", "Mail titulaire", "Mail équipe", "Facebook", "Instagram", "LinkedIn", "Site internet", "Horaires", "Services", "Autres services", "Commentaire"];
+  const body = responses.map((row) => `
+    <tr>
+      <td>${escapeHtml(row.createdAt)}</td>
+      <td>${escapeHtml(row.pharmacyName)}</td>
+      <td>${escapeHtml(row.address)}</td>
+      <td>${escapeHtml(row.postalCode)}</td>
+      <td>${escapeHtml(row.city)}</td>
+      <td>${escapeHtml(row.ownerEmail || row.email || "")}</td>
+      <td>${escapeHtml(row.teamEmail)}</td>
+      <td>${escapeHtml(row.facebook)}</td>
+      <td>${escapeHtml(row.instagram)}</td>
+      <td>${escapeHtml(row.linkedin)}</td>
+      <td>${escapeHtml(row.website)}</td>
+      <td>${escapeHtml(formatProfileHours(row.hours || []))}</td>
+      <td>${escapeHtml((row.services || []).join(", "))}</td>
+      <td>${escapeHtml(row.otherServices)}</td>
+      <td>${escapeHtml(row.notes)}</td>
+    </tr>
+  `).join("");
+
+  const workbook = `
+    <html>
+      <head><meta charset="utf-8"></head>
+      <body>
+        <table border="1">
+          <thead><tr>${headings.map((heading) => `<th>${heading}</th>`).join("")}</tr></thead>
+          <tbody>${body}</tbody>
+        </table>
+      </body>
+    </html>
+  `;
+
+  const blob = new Blob([workbook], { type: "application/vnd.ms-excel;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `fiches-pharmacies-${new Date().toISOString().slice(0, 10)}.xls`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+  adminMessage.textContent = "Export Excel des fiches pharmacies généré.";
 }
 
 async function exportToExcel() {
@@ -1938,6 +2509,7 @@ pharmacyLoginForm.addEventListener("submit", async (event) => {
     pharmacyLoginMessage.textContent = "";
     await refreshPharmacyPollAnswers();
     await refreshPharmacyCampaignResponses();
+    await refreshPharmacyInfoResponses();
     renderCampaignPickers();
     showCampaignPicker();
     renderPharmacyAccess();
@@ -1979,6 +2551,7 @@ pharmacyPasswordChangeForm.addEventListener("submit", async (event) => {
     pharmacyLoginMessage.textContent = "";
     await refreshPharmacyPollAnswers();
     await refreshPharmacyCampaignResponses();
+    await refreshPharmacyInfoResponses();
     renderCampaignPickers();
     showCampaignPicker();
     renderPharmacyAccess();
@@ -2058,6 +2631,20 @@ pollCards.addEventListener("submit", async (event) => {
   await renderPollResults();
 });
 
+infoCards?.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-info-form]");
+  if (!button) return;
+  selectInfoForm(button.dataset.infoForm);
+});
+
+infoCards?.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter" && event.key !== " ") return;
+  const card = event.target.closest("[data-info-form]");
+  if (!card) return;
+  event.preventDefault();
+  selectInfoForm(card.dataset.infoForm);
+});
+
 pollOptions.addEventListener("change", updatePollChoiceSelection);
 
 adminCampaignCards.addEventListener("click", async (event) => {
@@ -2133,6 +2720,47 @@ adminPollCards.addEventListener("click", async (event) => {
   if (!button) return;
   await selectAdminPoll(button.dataset.adminPoll);
 });
+
+adminInfoCards?.addEventListener("click", async (event) => {
+  const deleteButton = event.target.closest("[data-delete-info]");
+  if (deleteButton) {
+    const infoForm = infoForms.find((item) => item.id === deleteButton.dataset.deleteInfo);
+    if (!infoForm) return;
+    const confirmed = confirm(`Supprimer définitivement la demande "${infoForm.title}" ?`);
+    if (!confirmed) return;
+    infoForms = infoForms.filter((item) => item.id !== infoForm.id);
+    infoResponses = infoResponses.filter((item) => item.formId !== infoForm.id);
+    infoForms = await saveInfoForms(infoForms);
+    infoResponses = await saveInfoResponses(infoResponses);
+    if (selectedAdminInfoForm?.id === infoForm.id) selectedAdminInfoForm = null;
+    renderCampaignPickers();
+    adminMessage.textContent = `Demande "${infoForm.title}" supprimée.`;
+    return;
+  }
+
+  const toggleButton = event.target.closest("[data-toggle-closed-info]");
+  if (toggleButton) {
+    const infoForm = infoForms.find((item) => item.id === toggleButton.dataset.toggleClosedInfo);
+    if (!infoForm) return;
+    const nextClosed = !infoForm.closed;
+    const confirmed = confirm(nextClosed
+      ? `Clôturer la demande "${infoForm.title}" ?\n\nElle ne sera plus visible par les pharmacies.`
+      : `Rouvrir la demande "${infoForm.title}" ?\n\nElle redeviendra visible par les pharmacies.`);
+    if (!confirmed) return;
+    infoForm.closed = nextClosed;
+    infoForms = infoForms.map((item) => item.id === infoForm.id ? infoForm : item);
+    infoForms = await saveInfoForms(infoForms);
+    renderCampaignPickers();
+    adminMessage.textContent = nextClosed ? `Demande "${infoForm.title}" clôturée.` : `Demande "${infoForm.title}" rouverte.`;
+    return;
+  }
+
+  const button = event.target.closest("[data-admin-info]");
+  if (!button) return;
+  await selectAdminInfoForm(button.dataset.adminInfo);
+});
+
+backToAdminInfoBtn?.addEventListener("click", showAdminCampaignPicker);
 
 backToCampaignsBtn.addEventListener("click", showCampaignPicker);
 backToPollsBtn.addEventListener("click", showCampaignPicker);
@@ -2301,6 +2929,37 @@ createPollForm.addEventListener("submit", async (event) => {
   adminMessage.textContent = `Sondage "${question}" créé.`;
 });
 
+createInfoForm?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const title = newInfoTitle.value.trim();
+  if (!title) {
+    adminMessage.textContent = "Indiquez le titre de la mise à jour fiche pharmacie.";
+    return;
+  }
+
+  const baseId = slugify(title);
+  let id = baseId;
+  let index = 2;
+  while (infoForms.some((infoForm) => infoForm.id === id)) {
+    id = `${baseId}-${index}`;
+    index += 1;
+  }
+
+  const infoForm = {
+    id,
+    title,
+    type: "Fiche pharmacie",
+    intro: newInfoIntro.value.trim() || "Merci de noter vos coordonnées, réseaux sociaux, horaires et services proposés.",
+    closed: false
+  };
+
+  infoForms = [...infoForms, infoForm];
+  infoForms = await saveInfoForms(infoForms);
+  createInfoForm.reset();
+  showAdminSection("info-forms");
+  adminMessage.textContent = `Demande "${title}" créée en aperçu local.`;
+});
+
 createPharmacyForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const name = newPharmacyName.value.trim();
@@ -2442,6 +3101,82 @@ pollForm.addEventListener("submit", async (event) => {
   showSuccessScreen();
 });
 
+profileUpdateForm?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (!selectedInfoForm) {
+    profileMessage.textContent = "Veuillez choisir une mise à jour avant d'envoyer votre fiche.";
+    return;
+  }
+
+  const pharmacyName = profilePharmacyName.value.trim();
+  if (!pharmacyName) {
+    profileMessage.textContent = "Le nom de la pharmacie est obligatoire.";
+    return;
+  }
+
+  const response = {
+    id: createId(),
+    formId: selectedInfoForm.id,
+    formTitle: selectedInfoForm.title,
+    createdAt: new Date().toLocaleString("fr-FR"),
+    pharmacyId: currentPharmacy?.id || "",
+    pharmacyName,
+    address: profileAddress.value.trim(),
+    postalCode: profilePostalCode.value.trim(),
+    city: profileCity.value.trim(),
+    ownerEmail: profileOwnerEmail.value.trim(),
+    teamEmail: profileTeamEmail.value.trim(),
+    facebook: profileFacebook.value.trim(),
+    instagram: profileInstagram.value.trim(),
+    linkedin: profileLinkedin.value.trim(),
+    website: profileWebsite.value.trim(),
+    hours: collectProfileHours(),
+    services: collectProfileServices(),
+    otherServices: profileOtherServices.value.trim(),
+    notes: profileNotes.value.trim()
+  };
+
+  let savedResponse;
+  try {
+    savedResponse = await appendInfoResponse(response);
+  } catch (error) {
+    profileMessage.textContent = error.message || "Enregistrement impossible. Merci de réessayer.";
+    return;
+  }
+
+  infoResponses = infoResponses
+    .filter((item) => !(item.formId === response.formId && currentPharmacy && responseMatchesPharmacy(item, currentPharmacy)))
+    .concat(savedResponse || response);
+  saveLocalInfoResponses(infoResponses);
+  renderCampaignPickers();
+  showSuccessScreen();
+});
+
+backToInfoFormsBtn?.addEventListener("click", showCampaignPicker);
+
+profileHoursGrid?.addEventListener("change", (event) => {
+  const row = event.target.closest("[data-hours-day]");
+  if (!row) return;
+
+  if (event.target.matches("[data-hours-split]")) {
+    const splitBlock = row.querySelector(".split-hours");
+    splitBlock.hidden = !event.target.checked;
+  }
+
+  if (event.target.matches("[data-hours-closed]")) {
+    const disabled = event.target.checked;
+    row.querySelectorAll("input[type='time'], [data-hours-split]").forEach((input) => {
+      input.disabled = disabled;
+      if (disabled) {
+        input.value = "";
+        if (input.matches("[data-hours-split]")) input.checked = false;
+      }
+    });
+    const splitBlock = row.querySelector(".split-hours");
+    if (splitBlock) splitBlock.hidden = true;
+  }
+});
+
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
   if (!selectedCampaign) {
@@ -2525,6 +3260,8 @@ adminLogin.addEventListener("submit", async (event) => {
   adminContent.hidden = false;
   adminContent.classList.remove("locked");
   pharmacies = await getPharmacies(true);
+  infoForms = await getInfoForms();
+  infoResponses = await getInfoResponses();
   renderPharmacyAccounts();
   await showAdminCampaignPicker();
   adminMessage.textContent = "Accès administrateur ouvert.";
@@ -2532,6 +3269,7 @@ adminLogin.addEventListener("submit", async (event) => {
 
 exportExcelBtn.addEventListener("click", exportToExcel);
 exportPollExcelBtn.addEventListener("click", exportPollToExcel);
+exportInfoExcelBtn?.addEventListener("click", exportInfoToExcel);
 
 responsesTable.addEventListener("click", async (event) => {
   const button = event.target.closest("[data-delete-response]");
@@ -2557,6 +3295,8 @@ quantitySummaryBtn.addEventListener("click", () => {
 async function init() {
   campaigns = await getCampaigns();
   polls = await getPolls();
+  infoForms = await getInfoForms();
+  infoResponses = localInfoResponses();
   const pharmacyInfo = await getPharmacies(false);
   if (pharmacyInfo && typeof pharmacyInfo.count === "number" && pharmacyInfo.count === 0) {
     pharmacies = [];
@@ -2567,6 +3307,7 @@ async function init() {
   }
   await refreshPharmacyPollAnswers();
   await refreshPharmacyCampaignResponses();
+  await refreshPharmacyInfoResponses();
   renderCampaignPickers();
   showCampaignPicker();
   await showAdminCampaignPicker();
