@@ -399,6 +399,38 @@ main::before {
   font-weight: 800;
 }
 
+.admin-reset-alert {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: center;
+  width: min(980px, 100%);
+  margin: 0 auto 18px;
+  padding: 16px;
+  color: #102019;
+  background: linear-gradient(135deg, #fff7e6, #ffffff);
+  border: 2px solid #f0b84d;
+  border-left: 8px solid #f09a00;
+  border-radius: 12px;
+  box-shadow: 0 14px 34px rgba(122, 63, 0, .13);
+}
+
+.admin-reset-alert[hidden] {
+  display: none !important;
+}
+
+.admin-reset-alert strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #7a3f00;
+  font-size: 18px;
+}
+
+.admin-reset-alert p {
+  margin: 0;
+  color: #516171;
+}
+
 .request-badge {
   display: inline-flex;
   margin-bottom: 4px;
@@ -2312,6 +2344,7 @@ main,
   .upload-actions,
   .table-toolbar,
   .section-head,
+  .admin-reset-alert,
   .pharmacy-session-bar {
     width: 100%;
   }
@@ -2319,6 +2352,7 @@ main,
   .form-actions > *,
   .toolbar-actions > *,
   .upload-actions > *,
+  .admin-reset-alert > *,
   .pharmacy-session-bar > button,
   .admin-dashboard-btn,
   .primary-btn,
@@ -2331,6 +2365,11 @@ main,
 
   .admin-dashboard-btn {
     flex: 1 1 100%;
+  }
+
+  .admin-reset-alert {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .campaign-card h3 {

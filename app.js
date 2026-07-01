@@ -72,6 +72,7 @@ const adminPanel = document.querySelector(".admin-panel");
 const adminContent = document.querySelector("#adminContent");
 const adminCampaignPicker = document.querySelector("#adminCampaignPicker");
 const adminDashboardNav = document.querySelector("#adminDashboardNav");
+const adminResetAlert = document.querySelector("#adminResetAlert");
 const adminCampaignTitle = document.querySelector("#adminCampaignTitle");
 const adminSectionIntro = document.querySelector("#adminSectionIntro");
 const adminCampaignCards = document.querySelector("#adminCampaignCards");
@@ -1127,6 +1128,30 @@ function applyCurrentPharmacyToForms() {
   profilePharmacyName.readOnly = true;
 }
 
+function renderAdminResetAlert() {
+  if (!adminResetAlert) return;
+  const requests = pharmacies.filter((pharmacy) => pharmacy.passwordResetRequested);
+  adminResetAlert.hidden = requests.length === 0;
+  if (!requests.length) {
+    adminResetAlert.innerHTML = "";
+    return;
+  }
+
+  const names = requests
+    .map((pharmacy) => pharmacy.name)
+    .filter(Boolean)
+    .slice(0, 4)
+    .join(", ");
+  const extra = requests.length > 4 ? `, +${requests.length - 4}` : "";
+  adminResetAlert.innerHTML = `
+    <div>
+      <strong>${requests.length} demande${requests.length > 1 ? "s" : ""} de réinitialisation de mot de passe</strong>
+      <p>${escapeHtml(names)}${escapeHtml(extra)}</p>
+    </div>
+    <button class="primary-btn small-btn" type="button" data-open-reset-requests>Voir les demandes</button>
+  `;
+}
+
 function renderPharmacyAccounts() {
   if (!pharmacyAccountsList) return;
   if (!pharmacies.length) {
@@ -1898,6 +1923,7 @@ async function showAdminCampaignPicker() {
   adminInfoDetail.hidden = true;
   await refreshPollResponseCounts();
   if (adminUnlocked) infoResponses = await getInfoResponses();
+  renderAdminResetAlert();
   showAdminSection(activeAdminSection);
 }
 
@@ -2459,6 +2485,13 @@ adminDashboardNav?.addEventListener("click", (event) => {
   showAdminSection(button.dataset.adminSection);
 });
 
+adminResetAlert?.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-open-reset-requests]");
+  if (!button) return;
+  showAdminSection("pharmacies");
+  pharmacyAccountsList?.scrollIntoView({ behavior: "smooth", block: "start" });
+});
+
 togglePharmacyPassword?.addEventListener("click", () => {
   const isPassword = pharmacyPassword.type === "password";
   pharmacyPassword.type = isPassword ? "text" : "password";
@@ -2989,6 +3022,7 @@ createPharmacyForm.addEventListener("submit", async (event) => {
   pharmacies = await savePharmacies([...pharmacies, pharmacy]);
   newPharmacyName.value = "";
   renderPharmacyAccounts();
+  renderAdminResetAlert();
   renderPharmacyAccess();
   showAdminSection("pharmacies");
   adminMessage.textContent = `Accès créé pour ${name}. Mot de passe : ${pharmacy.password}`;
@@ -3010,6 +3044,7 @@ pharmacyAccountsList.addEventListener("click", async (event) => {
       passwordResetRequestedAt: ""
     } : item));
     renderPharmacyAccounts();
+    renderAdminResetAlert();
     adminMessage.textContent = `Mot de passe réinitialisé pour ${pharmacy.name} : ${newPassword}`;
     return;
   }
@@ -3026,6 +3061,7 @@ pharmacyAccountsList.addEventListener("click", async (event) => {
     localStorage.removeItem(PHARMACY_SESSION_KEY);
   }
   renderPharmacyAccounts();
+  renderAdminResetAlert();
   renderPharmacyAccess();
   adminMessage.textContent = `Accès supprimé pour ${pharmacy.name}.`;
 });
@@ -3273,6 +3309,7 @@ adminLogin.addEventListener("submit", async (event) => {
   infoForms = await getInfoForms();
   infoResponses = await getInfoResponses();
   renderPharmacyAccounts();
+  renderAdminResetAlert();
   await showAdminCampaignPicker();
   adminMessage.textContent = "Accès administrateur ouvert.";
 });
