@@ -49,6 +49,7 @@ const profilePharmacyName = document.querySelector("#profilePharmacyName");
 const profileAddress = document.querySelector("#profileAddress");
 const profilePostalCode = document.querySelector("#profilePostalCode");
 const profileCity = document.querySelector("#profileCity");
+const profilePhone = document.querySelector("#profilePhone");
 const profileOwnerEmail = document.querySelector("#profileOwnerEmail");
 const profileTeamEmail = document.querySelector("#profileTeamEmail");
 const profileFacebook = document.querySelector("#profileFacebook");
@@ -1764,6 +1765,7 @@ function selectInfoForm(infoFormId) {
   profileAddress.value = previousResponse?.address || "";
   profilePostalCode.value = previousResponse?.postalCode || "";
   profileCity.value = previousResponse?.city || "";
+  profilePhone.value = previousResponse?.phone || "";
   profileOwnerEmail.value = previousResponse?.ownerEmail || previousResponse?.email || "";
   profileTeamEmail.value = previousResponse?.teamEmail || "";
   profileFacebook.value = previousResponse?.facebook || "";
@@ -2188,6 +2190,7 @@ function renderInfoResults() {
         <td>
           ${escapeHtml(response.address || "-")}<br>
           ${escapeHtml(response.postalCode || "")} ${escapeHtml(response.city || "")}<br>
+          Téléphone : <strong>${escapeHtml(response.phone || "-")}</strong><br>
           Titulaire : <strong>${escapeHtml(response.ownerEmail || response.email || "-")}</strong><br>
           Équipe : <strong>${escapeHtml(response.teamEmail || "-")}</strong>
         </td>
@@ -2272,7 +2275,7 @@ function exportInfoToExcel() {
     return;
   }
 
-  const headings = ["Date", "Pharmacie", "Adresse", "Code postal", "Ville", "Mail titulaire", "Mail équipe", "Facebook", "Instagram", "LinkedIn", "TikTok", "Site internet", "Horaires", "Services", "Autres services", "Commentaire"];
+  const headings = ["Date", "Pharmacie", "Adresse", "Code postal", "Ville", "Téléphone", "Mail titulaire", "Mail équipe", "Facebook", "Instagram", "LinkedIn", "TikTok", "Site internet", "Horaires", "Services", "Autres services", "Commentaire"];
   const body = responses.map((row) => `
     <tr>
       <td>${escapeHtml(row.createdAt)}</td>
@@ -2280,6 +2283,7 @@ function exportInfoToExcel() {
       <td>${escapeHtml(row.address)}</td>
       <td>${escapeHtml(row.postalCode)}</td>
       <td>${escapeHtml(row.city)}</td>
+      <td>${escapeHtml(row.phone)}</td>
       <td>${escapeHtml(row.ownerEmail || row.email || "")}</td>
       <td>${escapeHtml(row.teamEmail)}</td>
       <td>${escapeHtml(row.facebook)}</td>
@@ -3128,6 +3132,7 @@ profileUpdateForm?.addEventListener("submit", async (event) => {
     address: profileAddress.value.trim(),
     postalCode: profilePostalCode.value.trim(),
     city: profileCity.value.trim(),
+    phone: profilePhone.value.trim(),
     ownerEmail: profileOwnerEmail.value.trim(),
     teamEmail: profileTeamEmail.value.trim(),
     facebook: profileFacebook.value.trim(),

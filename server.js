@@ -288,6 +288,7 @@ function normalizeInfoResponse(item) {
     address: String(item.address || "").trim(),
     postalCode: String(item.postalCode || "").trim(),
     city: String(item.city || "").trim(),
+    phone: String(item.phone || "").trim(),
     ownerEmail: String(item.ownerEmail || item.email || "").trim(),
     teamEmail: String(item.teamEmail || "").trim(),
     facebook: String(item.facebook || "").trim(),
@@ -443,7 +444,7 @@ function formatProfileHours(hours = []) {
 }
 
 function sendInfoExcel(response, responses) {
-  const headings = ["Date", "Modifié le", "Pharmacie", "Adresse", "Code postal", "Ville", "Mail titulaire", "Mail équipe", "Facebook", "Instagram", "LinkedIn", "TikTok", "Site internet", "Horaires", "Services", "Autres services", "Commentaire"];
+  const headings = ["Date", "Modifié le", "Pharmacie", "Adresse", "Code postal", "Ville", "Téléphone", "Mail titulaire", "Mail équipe", "Facebook", "Instagram", "LinkedIn", "TikTok", "Site internet", "Horaires", "Services", "Autres services", "Commentaire"];
   const rows = latestInfoResponses(responses).map((row) => `
     <tr>
       <td>${escapeHtml(row.createdAt)}</td>
@@ -452,6 +453,7 @@ function sendInfoExcel(response, responses) {
       <td>${escapeHtml(row.address)}</td>
       <td>${escapeHtml(row.postalCode)}</td>
       <td>${escapeHtml(row.city)}</td>
+      <td>${escapeHtml(row.phone)}</td>
       <td>${escapeHtml(row.ownerEmail)}</td>
       <td>${escapeHtml(row.teamEmail)}</td>
       <td>${escapeHtml(row.facebook)}</td>
