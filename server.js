@@ -293,6 +293,7 @@ function normalizeInfoResponse(item) {
     facebook: String(item.facebook || "").trim(),
     instagram: String(item.instagram || "").trim(),
     linkedin: String(item.linkedin || "").trim(),
+    tiktok: String(item.tiktok || "").trim(),
     website: String(item.website || "").trim(),
     hours: normalizeProfileHours(item.hours),
     services: Array.isArray(item.services) ? item.services.map((service) => String(service || "").trim()).filter(Boolean) : [],
@@ -442,7 +443,7 @@ function formatProfileHours(hours = []) {
 }
 
 function sendInfoExcel(response, responses) {
-  const headings = ["Date", "Modifié le", "Pharmacie", "Adresse", "Code postal", "Ville", "Mail titulaire", "Mail équipe", "Facebook", "Instagram", "LinkedIn", "Site internet", "Horaires", "Services", "Autres services", "Commentaire"];
+  const headings = ["Date", "Modifié le", "Pharmacie", "Adresse", "Code postal", "Ville", "Mail titulaire", "Mail équipe", "Facebook", "Instagram", "LinkedIn", "TikTok", "Site internet", "Horaires", "Services", "Autres services", "Commentaire"];
   const rows = latestInfoResponses(responses).map((row) => `
     <tr>
       <td>${escapeHtml(row.createdAt)}</td>
@@ -456,6 +457,7 @@ function sendInfoExcel(response, responses) {
       <td>${escapeHtml(row.facebook)}</td>
       <td>${escapeHtml(row.instagram)}</td>
       <td>${escapeHtml(row.linkedin)}</td>
+      <td>${escapeHtml(row.tiktok)}</td>
       <td>${escapeHtml(row.website)}</td>
       <td>${escapeHtml(formatProfileHours(row.hours))}</td>
       <td>${escapeHtml((row.services || []).join(", "))}</td>

@@ -54,6 +54,7 @@ const profileTeamEmail = document.querySelector("#profileTeamEmail");
 const profileFacebook = document.querySelector("#profileFacebook");
 const profileInstagram = document.querySelector("#profileInstagram");
 const profileLinkedin = document.querySelector("#profileLinkedin");
+const profileTiktok = document.querySelector("#profileTiktok");
 const profileWebsite = document.querySelector("#profileWebsite");
 const profileHoursGrid = document.querySelector("#profileHoursGrid");
 const profileServicesGrid = document.querySelector("#profileServicesGrid");
@@ -1768,6 +1769,7 @@ function selectInfoForm(infoFormId) {
   profileFacebook.value = previousResponse?.facebook || "";
   profileInstagram.value = previousResponse?.instagram || "";
   profileLinkedin.value = previousResponse?.linkedin || "";
+  profileTiktok.value = previousResponse?.tiktok || "";
   profileWebsite.value = previousResponse?.website || "";
   renderProfileHoursFields(previousResponse?.hours || []);
   renderProfileServiceFields(previousResponse?.services || []);
@@ -2193,6 +2195,7 @@ function renderInfoResults() {
           Facebook : ${escapeHtml(response.facebook || "-")}<br>
           Instagram : ${escapeHtml(response.instagram || "-")}<br>
           LinkedIn : ${escapeHtml(response.linkedin || "-")}<br>
+          TikTok : ${escapeHtml(response.tiktok || "-")}<br>
           Site : ${escapeHtml(response.website || "-")}
         </td>
         <td>${escapeHtml(formatProfileHours(response.hours || []) || "-").replaceAll("\n", "<br>")}</td>
@@ -2269,7 +2272,7 @@ function exportInfoToExcel() {
     return;
   }
 
-  const headings = ["Date", "Pharmacie", "Adresse", "Code postal", "Ville", "Mail titulaire", "Mail équipe", "Facebook", "Instagram", "LinkedIn", "Site internet", "Horaires", "Services", "Autres services", "Commentaire"];
+  const headings = ["Date", "Pharmacie", "Adresse", "Code postal", "Ville", "Mail titulaire", "Mail équipe", "Facebook", "Instagram", "LinkedIn", "TikTok", "Site internet", "Horaires", "Services", "Autres services", "Commentaire"];
   const body = responses.map((row) => `
     <tr>
       <td>${escapeHtml(row.createdAt)}</td>
@@ -2282,6 +2285,7 @@ function exportInfoToExcel() {
       <td>${escapeHtml(row.facebook)}</td>
       <td>${escapeHtml(row.instagram)}</td>
       <td>${escapeHtml(row.linkedin)}</td>
+      <td>${escapeHtml(row.tiktok)}</td>
       <td>${escapeHtml(row.website)}</td>
       <td>${escapeHtml(formatProfileHours(row.hours || []))}</td>
       <td>${escapeHtml((row.services || []).join(", "))}</td>
@@ -3129,6 +3133,7 @@ profileUpdateForm?.addEventListener("submit", async (event) => {
     facebook: profileFacebook.value.trim(),
     instagram: profileInstagram.value.trim(),
     linkedin: profileLinkedin.value.trim(),
+    tiktok: profileTiktok.value.trim(),
     website: profileWebsite.value.trim(),
     hours: collectProfileHours(),
     services: collectProfileServices(),
