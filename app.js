@@ -176,11 +176,7 @@ const ADMIN_SECTIONS = {
   },
   "new-poll": {
     title: "Créer un sondage",
-    intro: "Renseignez la question, les réponses possibles et le champ libre si nécessaire."
-  },
-  "new-info": {
-    title: "Créer une mise à jour fiche pharmacie",
-    intro: "Préparez une demande structurée pour récupérer les coordonnées, horaires, réseaux sociaux et services."
+    intro: "Créez un sondage rapide ou une demande de mise à jour de fiche pharmacie."
   },
   campaigns: {
     title: "Campagnes en cours",
@@ -188,11 +184,7 @@ const ADMIN_SECTIONS = {
   },
   polls: {
     title: "Sondages en cours",
-    intro: "Consultez les sondages actifs et les réponses reçues."
-  },
-  "info-forms": {
-    title: "Fiches pharmacies en cours",
-    intro: "Suivez les mises à jour de données transmises par les pharmacies."
+    intro: "Consultez les sondages actifs, les fiches pharmacies et les réponses reçues."
   },
   pharmacies: {
     title: "Accès pharmacies",
@@ -1650,14 +1642,14 @@ function showAdminSection(section) {
   const closedActions = showClosedCampaignsBtn?.closest(".closed-campaign-actions");
   const showCampaignList = activeAdminSection === "campaigns" || activeAdminSection === "archives";
   const showPollList = activeAdminSection === "polls" || activeAdminSection === "archives";
-  const showInfoList = activeAdminSection === "info-forms" || activeAdminSection === "archives";
+  const showInfoList = activeAdminSection === "polls" || activeAdminSection === "archives";
   const showPharmacies = activeAdminSection === "pharmacies";
 
   adminCampaignTitle.textContent = sectionCopy.title;
   adminSectionIntro.textContent = sectionCopy.intro;
   createCampaignForm.hidden = activeAdminSection !== "new-campaign";
   createPollForm.hidden = activeAdminSection !== "new-poll";
-  createInfoForm.hidden = activeAdminSection !== "new-info";
+  createInfoForm.hidden = activeAdminSection !== "new-poll";
   createPharmacyForm.hidden = !showPharmacies;
   pharmacyAccountsList.hidden = !showPharmacies;
   adminCampaignCards.hidden = !showCampaignList;
@@ -2997,8 +2989,8 @@ createInfoForm?.addEventListener("submit", async (event) => {
   infoForms = [...infoForms, infoForm];
   infoForms = await saveInfoForms(infoForms);
   createInfoForm.reset();
-  showAdminSection("info-forms");
-  adminMessage.textContent = `Demande "${title}" créée en aperçu local.`;
+  showAdminSection("polls");
+  adminMessage.textContent = `Demande "${title}" créée dans les sondages.`;
 });
 
 createPharmacyForm.addEventListener("submit", async (event) => {
