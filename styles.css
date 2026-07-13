@@ -283,6 +283,101 @@ main::before {
   color: var(--muted);
 }
 
+.validation-grid {
+  grid-template-columns: minmax(0, 1fr);
+  margin-top: 14px;
+}
+
+.bat-card h3,
+.bat-card p {
+  overflow-wrap: anywhere;
+}
+
+.bat-card {
+  min-height: auto;
+}
+
+.bat-card h3 {
+  margin-top: 0;
+}
+
+.bat-card .campaign-foot {
+  align-items: center;
+  gap: 12px;
+}
+
+.bat-card .campaign-actions {
+  flex-wrap: wrap;
+}
+
+.validation-extra-message {
+  margin-top: 10px;
+  padding: 10px 12px;
+  background: var(--green-soft);
+  border-left: 4px solid var(--green);
+  border-radius: 8px;
+  color: var(--green-dark);
+  font-weight: 700;
+}
+
+.document-preview-link {
+  display: block;
+  margin-top: 14px;
+  padding: 12px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  text-align: center;
+}
+
+.document-preview-link img {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  max-height: 76vh;
+  margin: 0 auto;
+  object-fit: contain;
+}
+
+#batDocumentPdfPreview {
+  display: block;
+  width: 100%;
+  min-height: 640px;
+  border: 0;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.bat-validation-shell .radio-list {
+  display: grid;
+  gap: 10px;
+}
+
+.bat-validation-shell .radio-list label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-weight: 800;
+}
+
+.mini-validation-editor {
+  margin: 12px 0 16px;
+  padding: 14px;
+}
+
+.mini-validation-editor textarea {
+  width: 100%;
+  margin-top: 8px;
+}
+
+.mini-validation-editor .ghost-btn {
+  margin-top: 10px;
+}
+
 #campaignPicker[hidden],
 #requestForm[hidden],
 #responseSuccess[hidden],
@@ -2120,6 +2215,22 @@ tbody tr:hover {
   color: #8a4b00;
 }
 
+.collapsible-toolbar {
+  align-items: center;
+}
+
+.table-wrap.is-collapsed {
+  display: none;
+}
+
+.correction-note {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.35;
+}
+
 .overview-box h3 {
   margin: 0 0 10px;
   font-size: 15px;
@@ -2392,8 +2503,13 @@ main,
   .image-preview-modal,
   .poll-shell,
   .profile-update-shell,
+  .bat-validation-shell,
   .success-screen {
     padding: 12px;
+  }
+
+  .document-preview-link img {
+    max-height: 62vh;
   }
 
   .image-preview-panel {

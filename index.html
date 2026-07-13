@@ -84,6 +84,7 @@
           <h2>Mise à jour des informations pharmacie</h2>
           <p>Complétez ou corrigez les coordonnées, horaires, réseaux sociaux et services proposés par votre pharmacie.</p>
           <div id="infoCards" class="campaign-grid" aria-live="polite"></div>
+          <div id="batCards" class="campaign-grid validation-grid" aria-live="polite"></div>
         </div>
       </section>
 
@@ -154,6 +155,55 @@
           <button class="text-btn" type="reset">Réinitialiser</button>
         </div>
         <p id="formMessage" class="status-message" role="status"></p>
+      </form>
+
+      <form id="batValidationForm" class="form-shell bat-validation-shell" hidden>
+        <button id="backToBatListBtn" class="back-strong-btn" type="button">← Retour au menu</button>
+        <section class="question-block profile-intro-block">
+          <span class="poll-kicker">Validation</span>
+          <h2 id="batFormTitle">Validation en attente</h2>
+          <p id="batFormIntro">Validation et contrôle.</p>
+        </section>
+        <section class="question-block bat-pdf-block">
+          <div class="section-head">
+            <div>
+              <span class="field-title" id="batPdfTitle">Votre document</span>
+              <p>Ce document est rattaché à votre pharmacie.</p>
+            </div>
+            <a id="batPdfOpenLink" class="ghost-btn" href="#" target="_blank" rel="noopener">Ouvrir le PDF</a>
+          </div>
+          <div id="batDocumentPreviewPanel" class="document-preview-link">
+            <img id="batDocumentPreview" alt="Aperçu du document à valider">
+            <object id="batDocumentPdfPreview" type="application/pdf" hidden>
+              <p>Prévisualisation PDF indisponible. Utilisez le bouton Ouvrir le PDF.</p>
+            </object>
+          </div>
+        </section>
+        <section class="question-block">
+          <label for="batPharmacyName">Nom de la pharmacie <span aria-hidden="true">*</span></label>
+          <input id="batPharmacyName" type="text" autocomplete="organization" required>
+        </section>
+        <section class="question-block">
+          <span class="field-title">Votre validation <span aria-hidden="true">*</span></span>
+          <div class="radio-list">
+            <label>
+              <input type="radio" name="batStatus" value="Validé" required>
+              <span>Validé</span>
+            </label>
+            <label>
+              <input type="radio" name="batStatus" value="Correction demandée" required>
+              <span>Correction demandée</span>
+            </label>
+          </div>
+        </section>
+        <section class="question-block">
+          <label for="batComment">Commentaire ou correction à apporter</label>
+          <textarea id="batComment" rows="4" placeholder="Indiquez précisément la correction demandée si besoin"></textarea>
+        </section>
+        <div class="form-actions">
+          <button class="primary-btn" type="submit">Envoyer la validation</button>
+        </div>
+        <p id="batMessage" class="status-message" role="status"></p>
       </form>
 
       <form id="pollForm" class="form-shell poll-shell" hidden>
@@ -289,7 +339,9 @@
             <div id="adminDashboardNav" class="admin-dashboard-nav" aria-label="Menu administrateur">
               <button class="admin-dashboard-btn active" type="button" data-admin-section="new-campaign">Nouvelle campagne précommande</button>
               <button class="admin-dashboard-btn" type="button" data-admin-section="new-poll">Nouveau sondage</button>
+              <button class="admin-dashboard-btn" type="button" data-admin-section="new-validation">Nouvelle validation</button>
               <button class="admin-dashboard-btn" type="button" data-admin-section="campaigns">Campagnes en cours</button>
+              <button class="admin-dashboard-btn" type="button" data-admin-section="bat">Validations en attente</button>
               <button class="admin-dashboard-btn" type="button" data-admin-section="polls">Sondages en cours</button>
               <button class="admin-dashboard-btn" type="button" data-admin-section="pharmacies">Pharmacies</button>
               <button class="admin-dashboard-btn" type="button" data-admin-section="archives">Archivés</button>
@@ -322,6 +374,17 @@
               <textarea id="newInfoIntro" rows="3" placeholder="Merci de noter vos coordonnées, réseaux sociaux, horaires et services proposés."></textarea>
               <button class="primary-btn" type="submit">Créer la demande</button>
             </form>
+            <form id="createValidationForm" class="create-campaign-form">
+              <label for="newValidationTitle">Nouvelle validation</label>
+              <input id="newValidationTitle" type="text" placeholder="Ex. Validation calendrier, contrôle cadeaux, validation affiche..." autocomplete="off">
+              <label for="batAdminMessage">Message visible par la pharmacie</label>
+              <textarea id="batAdminMessage" rows="3" placeholder="Ex. Merci de contrôler votre document et de valider ou demander une correction."></textarea>
+              <label for="validationDocumentInput">Documents à rattacher aux pharmacies</label>
+              <input id="validationDocumentInput" type="file" accept=".pdf,image/*" multiple>
+              <p class="form-help">Le nom de la pharmacie doit apparaître dans le nom du fichier, ex. DU GOSIER.pdf.</p>
+              <p id="validationImportMessage" class="status-message" role="status"></p>
+              <button id="saveBatAdminMessageBtn" class="primary-btn" type="submit">Créer la validation</button>
+            </form>
             <form id="createPharmacyForm" class="create-campaign-form">
               <label for="newPharmacyName">Nouvel accès pharmacie</label>
               <div class="create-campaign-row">
@@ -335,7 +398,11 @@
               <button id="showClosedCampaignsBtn" class="ghost-btn" type="button">Campagnes clôturées</button>
             </div>
             <div id="adminCampaignCards" class="campaign-grid" aria-live="polite"></div>
-            <div class="poll-picker-block">
+            <div class="poll-picker-block" id="adminBatBlock">
+              <h2>Validations en attente</h2>
+              <div id="adminBatCards" class="campaign-grid" aria-live="polite"></div>
+            </div>
+            <div class="poll-picker-block" id="adminPollBlock">
               <h2>Sondages</h2>
               <div id="adminPollCards" class="campaign-grid" aria-live="polite"></div>
             </div>
@@ -564,6 +631,89 @@
                   <tr>
                     <td colspan="4" class="empty-state">Aucune réponse enregistrée pour le moment.</td>
                   </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div id="adminBatDetail" hidden>
+            <button id="backToAdminBatBtn" class="back-strong-btn" type="button">← Retour validations</button>
+            <div class="selected-campaign-title">
+              <p class="eyebrow">Validation</p>
+              <h2>Validation en attente</h2>
+              <div class="campaign-actions validation-detail-actions">
+                <button class="ghost-btn" type="button" data-toggle-validation-archive>Archiver</button>
+                <button class="delete-campaign-btn" type="button" title="Supprimer la validation" aria-label="Supprimer la validation" data-delete-validation>&#128465;</button>
+              </div>
+            </div>
+            <section class="admin-upload validation-upload">
+              <h2>Importer des documents à valider</h2>
+              <p>Ajoutez les PDF ou images. Le rattachement se fait automatiquement si le nom de la pharmacie apparaît dans le nom du fichier.</p>
+              <div class="upload-actions">
+                <input id="adminValidationDocumentInput" type="file" accept=".pdf,image/*" multiple>
+              </div>
+              <p id="adminValidationImportMessage" class="status-message" role="status"></p>
+            </section>
+            <div id="batResultsSummary" class="metrics"></div>
+            <div class="table-toolbar">
+              <div>
+                <h2>Documents en attente validation</h2>
+                <p>Liste complète des documents liés aux pharmacies.</p>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Pharmacie</th>
+                    <th>Statut</th>
+                    <th>Document</th>
+                  </tr>
+                </thead>
+                <tbody id="batDocumentsTable">
+                  <tr><td colspan="3" class="empty-state">Aucun document disponible.</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <section class="admin-overview poll-overview">
+              <div>
+                <h2>Vue d'ensemble</h2>
+                <p>Suivi des pharmacies ayant contrôlé leur document.</p>
+              </div>
+              <div class="overview-grid three-columns">
+                <div class="overview-box">
+                  <h3>Validations validées</h3>
+                  <ul id="batValidatedPharmacies"><li>Aucune validation pour le moment.</li></ul>
+                </div>
+                <div class="overview-box alert-box">
+                  <h3>Corrections demandées</h3>
+                  <ul id="batCorrectionPharmacies"><li>Aucune correction pour le moment.</li></ul>
+                </div>
+                <div class="overview-box alert-box">
+                  <h3>N'ont pas répondu</h3>
+                  <ul id="batUnansweredPharmacies"><li>Aucune pharmacie à relancer.</li></ul>
+                </div>
+              </div>
+            </section>
+            <div class="table-toolbar">
+              <div>
+                <h2>Détail des validations</h2>
+                <p>Réponses reçues pour chaque document pharmacie.</p>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Pharmacie</th>
+                    <th>Statut</th>
+                    <th>Commentaire</th>
+                    <th>PDF</th>
+                  </tr>
+                </thead>
+                <tbody id="batResponsesTable">
+                  <tr><td colspan="5" class="empty-state">Aucune validation pour le moment.</td></tr>
                 </tbody>
               </table>
             </div>

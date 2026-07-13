@@ -14,12 +14,18 @@ const POLL_RESPONSES_FILE = path.join(DATA_DIR, "poll-responses.json");
 const INFO_FORMS_FILE = path.join(DATA_DIR, "info-forms.json");
 const INFO_RESPONSES_FILE = path.join(DATA_DIR, "info-responses.json");
 const PHARMACIES_FILE = path.join(DATA_DIR, "pharmacies.json");
+const VALIDATION_FILE = path.join(DATA_DIR, "validation.json");
+const VALIDATION_RESPONSES_FILE = path.join(DATA_DIR, "validation-responses.json");
 
 const MIME_TYPES = {
   ".html": "text/html; charset=utf-8",
   ".css": "text/css; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
-  ".json": "application/json; charset=utf-8"
+  ".json": "application/json; charset=utf-8",
+  ".pdf": "application/pdf",
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg"
 };
 
 function ensureDataFile() {
@@ -142,12 +148,71 @@ function writePharmacies(pharmacies) {
   fs.writeFileSync(PHARMACIES_FILE, JSON.stringify(pharmacies, null, 2), "utf8");
 }
 
+function defaultValidation() {
+  return {
+    title: "",
+    description: "",
+    archived: false,
+    documents: []
+  };
+}
+
+function normalizeValidationDocument(document, index = 0) {
+  return {
+    id: String(document.id || `validation-document-${Date.now()}-${index}`),
+    pharmacyId: String(document.pharmacyId || "").trim(),
+    pharmacyName: String(document.pharmacyName || "").trim(),
+    matched: Boolean(document.matched),
+    fileName: String(document.fileName || "").trim(),
+    fileType: String(document.fileType || "application/octet-stream").trim(),
+    url: String(document.url || ""),
+    thumbnailUrl: String(document.thumbnailUrl || ""),
+    importedAt: String(document.importedAt || new Date().toLocaleString("fr-FR"))
+  };
+}
+
+function readValidation() {
+  if (!fs.existsSync(VALIDATION_FILE)) return defaultValidation();
+  const validation = JSON.parse(fs.readFileSync(VALIDATION_FILE, "utf8") || "{}");
+  return {
+    ...defaultValidation(),
+    ...validation,
+    documents: Array.isArray(validation.documents)
+      ? validation.documents.map(normalizeValidationDocument).filter((document) => document.id && document.fileName && document.url)
+      : []
+  };
+}
+
+function writeValidation(validation) {
+  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+  const payload = {
+    title: String(validation.title || "").trim(),
+    description: String(validation.description || "").trim(),
+    archived: Boolean(validation.archived),
+    documents: Array.isArray(validation.documents)
+      ? validation.documents.map(normalizeValidationDocument).filter((document) => document.id && document.fileName && document.url)
+      : []
+  };
+  fs.writeFileSync(VALIDATION_FILE, JSON.stringify(payload, null, 2), "utf8");
+  return payload;
+}
+
+function readValidationResponses() {
+  if (!fs.existsSync(VALIDATION_RESPONSES_FILE)) return [];
+  return JSON.parse(fs.readFileSync(VALIDATION_RESPONSES_FILE, "utf8") || "[]");
+}
+
+function writeValidationResponses(responses) {
+  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+  fs.writeFileSync(VALIDATION_RESPONSES_FILE, JSON.stringify(responses, null, 2), "utf8");
+}
+
 function readBody(request) {
   return new Promise((resolve, reject) => {
     let body = "";
     request.on("data", (chunk) => {
       body += chunk;
-      if (body.length > 6_000_000) {
+      if (body.length > 80_000_000) {
         request.destroy();
         reject(new Error("Payload trop volumineux"));
       }
@@ -249,6 +314,43 @@ function latestInfoResponses(responses = []) {
   const byOwner = new Map();
   responses.forEach((item) => {
     const key = infoResponseOwnerKey(item, pharmacies);
+    const previous = byOwner.get(key);
+    if (!previous) {
+      byOwner.set(key, item);
+      return;
+    }
+
+    const previousDate = Date.parse(previous.updatedAt || previous.createdAt || "") || 0;
+    const nextDate = Date.parse(item.updatedAt || item.createdAt || "") || 0;
+    if (nextDate >= previousDate) byOwner.set(key, item);
+  });
+  return [...byOwner.values()];
+}
+
+function validationResponseOwnerKey(response, pharmacies = readPharmacies()) {
+  return `${response.documentId || ""}|${responsePharmacyOwnerKey(response, pharmacies)}`;
+}
+
+function normalizeValidationResponse(item) {
+  return {
+    id: String(item.id || Date.now()),
+    validationId: String(item.validationId || "document-validation"),
+    documentId: String(item.documentId || "").trim(),
+    documentUrl: String(item.documentUrl || ""),
+    createdAt: String(item.createdAt || new Date().toLocaleString("fr-FR")),
+    updatedAt: String(item.updatedAt || ""),
+    pharmacyId: String(item.pharmacyId || "").trim(),
+    pharmacyName: String(item.pharmacyName || "").trim(),
+    status: String(item.status || "").trim(),
+    comment: String(item.comment || "").trim()
+  };
+}
+
+function latestValidationResponses(responses = []) {
+  const pharmacies = readPharmacies();
+  const byOwner = new Map();
+  responses.forEach((item) => {
+    const key = validationResponseOwnerKey(item, pharmacies);
     const previous = byOwner.get(key);
     if (!previous) {
       byOwner.set(key, item);
@@ -555,6 +657,23 @@ const server = http.createServer(async (request, response) => {
       return;
     }
 
+    if (url.pathname === "/api/validation" && request.method === "GET") {
+      sendJson(response, 200, readValidation());
+      return;
+    }
+
+    if (url.pathname === "/api/validation" && request.method === "PUT") {
+      if (request.headers["x-admin-code"] !== ADMIN_CODE) {
+        sendJson(response, 401, { error: "Code administrateur incorrect" });
+        return;
+      }
+
+      const payload = JSON.parse(await readBody(request));
+      const validation = writeValidation(payload || {});
+      sendJson(response, 200, validation);
+      return;
+    }
+
     if (url.pathname === "/api/info-forms" && request.method === "PUT") {
       if (request.headers["x-admin-code"] !== ADMIN_CODE) {
         sendJson(response, 401, { error: "Code administrateur incorrect" });
@@ -760,6 +879,15 @@ const server = http.createServer(async (request, response) => {
       return;
     }
 
+    if (url.pathname === "/api/validation-responses" && request.method === "GET") {
+      if (request.headers["x-admin-code"] !== ADMIN_CODE) {
+        sendJson(response, 401, { error: "Code administrateur incorrect" });
+        return;
+      }
+      sendJson(response, 200, latestValidationResponses(readValidationResponses()));
+      return;
+    }
+
     if (url.pathname === "/api/responses" && request.method === "PUT") {
       if (request.headers["x-admin-code"] !== ADMIN_CODE) {
         sendJson(response, 401, { error: "Code administrateur incorrect" });
@@ -828,6 +956,20 @@ const server = http.createServer(async (request, response) => {
       return;
     }
 
+    if (url.pathname === "/api/validation-responses" && request.method === "PUT") {
+      if (request.headers["x-admin-code"] !== ADMIN_CODE) {
+        sendJson(response, 401, { error: "Code administrateur incorrect" });
+        return;
+      }
+
+      const payload = JSON.parse(await readBody(request));
+      const responses = Array.isArray(payload) ? payload.map(normalizeValidationResponse) : [];
+      const latest = latestValidationResponses(responses);
+      writeValidationResponses(latest);
+      sendJson(response, 200, latest);
+      return;
+    }
+
     if (url.pathname === "/api/pharmacy-poll-responses" && request.method === "GET") {
       const pharmacyId = url.searchParams.get("pharmacyId");
       const pharmacyName = normalizeLookup(url.searchParams.get("pharmacyName"));
@@ -848,6 +990,18 @@ const server = http.createServer(async (request, response) => {
       const pharmacyId = url.searchParams.get("pharmacyId");
       const pharmacyName = normalizeLookup(url.searchParams.get("pharmacyName"));
       const responses = latestInfoResponses(readInfoResponses())
+        .filter((item) => {
+          if (pharmacyId && item.pharmacyId === pharmacyId) return true;
+          return pharmacyName && normalizeLookup(item.pharmacyName) === pharmacyName;
+        });
+      sendJson(response, 200, responses);
+      return;
+    }
+
+    if (url.pathname === "/api/pharmacy-validation-responses" && request.method === "GET") {
+      const pharmacyId = url.searchParams.get("pharmacyId");
+      const pharmacyName = normalizeLookup(url.searchParams.get("pharmacyName"));
+      const responses = latestValidationResponses(readValidationResponses())
         .filter((item) => {
           if (pharmacyId && item.pharmacyId === pharmacyId) return true;
           return pharmacyName && normalizeLookup(item.pharmacyName) === pharmacyName;
@@ -941,6 +1095,26 @@ const server = http.createServer(async (request, response) => {
       const updatedResponses = responses.filter((item) => infoResponseOwnerKey(item, pharmacies) !== infoResponseOwnerKey(savedResponse, pharmacies));
       updatedResponses.push(savedResponse);
       writeInfoResponses(updatedResponses);
+      sendJson(response, 201, savedResponse);
+      return;
+    }
+
+    if (url.pathname === "/api/validation-responses" && request.method === "POST") {
+      const payload = JSON.parse(await readBody(request));
+      const responses = readValidationResponses();
+      const incoming = normalizeValidationResponse(payload);
+      const pharmacies = readPharmacies();
+      const existing = responses.find((item) => validationResponseOwnerKey(item, pharmacies) === validationResponseOwnerKey(incoming, pharmacies));
+      const now = new Date().toLocaleString("fr-FR");
+      const savedResponse = {
+        ...incoming,
+        id: existing?.id || incoming.id,
+        createdAt: existing?.createdAt || incoming.createdAt || now,
+        updatedAt: existing ? now : ""
+      };
+      const updatedResponses = responses.filter((item) => validationResponseOwnerKey(item, pharmacies) !== validationResponseOwnerKey(savedResponse, pharmacies));
+      updatedResponses.push(savedResponse);
+      writeValidationResponses(updatedResponses);
       sendJson(response, 201, savedResponse);
       return;
     }

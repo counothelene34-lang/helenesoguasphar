@@ -4,6 +4,11 @@ const POLL_RESPONSES_KEY = "soguasphar_poll_responses";
 const POLL_ANSWERED_KEY = "soguasphar_answered_polls";
 const INFO_FORMS_KEY = "soguasphar_info_forms_preview";
 const INFO_RESPONSES_KEY = "soguasphar_info_responses_preview";
+const BAT_RESPONSES_KEY = "soguasphar_bat_responses_preview";
+const VALIDATION_DOCUMENTS_KEY = "soguasphar_validation_documents_preview";
+const VALIDATION_TITLE_KEY = "soguasphar_validation_title_preview";
+const VALIDATION_MESSAGE_KEY = "soguasphar_validation_message_preview";
+const VALIDATION_ARCHIVED_KEY = "soguasphar_validation_archived_preview";
 const ADMIN_CODE = "SOGUASPHAR2026";
 const API_AVAILABLE = location.protocol === "http:" || location.protocol === "https:";
 const PHARMACY_SESSION_KEY = "soguasphar_current_pharmacy";
@@ -26,12 +31,23 @@ const logoutPharmacyBtn = document.querySelector("#logoutPharmacyBtn");
 const heroBand = document.querySelector(".hero-band");
 const campaignPicker = document.querySelector("#campaignPicker");
 const campaignCards = document.querySelector("#campaignCards");
+const batCards = document.querySelector("#batCards");
 const pollCards = document.querySelector("#pollCards");
 const infoCards = document.querySelector("#infoCards");
 const backToCampaignsBtn = document.querySelector("#backToCampaignsBtn");
 const campaignNotice = document.querySelector("#campaignNotice");
 const responseSuccess = document.querySelector("#responseSuccess");
 const returnToMenuBtn = document.querySelector("#returnToMenuBtn");
+const batValidationForm = document.querySelector("#batValidationForm");
+const backToBatListBtn = document.querySelector("#backToBatListBtn");
+const batFormTitle = document.querySelector("#batFormTitle");
+const batPdfTitle = document.querySelector("#batPdfTitle");
+const batDocumentPreview = document.querySelector("#batDocumentPreview");
+const batDocumentPdfPreview = document.querySelector("#batDocumentPdfPreview");
+const batPdfOpenLink = document.querySelector("#batPdfOpenLink");
+const batPharmacyName = document.querySelector("#batPharmacyName");
+const batComment = document.querySelector("#batComment");
+const batMessage = document.querySelector("#batMessage");
 const pollForm = document.querySelector("#pollForm");
 const backToPollsBtn = document.querySelector("#backToPollsBtn");
 const pollPharmacyName = document.querySelector("#pollPharmacyName");
@@ -76,6 +92,24 @@ const adminResetAlert = document.querySelector("#adminResetAlert");
 const adminCampaignTitle = document.querySelector("#adminCampaignTitle");
 const adminSectionIntro = document.querySelector("#adminSectionIntro");
 const adminCampaignCards = document.querySelector("#adminCampaignCards");
+const createValidationForm = document.querySelector("#createValidationForm");
+const adminBatBlock = document.querySelector("#adminBatBlock");
+const adminBatCards = document.querySelector("#adminBatCards");
+const adminBatDetail = document.querySelector("#adminBatDetail");
+const backToAdminBatBtn = document.querySelector("#backToAdminBatBtn");
+const batAdminMessage = document.querySelector("#batAdminMessage");
+const saveBatAdminMessageBtn = document.querySelector("#saveBatAdminMessageBtn");
+const validationDocumentInput = document.querySelector("#validationDocumentInput");
+const validationImportMessage = document.querySelector("#validationImportMessage");
+const adminValidationDocumentInput = document.querySelector("#adminValidationDocumentInput");
+const adminValidationImportMessage = document.querySelector("#adminValidationImportMessage");
+const batResultsSummary = document.querySelector("#batResultsSummary");
+const batValidatedPharmacies = document.querySelector("#batValidatedPharmacies");
+const batCorrectionPharmacies = document.querySelector("#batCorrectionPharmacies");
+const batUnansweredPharmacies = document.querySelector("#batUnansweredPharmacies");
+const batDocumentsTable = document.querySelector("#batDocumentsTable");
+const batResponsesTable = document.querySelector("#batResponsesTable");
+let batDocumentsExpanded = false;
 const createCampaignForm = document.querySelector("#createCampaignForm");
 const newCampaignTitle = document.querySelector("#newCampaignTitle");
 const createPollForm = document.querySelector("#createPollForm");
@@ -91,7 +125,7 @@ const newPharmacyName = document.querySelector("#newPharmacyName");
 const pharmacyAccountsList = document.querySelector("#pharmacyAccountsList");
 const showClosedCampaignsBtn = document.querySelector("#showClosedCampaignsBtn");
 const adminPollCards = document.querySelector("#adminPollCards");
-const adminPollBlock = adminCampaignPicker.querySelector(".poll-picker-block");
+const adminPollBlock = document.querySelector("#adminPollBlock");
 const adminInfoBlock = document.querySelector("#adminInfoBlock");
 const adminInfoCards = document.querySelector("#adminInfoCards");
 const adminInfoDetail = document.querySelector("#adminInfoDetail");
@@ -152,6 +186,12 @@ let campaigns = [];
 let polls = [];
 let infoForms = [];
 let infoResponses = [];
+let batResponses = [];
+let validationConfigState = {
+  title: "",
+  description: "",
+  archived: false
+};
 let pharmacies = [];
 let currentPharmacy = JSON.parse(localStorage.getItem(PHARMACY_SESSION_KEY) || "null");
 let pendingPasswordPharmacy = null;
@@ -161,6 +201,7 @@ let pharmacyCampaignResponses = {};
 let selectedCampaign = null;
 let selectedPoll = null;
 let selectedInfoForm = null;
+let selectedBatDocument = null;
 let selectedAdminCampaign = null;
 let selectedAdminPoll = null;
 let selectedAdminInfoForm = null;
@@ -178,9 +219,17 @@ const ADMIN_SECTIONS = {
     title: "Créer un sondage",
     intro: "Créez un sondage rapide ou une demande de mise à jour de fiche pharmacie."
   },
+  "new-validation": {
+    title: "Nouvelle validation",
+    intro: "Creez une validation de document et indiquez le message visible par les pharmacies."
+  },
   campaigns: {
     title: "Campagnes en cours",
     intro: "Retrouvez les précommandes actives, leur suivi et leurs exports."
+  },
+  bat: {
+    title: "Validations en attente",
+    intro: "Suivez les documents a valider et les corrections demandees."
   },
   polls: {
     title: "Sondages en cours",
@@ -195,6 +244,26 @@ const ADMIN_SECTIONS = {
     intro: "Retrouvez les campagnes et sondages clôturés, avec possibilité de les rouvrir."
   }
 };
+
+const BAT_VALIDATION = {
+  id: "bat-cadeaux-fin-annee-2026",
+  title: "Validation en attente",
+  description: "Validation et contrôle."
+};
+
+function currentValidationConfig() {
+  const title = validationConfigState.title || localStorage.getItem(VALIDATION_TITLE_KEY) || "";
+  const description = validationConfigState.description || localStorage.getItem(VALIDATION_MESSAGE_KEY) || "";
+  const archived = Boolean(validationConfigState.archived) || localStorage.getItem(VALIDATION_ARCHIVED_KEY) === "true";
+  return {
+    title: title || BAT_VALIDATION.title,
+    description: description || BAT_VALIDATION.description,
+    archived,
+    exists: Boolean(title || description || batDocuments.length || batResponses.length)
+  };
+}
+
+let batDocuments = [];
 
 const PROFILE_DAYS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
 
@@ -317,6 +386,188 @@ function localInfoResponses() {
 
 function saveLocalInfoResponses(nextResponses) {
   localStorage.setItem(INFO_RESPONSES_KEY, JSON.stringify(nextResponses));
+}
+
+function localBatResponses() {
+  return JSON.parse(localStorage.getItem(BAT_RESPONSES_KEY) || "[]");
+}
+
+function saveLocalBatResponses(nextResponses) {
+  localStorage.setItem(BAT_RESPONSES_KEY, JSON.stringify(nextResponses));
+}
+
+function localValidationDocuments() {
+  return JSON.parse(localStorage.getItem(VALIDATION_DOCUMENTS_KEY) || "[]");
+}
+
+function saveLocalValidationDocuments(nextDocuments) {
+  localStorage.setItem(VALIDATION_DOCUMENTS_KEY, JSON.stringify(nextDocuments));
+}
+
+function localValidationState() {
+  return {
+    title: localStorage.getItem(VALIDATION_TITLE_KEY) || "",
+    description: localStorage.getItem(VALIDATION_MESSAGE_KEY) || "",
+    archived: localStorage.getItem(VALIDATION_ARCHIVED_KEY) === "true",
+    documents: localValidationDocuments()
+  };
+}
+
+function saveLocalValidationState(state) {
+  localStorage.setItem(VALIDATION_TITLE_KEY, state.title || "");
+  localStorage.setItem(VALIDATION_MESSAGE_KEY, state.description || "");
+  localStorage.setItem(VALIDATION_ARCHIVED_KEY, state.archived ? "true" : "false");
+  saveLocalValidationDocuments(state.documents || []);
+}
+
+async function getValidationState() {
+  if (API_AVAILABLE) {
+    try {
+      const remote = await requestJson("/api/validation");
+      if (remote && typeof remote === "object") return remote;
+    } catch {
+      // Fallback for preview servers without validation API.
+    }
+  }
+  return localValidationState();
+}
+
+async function saveValidationState(nextState) {
+  const payload = {
+    title: nextState.title || "",
+    description: nextState.description || "",
+    archived: Boolean(nextState.archived),
+    documents: Array.isArray(nextState.documents) ? nextState.documents : []
+  };
+
+  if (API_AVAILABLE) {
+    try {
+      const saved = await requestJson("/api/validation", {
+        method: "PUT",
+        headers: { "X-Admin-Code": ADMIN_CODE },
+        body: JSON.stringify(payload)
+      });
+      validationConfigState = {
+        title: saved.title || "",
+        description: saved.description || "",
+        archived: Boolean(saved.archived)
+      };
+      batDocuments = Array.isArray(saved.documents) ? saved.documents : [];
+      saveLocalValidationState(saved);
+      return saved;
+    } catch {
+      // Fallback for preview servers without validation API.
+    }
+  }
+
+  saveLocalValidationState(payload);
+  validationConfigState = {
+    title: payload.title || "",
+    description: payload.description || "",
+    archived: Boolean(payload.archived)
+  };
+  batDocuments = payload.documents || [];
+  return payload;
+}
+
+async function getValidationResponses() {
+  if (API_AVAILABLE && adminUnlocked) {
+    try {
+      const responses = await requestJson("/api/validation-responses", {
+        headers: { "X-Admin-Code": ADMIN_CODE }
+      });
+      if (Array.isArray(responses)) return responses;
+    } catch {
+      // Fallback for preview servers without validation API.
+    }
+  }
+  return localBatResponses();
+}
+
+async function refreshPharmacyValidationResponses() {
+  if (!API_AVAILABLE || !currentPharmacy?.id) {
+    batResponses = localBatResponses();
+    return;
+  }
+
+  try {
+    const params = new URLSearchParams({
+      pharmacyId: currentPharmacy.id || "",
+      pharmacyName: currentPharmacy.name || ""
+    });
+    const responses = await requestJson(`/api/pharmacy-validation-responses?${params.toString()}`);
+    batResponses = Array.isArray(responses) ? responses : [];
+  } catch {
+    batResponses = localBatResponses();
+  }
+}
+
+async function saveValidationResponses(nextResponses) {
+  if (API_AVAILABLE && adminUnlocked) {
+    try {
+      const saved = await requestJson("/api/validation-responses", {
+        method: "PUT",
+        headers: { "X-Admin-Code": ADMIN_CODE },
+        body: JSON.stringify(nextResponses)
+      });
+      saveLocalBatResponses(saved);
+      return saved;
+    } catch {
+      // Fallback for preview servers without validation API.
+    }
+  }
+
+  saveLocalBatResponses(nextResponses);
+  return nextResponses;
+}
+
+async function submitValidationResponse(response) {
+  if (API_AVAILABLE) {
+    try {
+      return await requestJson("/api/validation-responses", {
+        method: "POST",
+        body: JSON.stringify(response)
+      });
+    } catch {
+      // Fallback for preview servers without validation API.
+    }
+  }
+  const previousResponse = batResponses.find((item) => item.documentId === response.documentId);
+  const saved = {
+    ...response,
+    id: previousResponse?.id || response.id,
+    createdAt: previousResponse?.createdAt || response.createdAt,
+    updatedAt: previousResponse ? new Date().toLocaleString("fr-FR") : ""
+  };
+  batResponses = batResponses.filter((item) => item.documentId !== response.documentId).concat(saved);
+  saveLocalBatResponses(batResponses);
+  return saved;
+}
+
+function resetValidationState() {
+  localStorage.removeItem(VALIDATION_TITLE_KEY);
+  localStorage.removeItem(VALIDATION_MESSAGE_KEY);
+  localStorage.removeItem(VALIDATION_ARCHIVED_KEY);
+  localStorage.removeItem(VALIDATION_DOCUMENTS_KEY);
+  localStorage.removeItem(BAT_RESPONSES_KEY);
+  validationConfigState = { title: "", description: "", archived: false };
+  batDocuments = [];
+  batResponses = [];
+  const validationTitleInput = document.querySelector("#newValidationTitle");
+  if (validationTitleInput) validationTitleInput.value = "";
+  if (batAdminMessage) batAdminMessage.value = "";
+  if (validationDocumentInput) validationDocumentInput.value = "";
+  if (adminValidationDocumentInput) adminValidationDocumentInput.value = "";
+  if (validationImportMessage) validationImportMessage.textContent = "";
+  if (adminValidationImportMessage) adminValidationImportMessage.textContent = "";
+}
+
+function setValidationArchived(archived) {
+  validationConfigState = {
+    ...validationConfigState,
+    archived: Boolean(archived)
+  };
+  localStorage.setItem(VALIDATION_ARCHIVED_KEY, archived ? "true" : "false");
 }
 
 async function getInfoForms() {
@@ -865,6 +1116,109 @@ function responsePharmacyCountKey(response) {
   return response.pharmacyId ? `id:${String(response.pharmacyId).trim()}` : `name:${pharmacyNameKey(response.pharmacyName)}`;
 }
 
+function batDocumentForPharmacy(pharmacy) {
+  if (!pharmacy?.name) return null;
+  const pharmacyKey = pharmacyNameKey(pharmacy.name);
+  return batDocuments.find((document) => pharmacyNameKey(document.pharmacyName) === pharmacyKey) || null;
+}
+
+function batResponseForDocument(document) {
+  return batResponses.find((response) => response.documentId === document?.id) || null;
+}
+
+function normalizeValidationStatus(status) {
+  const cleanStatus = String(status || "").replace(/^BAT\s+/i, "").trim();
+  if (cleanStatus === "Validé" || cleanStatus === "Valid\u00c3\u00a9") return "Validé";
+  if (cleanStatus === "Correction demandée" || cleanStatus === "Correction demand\u00c3\u00a9e") return "Correction demandée";
+  return cleanStatus;
+}
+
+function batDocumentsForActivePharmacies() {
+  return batDocuments.filter((document) => activePharmacies()
+    .some((pharmacy) => pharmacyNameKey(pharmacy.name) === pharmacyNameKey(document.pharmacyName)));
+}
+
+function unmatchedValidationDocuments() {
+  return batDocuments.filter((document) => !document.matched);
+}
+
+function pharmaciesWithoutValidationDocument() {
+  const documentedKeys = new Set(batDocuments
+    .filter((document) => document.matched)
+    .map((document) => pharmacyNameKey(document.pharmacyName)));
+  return activePharmacyNames().filter((name) => !documentedKeys.has(pharmacyNameKey(name)));
+}
+
+function bestPharmacyMatchForFile(fileName) {
+  const fileKey = pharmacyNameKey(String(fileName || "").replace(/\.[^.]+$/, "")
+    .replace(/\b(bat|validation|document|calendrier|cadeaux?|noel|noël|controle|contrôle|pdf|image)\b/gi, " "));
+  const candidates = activePharmacies()
+    .map((pharmacy) => {
+      const key = pharmacyNameKey(pharmacy.name);
+      const score = fileKey.includes(key) ? key.length : key.includes(fileKey) ? fileKey.length : 0;
+      return { pharmacy, score };
+    })
+    .filter((item) => item.score > 0)
+    .sort((a, b) => b.score - a.score);
+  return candidates[0]?.pharmacy || null;
+}
+
+function readValidationFile(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const matchedPharmacy = bestPharmacyMatchForFile(file.name);
+      const fallbackName = String(file.name || "Document").replace(/\.[^.]+$/, "");
+      resolve({
+        id: `validation-${createId()}`,
+        pharmacyId: matchedPharmacy?.id || "",
+        pharmacyName: matchedPharmacy?.name || fallbackName,
+        matched: Boolean(matchedPharmacy),
+        fileName: file.name,
+        fileType: file.type || "application/octet-stream",
+        url: reader.result,
+        thumbnailUrl: file.type?.startsWith("image/") ? reader.result : "",
+        importedAt: new Date().toLocaleString("fr-FR")
+      });
+    };
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
+
+async function importValidationDocuments(fileList, messageElement) {
+  const files = Array.from(fileList || []);
+  if (!files.length) {
+    if (messageElement) messageElement.textContent = "Sélectionnez au moins un PDF ou une image.";
+    return [];
+  }
+
+  const imported = await Promise.all(files.map(readValidationFile));
+  const byKey = new Map(batDocuments.map((document) => [document.matched ? pharmacyNameKey(document.pharmacyName) : document.fileName, document]));
+  imported.forEach((document) => {
+    const key = document.matched ? pharmacyNameKey(document.pharmacyName) : document.fileName;
+    byKey.set(key, document);
+  });
+  batDocuments = Array.from(byKey.values());
+  saveLocalValidationDocuments(batDocuments);
+  const config = currentValidationConfig();
+  await saveValidationState({
+    title: config.exists ? config.title : "",
+    description: config.exists ? config.description : "",
+    archived: config.archived,
+    documents: batDocuments
+  });
+  renderCampaignPickers();
+  renderBatResults();
+
+  const matchedCount = imported.filter((document) => document.matched).length;
+  const unmatchedCount = imported.length - matchedCount;
+  if (messageElement) {
+    messageElement.textContent = `${imported.length} document${imported.length > 1 ? "s" : ""} importé${imported.length > 1 ? "s" : ""} : ${matchedCount} rattaché${matchedCount > 1 ? "s" : ""}, ${unmatchedCount} non reconnu${unmatchedCount > 1 ? "s" : ""}.`;
+  }
+  return imported;
+}
+
 function renderProfileHoursFields(hours = []) {
   if (!profileHoursGrid) return;
   const byDay = new Map((Array.isArray(hours) ? hours : []).map((item) => [item.day, item]));
@@ -1104,6 +1458,7 @@ function renderPharmacyAccess() {
     form.hidden = true;
     pollForm.hidden = true;
     profileUpdateForm.hidden = true;
+    batValidationForm.hidden = true;
     responseSuccess.hidden = true;
   }
 }
@@ -1252,11 +1607,11 @@ function formatTemplateTarif(value) {
     return `${value.toLocaleString("fr-FR", {
       minimumFractionDigits: value % 1 ? 2 : 0,
       maximumFractionDigits: 2
-    })} €`;
+    })} \u20ac`;
   }
   const clean = cleanTemplateCell(value);
   if (!clean) return "";
-  return clean.replace(".", ",").replace(/\s*€?$/, " €").trim();
+  return clean.replace(".", ",").replace(/\s*\u20ac?$/, " \u20ac").trim();
 }
 
 function looksLikeHeaderRow(headers) {
@@ -1276,7 +1631,7 @@ function isIgnoredTemplateLine(text) {
 }
 
 function inferTemplateRows(rows) {
-  const priceRegex = /(?:\d+[,.]\d{1,2}\s*€?|\d+\s*€)/;
+  const priceRegex = /(?:\d+[,.]\d{1,2}\s*\u20ac?|\d+\s*\u20ac)/;
   const cipRegex = /\b(?:\d[\s.-]*){7,14}\b/;
 
   return rows
@@ -1291,7 +1646,7 @@ function inferTemplateRows(rows) {
         if (!cell || cellIndex === priceIndex) return false;
         if (cipMatch && cell.replace(/\D/g, "") === cipMatch[0].replace(/\D/g, "")) return false;
         if (priceRegex.test(cell)) return false;
-        return /[a-zA-ZÀ-ÿ]/.test(cell) && !isIgnoredTemplateLine(cell);
+        return /[a-zA-Z]/.test(cell.normalize("NFD").replace(/[\u0300-\u036f]/g, "")) && !isIgnoredTemplateLine(cell);
       });
       const designation = cleanTemplateCell(designationCell || cells.find(Boolean));
 
@@ -1377,7 +1732,7 @@ function parsePdfOrderText(text) {
   function addRow(designation, cip = "", tarif = "", colisage = "") {
     const cleanName = cleanDesignation(designation);
     const cleanCip = String(cip || "").replace(/\D/g, "");
-    const cleanTarif = String(tarif || "").replace(".", ",").replace(/\s*€?$/, " €").trim();
+    const cleanTarif = String(tarif || "").replace(".", ",").replace(/\s*\u20ac?$/, " \u20ac").trim();
     const cleanColisage = String(colisage || "").trim();
     const key = `${cleanName.toLowerCase()}|${cleanCip}|${cleanTarif}`;
 
@@ -1391,9 +1746,9 @@ function parsePdfOrderText(text) {
     if (!working || !/\d+[,.]\d{2}/.test(working)) return;
     if (/^(produits?|prix|tarif|colisage|commande|quantité|quantite|code|cip|ean)\b/i.test(working)) return;
 
-    const priceMatch = working.match(/(\d+[,.]\d{2})\s*(?:€|eur)?/i);
+    const priceMatch = working.match(/(\d+[,.]\d{2})\s*(?:\u20ac|eur)?/i);
     if (!priceMatch) return;
-    const tarif = `${priceMatch[1].replace(".", ",")} €`;
+    const tarif = `${priceMatch[1].replace(".", ",")} \u20ac`;
     working = `${working.slice(0, priceMatch.index)} ${working.slice(priceMatch.index + priceMatch[0].length)}`.trim();
 
     let cip = "";
@@ -1405,7 +1760,7 @@ function parsePdfOrderText(text) {
 
     let colisage = "";
     const trailingColisage = working.match(/\s(\d{1,4})$/);
-    if (trailingColisage && !/[A-Za-zÀ-ÿ]\d+$/.test(working.replace(/\s(\d{1,4})$/, ""))) {
+    if (trailingColisage && !/[A-Za-z]\d+$/.test(working.replace(/\s(\d{1,4})$/, "").normalize("NFD").replace(/[\u0300-\u036f]/g, ""))) {
       colisage = trailingColisage[1];
       working = working.replace(/\s\d{1,4}$/, "").trim();
     }
@@ -1424,10 +1779,10 @@ function parsePdfOrderText(text) {
       .replace(/\s+/g, " ")
       .replace(/TARIF HORS LIVRAISON.*?Quantités commandées/i, " ")
       .trim();
-    const genericMatches = compact.matchAll(/([A-Za-zÀ-ÿ0-9'’().,/\-+& ]{2,}?)\s+((?:\d[\s-]*){13})?\s*(\d+[,.]\d{2})\s*(?:€|eur)?\s*(\d{1,4})?(?=\s+[A-Za-zÀ-ÿ0-9'’().,/\-+& ]{2,}?\s+(?:(?:\d[\s-]*){13}\s*)?\d+[,.]\d{2}|\s*$)/gi);
+    const genericMatches = compact.matchAll(/([\p{L}0-9'().,/\-+& ]{2,}?)\s+((?:\d[\s-]*){13})?\s*(\d+[,.]\d{2})\s*(?:€|eur)?\s*(\d{1,4})?(?=\s+[\p{L}0-9'().,/\-+& ]{2,}?\s+(?:(?:\d[\s-]*){13}\s*)?\d+[,.]\d{2}|\s*$)/giu);
 
     for (const match of genericMatches) {
-      addRow(match[1], match[2] || "", `${match[3]} €`, match[4] || "");
+      addRow(match[1], match[2] || "", `${match[3]} \u20ac`, match[4] || "");
     }
   }
 
@@ -1539,9 +1894,9 @@ function pollCard(poll, target) {
   const localAnswer = !isAdmin ? (currentPharmacy ? pharmacyPollAnswers[poll.id] : localAnsweredPolls()[poll.id]) : null;
   const optionsPreview = (poll.options || []).map((option) => `
     <div class="whatsapp-poll-option ${localAnswer === option ? "is-answered" : ""}">
-      <span class="whatsapp-poll-circle" aria-hidden="true">${localAnswer === option ? "✓" : ""}</span>
+      <span class="whatsapp-poll-circle" aria-hidden="true">${localAnswer === option ? "\u2713" : ""}</span>
       <span class="whatsapp-poll-label">${escapeHtml(option)}</span>
-      <span class="whatsapp-poll-count">${localAnswer === option ? "✓" : "0"}</span>
+      <span class="whatsapp-poll-count">${localAnswer === option ? "\u2713" : "0"}</span>
       <span class="whatsapp-poll-bar" aria-hidden="true"></span>
     </div>
   `).join("");
@@ -1636,23 +1991,89 @@ function infoFormCard(infoForm, target) {
   `;
 }
 
+function batValidationCard(document, target) {
+  const isAdmin = target === "admin";
+  const response = batResponseForDocument(document);
+  const validationConfig = currentValidationConfig();
+  const displayStatus = normalizeValidationStatus(response?.status);
+  const actionAttr = isAdmin
+    ? `data-admin-bat-document="${escapeHtml(document.id)}"`
+    : `data-form-bat="${escapeHtml(document.id)}"`;
+
+  return `
+    <article class="campaign-card bat-card ${response ? "completed" : ""} clickable" ${actionAttr} role="button" tabindex="0">
+      <div>
+        <h3>${escapeHtml(validationConfig.title)}</h3>
+        <p>${escapeHtml(validationConfig.description)}</p>
+        ${response ? `
+          <div class="campaign-done-summary">
+            <strong>${escapeHtml(displayStatus)}</strong>
+            <span>${escapeHtml(response.comment || "Réponse enregistrée.")}</span>
+          </div>
+        ` : ""}
+      </div>
+      <div class="campaign-foot">
+        <strong>${escapeHtml(document.pharmacyName)}</strong>
+        <div class="campaign-actions">
+          <a class="ghost-btn" href="${escapeHtml(document.url)}" target="_blank" rel="noopener" data-bat-pdf-link>Voir le document</a>
+          <button class="primary-btn" type="button" ${actionAttr}>${isAdmin ? "Voir le suivi" : (response ? "Modifier" : "Valider")}</button>
+        </div>
+      </div>
+    </article>
+  `;
+}
+
+function adminBatOverviewCard() {
+  const documents = batDocumentsForActivePharmacies();
+  const unmatched = unmatchedValidationDocuments();
+  const answered = documents.filter((document) => batResponseForDocument(document));
+  const corrections = documents.filter((document) => normalizeValidationStatus(batResponseForDocument(document)?.status) === "Correction demandée");
+  const validationConfig = currentValidationConfig();
+
+  return `
+    <article class="campaign-card bat-card clickable" data-admin-bat-overview role="button" tabindex="0">
+      <div>
+        <div class="campaign-card-top">
+          <span class="campaign-type ${validationConfig.archived ? "closed" : ""}">${validationConfig.archived ? "Validation archivée" : "Validation"}</span>
+          <button class="delete-campaign-btn" type="button" title="Supprimer la validation" aria-label="Supprimer la validation" data-delete-validation>&#128465;</button>
+        </div>
+        <h3>${escapeHtml(validationConfig.title)}</h3>
+        <p>${escapeHtml(validationConfig.description)}</p>
+      </div>
+      <div class="campaign-foot">
+        <strong>${batDocuments.length} document${batDocuments.length > 1 ? "s" : ""} importé${batDocuments.length > 1 ? "s" : ""}</strong>
+        <div class="campaign-actions">
+          ${corrections.length ? `<span class="request-badge">${corrections.length} correction${corrections.length > 1 ? "s" : ""}</span>` : ""}
+          ${unmatched.length ? `<span class="request-badge">${unmatched.length} non reconnu${unmatched.length > 1 ? "s" : ""}</span>` : ""}
+          <button class="ghost-btn" type="button" data-toggle-validation-archive>${validationConfig.archived ? "Rouvrir" : "Archiver"}</button>
+          <button class="primary-btn" type="button" data-admin-bat-overview>Documents en attente validation</button>
+        </div>
+      </div>
+    </article>
+  `;
+}
+
 function showAdminSection(section) {
   activeAdminSection = section || "new-campaign";
   const sectionCopy = ADMIN_SECTIONS[activeAdminSection] || ADMIN_SECTIONS["new-campaign"];
+  const validationConfig = currentValidationConfig();
   const closedActions = showClosedCampaignsBtn?.closest(".closed-campaign-actions");
   const showCampaignList = activeAdminSection === "campaigns" || activeAdminSection === "archives";
   const showPollList = activeAdminSection === "polls" || activeAdminSection === "archives";
   const showInfoList = activeAdminSection === "polls" || activeAdminSection === "archives";
   const showPharmacies = activeAdminSection === "pharmacies";
+  const showBatList = activeAdminSection === "bat" || (activeAdminSection === "archives" && validationConfig.exists);
 
   adminCampaignTitle.textContent = sectionCopy.title;
   adminSectionIntro.textContent = sectionCopy.intro;
   createCampaignForm.hidden = activeAdminSection !== "new-campaign";
   createPollForm.hidden = activeAdminSection !== "new-poll";
   createInfoForm.hidden = activeAdminSection !== "new-poll";
+  if (createValidationForm) createValidationForm.hidden = activeAdminSection !== "new-validation";
   createPharmacyForm.hidden = !showPharmacies;
   pharmacyAccountsList.hidden = !showPharmacies;
   adminCampaignCards.hidden = !showCampaignList;
+  if (adminBatBlock) adminBatBlock.hidden = !showBatList;
   adminPollBlock.hidden = !showPollList;
   adminInfoBlock.hidden = !showInfoList;
   if (closedActions) closedActions.hidden = true;
@@ -1665,12 +2086,15 @@ function showAdminSection(section) {
 }
 
 function renderCampaignPickers() {
+  const validationConfig = currentValidationConfig();
   const openCampaigns = campaigns.filter((campaign) => !campaign.closed);
   const adminCampaigns = campaigns.filter((campaign) => activeAdminSection === "archives" ? campaign.closed : !campaign.closed);
   const openPolls = polls.filter((poll) => !poll.closed);
   const adminPolls = polls.filter((poll) => activeAdminSection === "archives" ? poll.closed : !poll.closed);
   const openInfoForms = infoForms.filter((infoForm) => !infoForm.closed);
   const adminInfoForms = infoForms.filter((infoForm) => activeAdminSection === "archives" ? infoForm.closed : !infoForm.closed);
+  const currentBatDocument = currentPharmacy ? batDocumentForPharmacy(currentPharmacy) : null;
+  const adminBatDocuments = batDocumentsForActivePharmacies();
 
   campaignCards.innerHTML = openCampaigns.length
     ? openCampaigns.map((campaign) => campaignCard(campaign, "form")).join("")
@@ -1684,6 +2108,14 @@ function renderCampaignPickers() {
     ? openInfoForms.map((infoForm) => infoFormCard(infoForm, "form")).join("")
     : '<p class="empty-campaigns">Aucune mise à jour de fiche pharmacie disponible pour le moment.</p>';
 
+  if (batCards) {
+    batCards.innerHTML = currentBatDocument
+      && validationConfig.exists
+      && !validationConfig.archived
+      ? batValidationCard(currentBatDocument, "form")
+      : '<p class="empty-campaigns">Aucun document de validation disponible pour votre pharmacie pour le moment.</p>';
+  }
+
   adminCampaignCards.innerHTML = adminCampaigns.length
     ? adminCampaigns.map((campaign) => campaignCard(campaign, "admin")).join("")
     : `<p class="empty-campaigns">Aucune campagne ${adminShowingClosedCampaigns ? "clôturée" : "active"}.</p>`;
@@ -1695,6 +2127,14 @@ function renderCampaignPickers() {
   adminInfoCards.innerHTML = adminInfoForms.length
     ? adminInfoForms.map((infoForm) => infoFormCard(infoForm, "admin")).join("")
     : '<p class="empty-campaigns">Aucune mise à jour fiche pharmacie créée pour le moment.</p>';
+
+  if (adminBatCards) {
+    const showActiveValidation = activeAdminSection === "bat" && validationConfig.exists && !validationConfig.archived;
+    const showArchivedValidation = activeAdminSection === "archives" && validationConfig.exists && validationConfig.archived;
+    adminBatCards.innerHTML = (showActiveValidation || showArchivedValidation)
+      ? adminBatOverviewCard()
+      : `<p class="empty-campaigns">${activeAdminSection === "archives" ? "Aucune validation archivée." : "Aucune validation en cours. Créez une nouvelle validation pour importer des documents."}</p>`;
+  }
 
   showClosedCampaignsBtn.textContent = adminShowingClosedCampaigns ? "Campagnes actives" : "Campagnes clôturées";
 }
@@ -1713,6 +2153,7 @@ function selectCampaign(campaignId) {
   form.hidden = false;
   pollForm.hidden = true;
   profileUpdateForm.hidden = true;
+  batValidationForm.hidden = true;
   responseSuccess.hidden = true;
   document.querySelector("#formTitle").textContent = "Commande, précommande, confirmation";
   if (selectedCampaign.pharmacyMessage) {
@@ -1747,6 +2188,7 @@ function selectPoll(pollId) {
   form.hidden = true;
   pollForm.hidden = true;
   profileUpdateForm.hidden = true;
+  batValidationForm.hidden = true;
   responseSuccess.hidden = true;
   renderCampaignPickers();
   const openedCard = Array.from(pollCards.querySelectorAll("[data-inline-poll-form]"))
@@ -1772,6 +2214,7 @@ function selectInfoForm(infoFormId) {
   form.hidden = true;
   pollForm.hidden = true;
   profileUpdateForm.hidden = false;
+  batValidationForm.hidden = true;
   responseSuccess.hidden = true;
 
   profileUpdateForm.reset();
@@ -1796,6 +2239,177 @@ function selectInfoForm(infoFormId) {
   profileNotes.value = previousResponse?.notes || "";
   profileMessage.textContent = "";
   profileUpdateForm.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function selectBat(documentId) {
+  if (pharmacyAccessRequired()) {
+    renderPharmacyAccess();
+    return;
+  }
+
+  selectedBatDocument = batDocuments.find((document) => document.id === documentId) || batDocumentForPharmacy(currentPharmacy);
+  if (!selectedBatDocument) return;
+
+  const previousResponse = batResponseForDocument(selectedBatDocument);
+
+  selectedCampaign = null;
+  selectedPoll = null;
+  selectedInfoForm = null;
+  campaignPicker.hidden = true;
+  heroBand.hidden = true;
+  form.hidden = true;
+  pollForm.hidden = true;
+  profileUpdateForm.hidden = true;
+  batValidationForm.hidden = false;
+  responseSuccess.hidden = true;
+
+  batFormTitle.textContent = currentValidationConfig().title;
+  batPdfTitle.textContent = `Document - ${selectedBatDocument.pharmacyName}`;
+  const isImageDocument = selectedBatDocument.fileType?.startsWith("image/");
+  if (batDocumentPreview) {
+    batDocumentPreview.hidden = !isImageDocument;
+    batDocumentPreview.src = isImageDocument ? selectedBatDocument.url : "";
+    batDocumentPreview.alt = `Aperçu du document ${selectedBatDocument.pharmacyName}`;
+  }
+  if (batDocumentPdfPreview) {
+    batDocumentPdfPreview.hidden = isImageDocument;
+    batDocumentPdfPreview.data = isImageDocument ? "" : selectedBatDocument.url;
+  }
+  batPdfOpenLink.href = selectedBatDocument.url;
+  batPharmacyName.value = previousResponse?.pharmacyName || currentPharmacy?.name || selectedBatDocument.pharmacyName;
+  batPharmacyName.readOnly = Boolean(currentPharmacy?.name);
+  batComment.value = previousResponse?.comment || "";
+  batValidationForm.querySelectorAll('input[name="batStatus"]').forEach((input) => {
+    input.checked = input.value === previousResponse?.status;
+  });
+  batMessage.textContent = "";
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function renderBatResults() {
+  const validationConfig = currentValidationConfig();
+  const documents = batDocumentsForActivePharmacies();
+  const unmatchedDocuments = unmatchedValidationDocuments();
+  const allDisplayedDocuments = documents.concat(unmatchedDocuments);
+  const responsesByDocument = new Map(batResponses.map((response) => [response.documentId, response]));
+  adminBatDetail?.querySelectorAll("[data-toggle-validation-archive]").forEach((button) => {
+    button.textContent = validationConfig.archived ? "Rouvrir" : "Archiver";
+  });
+  const validated = documents
+    .filter((document) => normalizeValidationStatus(responsesByDocument.get(document.id)?.status) === "Validé")
+    .map((document) => document.pharmacyName)
+    .sort((a, b) => a.localeCompare(b, "fr"));
+  const corrections = documents
+    .filter((document) => normalizeValidationStatus(responsesByDocument.get(document.id)?.status) === "Correction demandée")
+    .map((document) => document.pharmacyName)
+    .sort((a, b) => a.localeCompare(b, "fr"));
+  const correctionDetails = documents
+    .map((document) => ({ document, response: responsesByDocument.get(document.id) }))
+    .filter(({ response }) => normalizeValidationStatus(response?.status) === "Correction demandée")
+    .sort((a, b) => a.document.pharmacyName.localeCompare(b.document.pharmacyName, "fr"));
+  const unanswered = documents
+    .filter((document) => !responsesByDocument.has(document.id))
+    .map((document) => document.pharmacyName)
+    .sort((a, b) => a.localeCompare(b, "fr"));
+  const missingDocuments = pharmaciesWithoutValidationDocument();
+  const answered = documents.length - unanswered.length;
+
+  batResultsSummary.innerHTML = `
+    <div><span>${batDocuments.length}</span><p>document${batDocuments.length > 1 ? "s" : ""} importé${batDocuments.length > 1 ? "s" : ""}</p></div>
+    <div><span>${documents.length}</span><p>rattaché${documents.length > 1 ? "s" : ""}</p></div>
+    <div><span>${unmatchedDocuments.length}</span><p>non reconnu${unmatchedDocuments.length > 1 ? "s" : ""}</p></div>
+    <div><span>${answered}</span><p>réponse${answered > 1 ? "s" : ""}</p></div>
+    <div><span>${validated.length}</span><p>validée${validated.length > 1 ? "s" : ""}</p></div>
+    <div><span>${corrections.length}</span><p>correction${corrections.length > 1 ? "s" : ""}</p></div>
+    <div><span>${unanswered.length}</span><p>sans réponse</p></div>
+    <div><span>${missingDocuments.length}</span><p>sans document</p></div>
+  `;
+  batValidatedPharmacies.innerHTML = pharmacyListMarkup(validated, "Aucune validation pour le moment.");
+  batCorrectionPharmacies.innerHTML = correctionDetails.length
+    ? correctionDetails.map(({ document, response }) => `
+      <li>
+        <strong>${escapeHtml(document.pharmacyName)}</strong>
+        <span class="correction-note">${escapeHtml(response.comment || "Correction demandée sans détail.")}</span>
+      </li>
+    `).join("")
+    : "<li>Aucune correction pour le moment.</li>";
+  batUnansweredPharmacies.innerHTML = pharmacyListMarkup(unanswered, "Aucune pharmacie à relancer.");
+
+  if (batDocumentsTable) {
+    const documentsWrap = batDocumentsTable.closest(".table-wrap");
+    const documentsToolbar = documentsWrap?.previousElementSibling;
+    const documentsTable = batDocumentsTable.closest("table");
+    const documentsHead = documentsTable?.querySelector("thead");
+    if (documentsHead) {
+      documentsHead.innerHTML = `
+        <tr>
+          <th>Pharmacie</th>
+          <th>Statut</th>
+          <th>Correction / commentaire</th>
+          <th>Document</th>
+        </tr>
+      `;
+    }
+    if (documentsWrap) {
+      documentsWrap.classList.toggle("is-collapsed", !batDocumentsExpanded);
+    }
+    if (documentsToolbar && !documentsToolbar.querySelector("[data-toggle-bat-documents]")) {
+      documentsToolbar.classList.add("collapsible-toolbar");
+      documentsToolbar.insertAdjacentHTML("beforeend", '<button class="ghost-btn" type="button" data-toggle-bat-documents>Afficher les documents</button>');
+    }
+    const toggleButton = documentsToolbar?.querySelector("[data-toggle-bat-documents]");
+    if (toggleButton) {
+      toggleButton.textContent = batDocumentsExpanded ? "Masquer les documents" : "Afficher les documents";
+    }
+
+    batDocumentsTable.innerHTML = allDisplayedDocuments.length
+      ? allDisplayedDocuments.map((document) => {
+        const response = responsesByDocument.get(document.id);
+        const status = document.matched ? (normalizeValidationStatus(response?.status) || "En attente") : "Non reconnu";
+        return `
+          <tr>
+            <td><strong>${escapeHtml(document.pharmacyName)}</strong></td>
+            <td>${escapeHtml(status)}</td>
+            <td>${escapeHtml(response?.comment || "-")}</td>
+            <td><a class="ghost-btn small-btn" href="${escapeHtml(document.url)}" target="_blank" rel="noopener">Voir le document</a></td>
+          </tr>
+        `;
+      }).join("")
+      : '<tr><td colspan="4" class="empty-state">Aucun document disponible.</td></tr>';
+  }
+
+  const answeredRows = documents
+    .map((document) => ({ document, response: responsesByDocument.get(document.id) }))
+    .filter((item) => item.response);
+
+  batResponsesTable.innerHTML = answeredRows.length
+    ? answeredRows.map(({ document, response }) => `
+      <tr>
+        <td>${escapeHtml(response.updatedAt || response.createdAt || "")}</td>
+        <td><strong>${escapeHtml(response.pharmacyName || document.pharmacyName)}</strong></td>
+        <td>${escapeHtml(normalizeValidationStatus(response.status))}</td>
+        <td>${escapeHtml(response.comment || "-")}</td>
+        <td><a class="ghost-btn small-btn" href="${escapeHtml(document.url)}" target="_blank" rel="noopener">PDF</a></td>
+      </tr>
+    `).join("")
+    : '<tr><td colspan="5" class="empty-state">Aucune validation pour le moment.</td></tr>';
+
+  const responsesToolbar = batResponsesTable?.closest(".table-wrap")?.previousElementSibling;
+  if (responsesToolbar && !responsesToolbar.querySelector("[data-export-bat-excel]")) {
+    responsesToolbar.insertAdjacentHTML("beforeend", '<button class="primary-btn" type="button" data-export-bat-excel>Exporter Excel</button>');
+  }
+}
+
+function selectAdminBat() {
+  selectedAdminCampaign = null;
+  selectedAdminPoll = null;
+  selectedAdminInfoForm = null;
+  adminCampaignPicker.hidden = true;
+  adminDetail.hidden = true;
+  adminPollDetail.hidden = true;
+  adminInfoDetail.hidden = true;
+  adminBatDetail.hidden = false;
+  renderBatResults();
 }
 
 function updatePollChoiceSelection() {
@@ -1827,18 +2441,21 @@ function showCampaignPicker() {
     selectedCampaign = null;
     selectedPoll = null;
     selectedInfoForm = null;
+    selectedBatDocument = null;
     renderPharmacyAccess();
     return;
   }
   selectedCampaign = null;
   selectedPoll = null;
   selectedInfoForm = null;
+  selectedBatDocument = null;
   currentOrderTemplate = [];
   campaignPicker.hidden = false;
   heroBand.hidden = false;
   form.hidden = true;
   pollForm.hidden = true;
   profileUpdateForm.hidden = true;
+  batValidationForm.hidden = true;
   responseSuccess.hidden = true;
   campaignNotice.hidden = true;
   campaignNotice.textContent = "";
@@ -1851,6 +2468,7 @@ function showSuccessScreen() {
   form.hidden = true;
   pollForm.hidden = true;
   profileUpdateForm.hidden = true;
+  batValidationForm.hidden = true;
   campaignPicker.hidden = false;
   heroBand.hidden = false;
   responseSuccess.hidden = false;
@@ -1870,6 +2488,7 @@ async function selectAdminCampaign(campaignId) {
   adminDetail.hidden = false;
   adminPollDetail.hidden = true;
   quantitySummary.hidden = true;
+  adminBatDetail.hidden = true;
   quantitySummaryBtn.textContent = "Récap des quantités";
   renderOrderTemplate();
   await renderAdmin();
@@ -1886,6 +2505,7 @@ async function selectAdminPoll(pollId) {
   adminDetail.hidden = true;
   adminPollDetail.hidden = false;
   adminInfoDetail.hidden = true;
+  adminBatDetail.hidden = true;
   await renderPollResults();
 }
 
@@ -1900,6 +2520,7 @@ async function selectAdminInfoForm(infoFormId) {
   adminDetail.hidden = true;
   adminPollDetail.hidden = true;
   adminInfoDetail.hidden = false;
+  adminBatDetail.hidden = true;
   infoResponses = await getInfoResponses();
   renderInfoResults();
 }
@@ -1913,6 +2534,7 @@ async function showAdminCampaignPicker() {
   adminDetail.hidden = true;
   adminPollDetail.hidden = true;
   adminInfoDetail.hidden = true;
+  adminBatDetail.hidden = true;
   await refreshPollResponseCounts();
   if (adminUnlocked) infoResponses = await getInfoResponses();
   renderAdminResetAlert();
@@ -2221,7 +2843,7 @@ function renderInfoResults() {
         </td>
         <td>${escapeHtml(formatProfileHours(response.hours || []) || "-").replaceAll("\n", "<br>")}</td>
         <td>
-          ${(response.services || []).map((service) => `• ${escapeHtml(service)}`).join("<br>") || "-"}
+          ${(response.services || []).map((service) => `\u2022 ${escapeHtml(service)}`).join("<br>") || "-"}
           ${response.otherServices ? `<br><strong>Autres :</strong> ${escapeHtml(response.otherServices)}` : ""}
         </td>
       </tr>
@@ -2338,6 +2960,53 @@ function exportInfoToExcel() {
   link.remove();
   URL.revokeObjectURL(url);
   adminMessage.textContent = "Export Excel des fiches pharmacies généré.";
+}
+
+function exportBatToExcel() {
+  const documents = batDocumentsForActivePharmacies();
+  const responsesByDocument = new Map(batResponses.map((response) => [response.documentId, response]));
+  if (!documents.length) {
+    adminMessage.textContent = "Aucun document à exporter.";
+    return;
+  }
+
+  const headings = ["Pharmacie", "Statut", "Date", "Correction / commentaire", "Document"];
+  const body = documents.map((document) => {
+    const response = responsesByDocument.get(document.id);
+    const status = normalizeValidationStatus(response?.status) || "En attente";
+    return `
+      <tr>
+        <td>${escapeHtml(response?.pharmacyName || document.pharmacyName)}</td>
+        <td>${escapeHtml(status)}</td>
+        <td>${escapeHtml(response?.updatedAt || response?.createdAt || "")}</td>
+        <td>${escapeHtml(response?.comment || "")}</td>
+        <td>${escapeHtml(document.url)}</td>
+      </tr>
+    `;
+  }).join("");
+
+  const workbook = `
+    <html>
+      <head><meta charset="utf-8"></head>
+      <body>
+        <table border="1">
+          <thead><tr>${headings.map((heading) => `<th>${heading}</th>`).join("")}</tr></thead>
+          <tbody>${body}</tbody>
+        </table>
+      </body>
+    </html>
+  `;
+
+  const blob = new Blob([workbook], { type: "application/vnd.ms-excel;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `validations-documents-${new Date().toISOString().slice(0, 10)}.xls`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+  adminMessage.textContent = "Export Excel des validations généré.";
 }
 
 async function exportToExcel() {
@@ -2543,6 +3212,7 @@ pharmacyLoginForm.addEventListener("submit", async (event) => {
     await refreshPharmacyPollAnswers();
     await refreshPharmacyCampaignResponses();
     await refreshPharmacyInfoResponses();
+    await refreshPharmacyValidationResponses();
     renderCampaignPickers();
     showCampaignPicker();
     renderPharmacyAccess();
@@ -2585,6 +3255,7 @@ pharmacyPasswordChangeForm.addEventListener("submit", async (event) => {
     await refreshPharmacyPollAnswers();
     await refreshPharmacyCampaignResponses();
     await refreshPharmacyInfoResponses();
+    await refreshPharmacyValidationResponses();
     renderCampaignPickers();
     showCampaignPicker();
     renderPharmacyAccess();
@@ -2618,6 +3289,22 @@ campaignCards.addEventListener("keydown", (event) => {
   if (!card) return;
   event.preventDefault();
   selectCampaign(card.dataset.formCampaign);
+});
+
+batCards?.addEventListener("click", (event) => {
+  if (event.target.closest("[data-bat-pdf-link]")) return;
+  const button = event.target.closest("[data-form-bat]");
+  if (!button) return;
+  selectBat(button.dataset.formBat);
+});
+
+batCards?.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter" && event.key !== " ") return;
+  if (event.target.closest("[data-bat-pdf-link], button, input, textarea")) return;
+  const card = event.target.closest("[data-form-bat]");
+  if (!card) return;
+  event.preventDefault();
+  selectBat(card.dataset.formBat);
 });
 
 pollCards.addEventListener("click", (event) => {
@@ -2793,10 +3480,139 @@ adminInfoCards?.addEventListener("click", async (event) => {
   await selectAdminInfoForm(button.dataset.adminInfo);
 });
 
+adminBatCards?.addEventListener("click", async (event) => {
+  const deleteButton = event.target.closest("[data-delete-validation]");
+  if (deleteButton) {
+    event.stopPropagation();
+    const confirmed = confirm("Supprimer définitivement cette validation ?\n\nLe titre, le message, les documents importés et les réponses seront supprimés.");
+    if (!confirmed) return;
+    resetValidationState();
+    await saveValidationState({ title: "", description: "", archived: false, documents: [] });
+    await saveValidationResponses([]);
+    showAdminSection("new-validation");
+    renderCampaignPickers();
+    adminMessage.textContent = "Validation supprimée. Vous pouvez repartir de zéro.";
+    return;
+  }
+
+  const archiveButton = event.target.closest("[data-toggle-validation-archive]");
+  if (archiveButton) {
+    event.stopPropagation();
+    const validationConfig = currentValidationConfig();
+    const nextArchived = !validationConfig.archived;
+    const confirmed = confirm(nextArchived
+      ? "Archiver cette validation ?\n\nElle ne sera plus visible par les pharmacies, mais restera consultable dans Archivés."
+      : "Rouvrir cette validation ?\n\nElle redeviendra visible par les pharmacies concernées.");
+    if (!confirmed) return;
+    setValidationArchived(nextArchived);
+    await saveValidationState({
+      title: validationConfig.title,
+      description: validationConfig.description,
+      archived: nextArchived,
+      documents: batDocuments
+    });
+    renderCampaignPickers();
+    adminMessage.textContent = nextArchived ? "Validation archivée." : "Validation rouverte.";
+    return;
+  }
+
+  const button = event.target.closest("[data-admin-bat-overview], [data-admin-bat-document]");
+  if (!button) return;
+  selectAdminBat();
+});
+
+createValidationForm?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const title = document.querySelector("#newValidationTitle")?.value.trim() || "";
+  const message = batAdminMessage?.value.trim() || "";
+  if (!title) {
+    adminMessage.textContent = "Indiquez le nom de la validation.";
+    return;
+  }
+
+  validationConfigState = { title, description: message, archived: false };
+  localStorage.setItem(VALIDATION_TITLE_KEY, title);
+  localStorage.setItem(VALIDATION_MESSAGE_KEY, message);
+  setValidationArchived(false);
+  batDocuments = [];
+  batResponses = [];
+  saveLocalValidationDocuments(batDocuments);
+  saveLocalBatResponses(batResponses);
+  if (validationDocumentInput?.files?.length) {
+    await importValidationDocuments(validationDocumentInput.files, validationImportMessage);
+    validationDocumentInput.value = "";
+  }
+  await saveValidationState({ title, description: message, archived: false, documents: batDocuments });
+  await saveValidationResponses([]);
+  renderCampaignPickers();
+  showAdminSection("bat");
+  adminMessage.textContent = `Validation "${title}" créée. Les documents rattachés aux pharmacies sont visibles dans validations en attente.`;
+});
+
+validationDocumentInput?.addEventListener("change", async () => {
+  if (!validationDocumentInput.files.length) return;
+  await importValidationDocuments(validationDocumentInput.files, validationImportMessage);
+});
+
+adminValidationDocumentInput?.addEventListener("change", async () => {
+  if (!adminValidationDocumentInput.files.length) return;
+  await importValidationDocuments(adminValidationDocumentInput.files, adminValidationImportMessage);
+  adminValidationDocumentInput.value = "";
+});
+
+adminBatDetail?.addEventListener("click", async (event) => {
+  const deleteButton = event.target.closest("[data-delete-validation]");
+  if (deleteButton) {
+    const confirmed = confirm("Supprimer définitivement cette validation ?\n\nLe titre, le message, les documents importés et les réponses seront supprimés.");
+    if (!confirmed) return;
+    resetValidationState();
+    await saveValidationState({ title: "", description: "", archived: false, documents: [] });
+    await saveValidationResponses([]);
+    adminBatDetail.hidden = true;
+    showAdminSection("new-validation");
+    renderCampaignPickers();
+    adminMessage.textContent = "Validation supprimée. Vous pouvez repartir de zéro.";
+    return;
+  }
+
+  const archiveButton = event.target.closest("[data-toggle-validation-archive]");
+  if (archiveButton) {
+    const validationConfig = currentValidationConfig();
+    const nextArchived = !validationConfig.archived;
+    const confirmed = confirm(nextArchived
+      ? "Archiver cette validation ?\n\nElle ne sera plus visible par les pharmacies, mais restera consultable dans Archivés."
+      : "Rouvrir cette validation ?\n\nElle redeviendra visible par les pharmacies concernées.");
+    if (!confirmed) return;
+    setValidationArchived(nextArchived);
+    await saveValidationState({
+      title: validationConfig.title,
+      description: validationConfig.description,
+      archived: nextArchived,
+      documents: batDocuments
+    });
+    showAdminCampaignPicker();
+    adminMessage.textContent = nextArchived ? "Validation archivée." : "Validation rouverte.";
+    return;
+  }
+
+  const toggleButton = event.target.closest("[data-toggle-bat-documents]");
+  if (toggleButton) {
+    batDocumentsExpanded = !batDocumentsExpanded;
+    renderBatResults();
+    return;
+  }
+
+  if (event.target.closest("[data-export-bat-excel]")) {
+    exportBatToExcel();
+  }
+});
+
 backToAdminInfoBtn?.addEventListener("click", showAdminCampaignPicker);
+backToAdminBatBtn?.addEventListener("click", showAdminCampaignPicker);
 
 backToCampaignsBtn.addEventListener("click", showCampaignPicker);
 backToPollsBtn.addEventListener("click", showCampaignPicker);
+backToBatListBtn?.addEventListener("click", showCampaignPicker);
 backToAdminCampaignsBtn.addEventListener("click", async () => {
   activeAdminSection = "campaigns";
   await showAdminCampaignPicker();
@@ -3109,6 +3925,52 @@ downloadTemplateBtn.addEventListener("click", () => {
   URL.revokeObjectURL(url);
 });
 
+batValidationForm?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (!selectedBatDocument) {
+    batMessage.textContent = "Veuillez choisir un document avant d'envoyer une réponse.";
+    return;
+  }
+
+  const status = batValidationForm.querySelector('input[name="batStatus"]:checked')?.value || "";
+  const pharmacyName = batPharmacyName.value.trim();
+  const comment = batComment.value.trim();
+
+  if (!pharmacyName || !status) {
+    batMessage.textContent = "Le nom de la pharmacie et la validation sont obligatoires.";
+    return;
+  }
+
+  if (status === "Correction demandée" && !comment) {
+    batMessage.textContent = "Merci d'indiquer la correction demandée.";
+    return;
+  }
+
+  const previousResponse = batResponseForDocument(selectedBatDocument);
+  const now = new Date().toLocaleString("fr-FR");
+  const response = {
+    id: previousResponse?.id || createId(),
+    validationId: BAT_VALIDATION.id,
+    documentId: selectedBatDocument.id,
+    documentUrl: selectedBatDocument.url,
+    createdAt: previousResponse?.createdAt || now,
+    updatedAt: previousResponse ? now : "",
+    pharmacyId: currentPharmacy?.id || "",
+    pharmacyName,
+    status,
+    comment
+  };
+
+  const savedResponse = await submitValidationResponse(response);
+  batResponses = batResponses
+    .filter((item) => item.documentId !== selectedBatDocument.id)
+    .concat(savedResponse);
+  saveLocalBatResponses(batResponses);
+  renderCampaignPickers();
+  renderBatResults();
+  showSuccessScreen();
+});
+
 pollForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   if (!selectedPoll) {
@@ -3300,6 +4162,7 @@ adminLogin.addEventListener("submit", async (event) => {
   pharmacies = await getPharmacies(true);
   infoForms = await getInfoForms();
   infoResponses = await getInfoResponses();
+  batResponses = await getValidationResponses();
   renderPharmacyAccounts();
   renderAdminResetAlert();
   await showAdminCampaignPicker();
@@ -3336,6 +4199,24 @@ async function init() {
   polls = await getPolls();
   infoForms = await getInfoForms();
   infoResponses = localInfoResponses();
+  const validationState = await getValidationState();
+  validationConfigState = {
+    title: validationState.title || "",
+    description: validationState.description || "",
+    archived: Boolean(validationState.archived)
+  };
+  batDocuments = Array.isArray(validationState.documents) ? validationState.documents : [];
+  batResponses = await getValidationResponses();
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("resetValidation") === "1") {
+    resetValidationState();
+    params.delete("resetValidation");
+    const nextQuery = params.toString();
+    window.history.replaceState({}, "", `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ""}`);
+  }
+  const validationTitleInput = document.querySelector("#newValidationTitle");
+  if (validationTitleInput) validationTitleInput.value = localStorage.getItem("soguasphar_validation_title_preview") || "";
+  if (batAdminMessage) batAdminMessage.value = localStorage.getItem("soguasphar_validation_message_preview") || "";
   const pharmacyInfo = await getPharmacies(false);
   if (pharmacyInfo && typeof pharmacyInfo.count === "number" && pharmacyInfo.count === 0) {
     pharmacies = [];
@@ -3347,6 +4228,7 @@ async function init() {
   await refreshPharmacyPollAnswers();
   await refreshPharmacyCampaignResponses();
   await refreshPharmacyInfoResponses();
+  await refreshPharmacyValidationResponses();
   renderCampaignPickers();
   showCampaignPicker();
   await showAdminCampaignPicker();
