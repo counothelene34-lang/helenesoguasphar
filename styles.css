@@ -238,6 +238,60 @@ main::before {
   margin-top: 18px;
 }
 
+.archived-orders-block {
+  margin-top: 18px;
+}
+
+.archived-orders-toggle {
+  width: 100%;
+  justify-content: center;
+  min-height: 52px;
+  font-size: 17px;
+}
+
+.archived-orders-panel {
+  margin-top: 14px;
+  padding: 16px;
+  background: rgba(243, 251, 247, .92);
+  border: 1px solid rgba(0, 140, 69, .18);
+  border-radius: 12px;
+}
+
+.archived-orders-panel .section-head {
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.archived-orders-panel h2 {
+  margin: 0 0 4px;
+  font-size: 22px;
+}
+
+.archived-orders-panel p {
+  color: var(--muted);
+}
+
+.archived-orders-table {
+  min-width: 0;
+  table-layout: fixed;
+}
+
+.archived-orders-table th:nth-child(1),
+.archived-orders-table td:nth-child(1) {
+  width: 34%;
+}
+
+.archived-orders-table th:nth-child(2),
+.archived-orders-table td:nth-child(2) {
+  width: 48%;
+}
+
+.archived-orders-table th:nth-child(3),
+.archived-orders-table td:nth-child(3) {
+  width: 18%;
+  text-align: center;
+}
+
 .create-campaign-form {
   width: min(760px, 100%);
   margin: 20px auto 0;

@@ -31,6 +31,10 @@ const logoutPharmacyBtn = document.querySelector("#logoutPharmacyBtn");
 const heroBand = document.querySelector(".hero-band");
 const campaignPicker = document.querySelector("#campaignPicker");
 const campaignCards = document.querySelector("#campaignCards");
+const toggleArchivedOrdersBtn = document.querySelector("#toggleArchivedOrdersBtn");
+const archivedOrdersPanel = document.querySelector("#archivedOrdersPanel");
+const archivedOrdersRows = document.querySelector("#archivedOrdersRows");
+const archivedOrdersEmpty = document.querySelector("#archivedOrdersEmpty");
 const batCards = document.querySelector("#batCards");
 const pollCards = document.querySelector("#pollCards");
 const infoCards = document.querySelector("#infoCards");
@@ -209,6 +213,7 @@ let currentOrderTemplate = [];
 let adminShowingClosedCampaigns = false;
 let pollResponseCounts = {};
 let activeAdminSection = "new-campaign";
+let archivedOrdersVisible = false;
 
 const ADMIN_SECTIONS = {
   "new-campaign": {
@@ -1348,6 +1353,53 @@ function campaignIsNotInterested(response) {
 function campaignIsInterested(response) {
   return !campaignIsNotInterested(response);
 }
+
+function archivedOrderRowsForCurrentPharmacy() {
+  return campaigns
+    .filter((campaign) => campaign.closed)
+    .flatMap((campaign) => {
+      const response = pharmacyCampaignResponses[campaign.id];
+      if (!response) return [];
+
+      const operation = response.campaignTitle || campaign.title || "Précommande";
+      if (campaignIsNotInterested(response)) {
+        return [{ operation, designation: "Pas intéressé", quantity: "-" }];
+      }
+
+      const products = Array.isArray(response.products)
+        ? response.products.filter((product) => Number(product.quantity) > 0)
+        : [];
+
+      if (!products.length) {
+        return [{ operation, designation: "Réponse enregistrée sans quantité", quantity: "-" }];
+      }
+
+      return products.map((product) => ({
+        operation,
+        designation: product.designation || product.product || "Produit",
+        quantity: product.quantity || ""
+      }));
+    });
+}
+
+function renderArchivedOrdersHistory() {
+  if (!toggleArchivedOrdersBtn || !archivedOrdersPanel || !archivedOrdersRows || !archivedOrdersEmpty) return;
+
+  const rows = archivedOrderRowsForCurrentPharmacy();
+  toggleArchivedOrdersBtn.hidden = !currentPharmacy;
+  toggleArchivedOrdersBtn.setAttribute("aria-expanded", archivedOrdersVisible ? "true" : "false");
+  archivedOrdersPanel.hidden = !archivedOrdersVisible || !currentPharmacy;
+  archivedOrdersRows.innerHTML = rows.map((row) => `
+    <tr>
+      <td><strong>${escapeHtml(row.operation)}</strong></td>
+      <td>${escapeHtml(row.designation)}</td>
+      <td>${escapeHtml(row.quantity)}</td>
+    </tr>
+  `).join("");
+  archivedOrdersEmpty.hidden = Boolean(rows.length);
+  archivedOrdersPanel.querySelector(".archived-orders-table-wrap").hidden = !rows.length;
+}
+
 function campaignResponseSummary(response) {
   if (!response) return "";
   if (String(response.interest || "").toLowerCase().includes("pas int")) {
@@ -2118,6 +2170,8 @@ function renderCampaignPickers() {
   campaignCards.innerHTML = openCampaigns.length
     ? openCampaigns.map((campaign) => campaignCard(campaign, "form")).join("")
     : '<p class="empty-campaigns">Aucune précommande disponible pour le moment.</p>';
+
+  renderArchivedOrdersHistory();
 
   pollCards.innerHTML = openPolls.length
     ? openPolls.map((poll) => pollCard(poll, "form")).join("")
@@ -3228,6 +3282,7 @@ pharmacyLoginForm.addEventListener("submit", async (event) => {
     }
 
     currentPharmacy = pharmacy;
+    archivedOrdersVisible = false;
     localStorage.setItem(PHARMACY_SESSION_KEY, JSON.stringify(currentPharmacy));
     pharmacyPassword.value = "";
     pharmacyLoginMessage.textContent = "";
@@ -3268,6 +3323,7 @@ pharmacyPasswordChangeForm.addEventListener("submit", async (event) => {
 
   try {
     currentPharmacy = await changePharmacyPassword(pendingPasswordPharmacy.id, pendingInitialPassword, newPassword);
+    archivedOrdersVisible = false;
     localStorage.setItem(PHARMACY_SESSION_KEY, JSON.stringify(currentPharmacy));
     pendingPasswordPharmacy = null;
     pendingInitialPassword = "";
@@ -3292,6 +3348,7 @@ logoutPharmacyBtn.addEventListener("click", () => {
   pendingInitialPassword = "";
   pharmacyPollAnswers = {};
   pharmacyCampaignResponses = {};
+  archivedOrdersVisible = false;
   localStorage.removeItem(PHARMACY_SESSION_KEY);
   renderCampaignPickers();
   showCampaignPicker();
@@ -3311,6 +3368,11 @@ campaignCards.addEventListener("keydown", (event) => {
   if (!card) return;
   event.preventDefault();
   selectCampaign(card.dataset.formCampaign);
+});
+
+toggleArchivedOrdersBtn?.addEventListener("click", () => {
+  archivedOrdersVisible = !archivedOrdersVisible;
+  renderArchivedOrdersHistory();
 });
 
 batCards?.addEventListener("click", (event) => {
