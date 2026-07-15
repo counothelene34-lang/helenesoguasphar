@@ -34,6 +34,7 @@ const campaignPicker = document.querySelector("#campaignPicker");
 const campaignCards = document.querySelector("#campaignCards");
 const toggleArchivedOrdersBtn = document.querySelector("#toggleArchivedOrdersBtn");
 const archivedOrdersPanel = document.querySelector("#archivedOrdersPanel");
+const backToArchivedOrdersMenuBtn = document.querySelector("#backToArchivedOrdersMenuBtn");
 const archivedOrdersRows = document.querySelector("#archivedOrdersRows");
 const archivedOrdersEmpty = document.querySelector("#archivedOrdersEmpty");
 const batCards = document.querySelector("#batCards");
@@ -1412,6 +1413,28 @@ function setHeroVisible(visible) {
   }
 }
 
+function showArchivedOrdersPage() {
+  if (pharmacyAccessRequired()) {
+    renderPharmacyAccess();
+    return;
+  }
+
+  selectedCampaign = null;
+  selectedPoll = null;
+  selectedInfoForm = null;
+  selectedBatDocument = null;
+  setHeroVisible(false);
+  archivedOrdersVisible = true;
+  campaignPicker.hidden = true;
+  form.hidden = true;
+  pollForm.hidden = true;
+  profileUpdateForm.hidden = true;
+  batValidationForm.hidden = true;
+  responseSuccess.hidden = true;
+  renderArchivedOrdersHistory();
+  archivedOrdersPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
 function campaignResponseSummary(response) {
   if (!response) return "";
   if (String(response.interest || "").toLowerCase().includes("pas int")) {
@@ -2545,6 +2568,8 @@ function showCampaignPicker() {
   selectedInfoForm = null;
   selectedBatDocument = null;
   currentOrderTemplate = [];
+  archivedOrdersVisible = false;
+  renderArchivedOrdersHistory();
   campaignPicker.hidden = false;
   setHeroVisible(true);
   form.hidden = true;
@@ -3436,9 +3461,10 @@ campaignCards.addEventListener("keydown", (event) => {
 });
 
 toggleArchivedOrdersBtn?.addEventListener("click", () => {
-  archivedOrdersVisible = !archivedOrdersVisible;
-  renderArchivedOrdersHistory();
+  showArchivedOrdersPage();
 });
+
+backToArchivedOrdersMenuBtn?.addEventListener("click", showCampaignPicker);
 
 batCards?.addEventListener("click", (event) => {
   if (event.target.closest("[data-bat-pdf-link]")) return;

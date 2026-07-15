@@ -71,11 +71,13 @@
         </div>
         <div id="archivedOrdersBlock" class="archived-orders-block">
           <button id="toggleArchivedOrdersBtn" class="ghost-btn archived-orders-toggle" type="button" aria-expanded="false">
-            Précommandes archivées
+            <span>Précommandes archivées</span>
+            <span aria-hidden="true">→</span>
           </button>
         </div>
       </div>
-      <div id="archivedOrdersPanel" class="archived-orders-panel" hidden>
+      <section id="archivedOrdersPanel" class="form-shell archived-orders-page" hidden>
+        <button id="backToArchivedOrdersMenuBtn" class="back-strong-btn" type="button">← Retour au menu</button>
         <div class="section-head">
           <div>
             <h2>Historique des précommandes</h2>
@@ -95,7 +97,7 @@
           </table>
         </div>
         <p id="archivedOrdersEmpty" class="empty-campaigns" hidden>Aucune précommande archivée pour votre pharmacie pour le moment.</p>
-      </div>
+      </section>
 
       <section id="campaignPicker" class="campaign-picker" aria-labelledby="campaignPickerTitle">
         <div class="picker-head">
