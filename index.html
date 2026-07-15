@@ -63,42 +63,44 @@
         <button id="logoutPharmacyBtn" class="ghost-btn" type="button">Changer de pharmacie</button>
       </div>
 
-      <div class="hero-band">
-        <div class="hero-copy">
-          <h1 id="formTitle">Commande, précommande, confirmation</h1>
+      <div class="hero-actions-row">
+        <div class="hero-band">
+          <div class="hero-copy">
+            <h1 id="formTitle">Commande, précommande, confirmation</h1>
+          </div>
         </div>
+        <div id="archivedOrdersBlock" class="archived-orders-block">
+          <button id="toggleArchivedOrdersBtn" class="ghost-btn archived-orders-toggle" type="button" aria-expanded="false">
+            Précommandes archivées
+          </button>
+        </div>
+      </div>
+      <div id="archivedOrdersPanel" class="archived-orders-panel" hidden>
+        <div class="section-head">
+          <div>
+            <h2>Historique des précommandes</h2>
+            <p>Retrouvez vos réponses sur les campagnes clôturées.</p>
+          </div>
+        </div>
+        <div class="table-wrap archived-orders-table-wrap">
+          <table class="archived-orders-table">
+            <thead>
+              <tr>
+                <th>Opération</th>
+                <th>Désignation du produit</th>
+                <th>Quantité</th>
+              </tr>
+            </thead>
+            <tbody id="archivedOrdersRows"></tbody>
+          </table>
+        </div>
+        <p id="archivedOrdersEmpty" class="empty-campaigns" hidden>Aucune précommande archivée pour votre pharmacie pour le moment.</p>
       </div>
 
       <section id="campaignPicker" class="campaign-picker" aria-labelledby="campaignPickerTitle">
         <div class="picker-head">
           <h2 id="campaignPickerTitle">Choisissez une commande à remplir</h2>
           <p>Sélectionnez la commande ou précommande concernée, puis indiquez vos quantités souhaitées. Si vous ne souhaitez pas participer, vous pouvez simplement répondre pas intéressé dans le formulaire merci.</p>
-        </div>
-        <div id="archivedOrdersBlock" class="archived-orders-block">
-          <button id="toggleArchivedOrdersBtn" class="ghost-btn archived-orders-toggle" type="button" aria-expanded="false">
-            Précommandes archivées
-          </button>
-          <div id="archivedOrdersPanel" class="archived-orders-panel" hidden>
-            <div class="section-head">
-              <div>
-                <h2>Historique des précommandes</h2>
-                <p>Retrouvez vos réponses sur les campagnes clôturées.</p>
-              </div>
-            </div>
-            <div class="table-wrap archived-orders-table-wrap">
-              <table class="archived-orders-table">
-                <thead>
-                  <tr>
-                    <th>Opération</th>
-                    <th>Désignation du produit</th>
-                    <th>Quantité</th>
-                  </tr>
-                </thead>
-                <tbody id="archivedOrdersRows"></tbody>
-              </table>
-            </div>
-            <p id="archivedOrdersEmpty" class="empty-campaigns" hidden>Aucune précommande archivée pour votre pharmacie pour le moment.</p>
-          </div>
         </div>
         <div id="campaignCards" class="campaign-grid" aria-live="polite"></div>
         <div class="poll-picker-block survey-picker-block">

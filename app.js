@@ -28,6 +28,7 @@ const pharmacyLoginMessage = document.querySelector("#pharmacyLoginMessage");
 const pharmacySessionBar = document.querySelector("#pharmacySessionBar");
 const currentPharmacyName = document.querySelector("#currentPharmacyName");
 const logoutPharmacyBtn = document.querySelector("#logoutPharmacyBtn");
+const heroActionsRow = document.querySelector(".hero-actions-row");
 const heroBand = document.querySelector(".hero-band");
 const campaignPicker = document.querySelector("#campaignPicker");
 const campaignCards = document.querySelector("#campaignCards");
@@ -1386,6 +1387,8 @@ function renderArchivedOrdersHistory() {
   if (!toggleArchivedOrdersBtn || !archivedOrdersPanel || !archivedOrdersRows || !archivedOrdersEmpty) return;
 
   const rows = archivedOrderRowsForCurrentPharmacy();
+  const archivedOrdersBlock = toggleArchivedOrdersBtn.closest(".archived-orders-block");
+  if (archivedOrdersBlock) archivedOrdersBlock.hidden = !currentPharmacy;
   toggleArchivedOrdersBtn.hidden = !currentPharmacy;
   toggleArchivedOrdersBtn.setAttribute("aria-expanded", archivedOrdersVisible ? "true" : "false");
   archivedOrdersPanel.hidden = !archivedOrdersVisible || !currentPharmacy;
@@ -1398,6 +1401,15 @@ function renderArchivedOrdersHistory() {
   `).join("");
   archivedOrdersEmpty.hidden = Boolean(rows.length);
   archivedOrdersPanel.querySelector(".archived-orders-table-wrap").hidden = !rows.length;
+}
+
+function setHeroVisible(visible) {
+  if (heroBand) heroBand.hidden = !visible;
+  if (heroActionsRow) heroActionsRow.hidden = !visible;
+  if (!visible && archivedOrdersVisible) {
+    archivedOrdersVisible = false;
+    renderArchivedOrdersHistory();
+  }
 }
 
 function campaignResponseSummary(response) {
@@ -1524,7 +1536,7 @@ function renderPharmacyAccess() {
   }
 
   if (requiresLogin) {
-    heroBand.hidden = true;
+    setHeroVisible(false);
     campaignPicker.hidden = true;
     form.hidden = true;
     pollForm.hidden = true;
@@ -2229,7 +2241,7 @@ function selectCampaign(campaignId) {
   selectedInfoForm = null;
   currentOrderTemplate = selectedCampaign?.template || [];
   campaignPicker.hidden = true;
-  heroBand.hidden = true;
+  setHeroVisible(false);
   form.hidden = false;
   pollForm.hidden = true;
   profileUpdateForm.hidden = true;
@@ -2264,7 +2276,7 @@ function selectPoll(pollId) {
 
   selectedCampaign = null;
   campaignPicker.hidden = false;
-  heroBand.hidden = false;
+  setHeroVisible(true);
   form.hidden = true;
   pollForm.hidden = true;
   profileUpdateForm.hidden = true;
@@ -2290,7 +2302,7 @@ function selectInfoForm(infoFormId) {
   selectedCampaign = null;
   selectedPoll = null;
   campaignPicker.hidden = true;
-  heroBand.hidden = true;
+  setHeroVisible(false);
   form.hidden = true;
   pollForm.hidden = true;
   profileUpdateForm.hidden = false;
@@ -2336,7 +2348,7 @@ function selectBat(documentId) {
   selectedPoll = null;
   selectedInfoForm = null;
   campaignPicker.hidden = true;
-  heroBand.hidden = true;
+  setHeroVisible(false);
   form.hidden = true;
   pollForm.hidden = true;
   profileUpdateForm.hidden = true;
@@ -2534,7 +2546,7 @@ function showCampaignPicker() {
   selectedBatDocument = null;
   currentOrderTemplate = [];
   campaignPicker.hidden = false;
-  heroBand.hidden = false;
+  setHeroVisible(true);
   form.hidden = true;
   pollForm.hidden = true;
   profileUpdateForm.hidden = true;
@@ -2553,7 +2565,7 @@ function showSuccessScreen() {
   profileUpdateForm.hidden = true;
   batValidationForm.hidden = true;
   campaignPicker.hidden = false;
-  heroBand.hidden = false;
+  setHeroVisible(true);
   responseSuccess.hidden = false;
 }
 
