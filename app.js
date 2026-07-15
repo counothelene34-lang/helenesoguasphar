@@ -1584,6 +1584,13 @@ function renderPharmacyAccounts() {
 
   pharmacyAccountsList.innerHTML = `
     ${resetNotice}
+    <div class="table-toolbar pharmacy-export-toolbar">
+      <div>
+        <h2>Accès pharmacies</h2>
+        <p>Exportez la liste des pharmacies avec leurs mots de passe actuels.</p>
+      </div>
+      <button class="primary-btn" type="button" data-export-pharmacy-passwords>Exporter Excel</button>
+    </div>
     <div class="table-wrap compact">
       <table>
         <thead><tr><th>Pharmacie</th><th>Mot de passe actuel</th><th>Statut</th><th>Demande</th><th>Action</th></tr></thead>
@@ -3038,6 +3045,52 @@ function exportInfoToExcel() {
   adminMessage.textContent = "Export Excel des fiches pharmacies généré.";
 }
 
+function exportPharmacyPasswordsToExcel() {
+  if (!adminUnlocked) return;
+  if (!pharmacies.length) {
+    adminMessage.textContent = "Aucun accès pharmacie à exporter.";
+    return;
+  }
+
+  const sortedPharmacies = pharmacies
+    .slice()
+    .sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""), "fr"));
+  const headings = ["Pharmacie", "Mot de passe", "Accès actif", "Mot de passe à changer", "Demande de réinitialisation", "Date de demande"];
+  const body = sortedPharmacies.map((pharmacy) => `
+    <tr>
+      <td>${escapeHtml(pharmacy.name || "")}</td>
+      <td>${escapeHtml(pharmacy.password || "")}</td>
+      <td>${pharmacy.active === false ? "Non" : "Oui"}</td>
+      <td>${pharmacy.mustChangePassword === false ? "Non" : "Oui"}</td>
+      <td>${pharmacy.passwordResetRequested ? "Oui" : "Non"}</td>
+      <td>${escapeHtml(pharmacy.passwordResetRequestedAt || "")}</td>
+    </tr>
+  `).join("");
+
+  const workbook = `
+    <html>
+      <head><meta charset="utf-8"></head>
+      <body>
+        <table border="1">
+          <thead><tr>${headings.map((heading) => `<th>${heading}</th>`).join("")}</tr></thead>
+          <tbody>${body}</tbody>
+        </table>
+      </body>
+    </html>
+  `;
+
+  const blob = new Blob([workbook], { type: "application/vnd.ms-excel;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `mots-de-passe-pharmacies-${new Date().toISOString().slice(0, 10)}.xls`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+  adminMessage.textContent = "Export Excel des mots de passe pharmacies généré.";
+}
+
 function exportBatToExcel() {
   const documents = batDocumentsForActivePharmacies();
   const responsesByDocument = new Map(batResponses.map((response) => [response.documentId, response]));
@@ -3921,6 +3974,12 @@ createPharmacyForm.addEventListener("submit", async (event) => {
 });
 
 pharmacyAccountsList.addEventListener("click", async (event) => {
+  const exportButton = event.target.closest("[data-export-pharmacy-passwords]");
+  if (exportButton) {
+    exportPharmacyPasswordsToExcel();
+    return;
+  }
+
   const resetButton = event.target.closest("[data-reset-pharmacy-password]");
   if (resetButton) {
     const pharmacy = pharmacies.find((item) => item.id === resetButton.dataset.resetPharmacyPassword);
