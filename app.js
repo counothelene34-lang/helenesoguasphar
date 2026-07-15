@@ -1061,6 +1061,25 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
+function safeDownloadName(value, fallback = "document.pdf") {
+  const cleaned = String(value || fallback)
+    .replace(/[\\/:*?"<>|]+/g, "-")
+    .replace(/\s+/g, " ")
+    .trim();
+  return cleaned || fallback;
+}
+
+function validationDocumentDownloadName(document) {
+  const fileName = document?.fileName;
+  if (fileName) return safeDownloadName(fileName);
+
+  const fileType = String(document?.fileType || "").toLowerCase();
+  const extension = fileType.includes("pdf")
+    ? "pdf"
+    : (fileType.startsWith("image/") ? (fileType.split("/")[1] || "png") : "pdf");
+  return safeDownloadName(`${document?.pharmacyName || "document"}.${extension}`);
+}
+
 function pharmacyNameKey(name) {
   return String(name || "")
     .normalize("NFD")
@@ -2015,7 +2034,7 @@ function batValidationCard(document, target) {
       <div class="campaign-foot">
         <strong>${escapeHtml(document.pharmacyName)}</strong>
         <div class="campaign-actions">
-          <a class="ghost-btn" href="${escapeHtml(document.url)}" target="_blank" rel="noopener" data-bat-pdf-link>Voir le document</a>
+          <a class="ghost-btn" href="${escapeHtml(document.url)}" download="${escapeHtml(validationDocumentDownloadName(document))}" data-bat-pdf-link>Télécharger le document</a>
           <button class="primary-btn" type="button" ${actionAttr}>${isAdmin ? "Voir le suivi" : (response ? "Modifier" : "Valider")}</button>
         </div>
       </div>
@@ -2276,6 +2295,9 @@ function selectBat(documentId) {
     batDocumentPdfPreview.data = isImageDocument ? "" : selectedBatDocument.url;
   }
   batPdfOpenLink.href = selectedBatDocument.url;
+  batPdfOpenLink.download = validationDocumentDownloadName(selectedBatDocument);
+  batPdfOpenLink.textContent = "Télécharger le document";
+  batPdfOpenLink.removeAttribute("target");
   batPharmacyName.value = previousResponse?.pharmacyName || currentPharmacy?.name || selectedBatDocument.pharmacyName;
   batPharmacyName.readOnly = Boolean(currentPharmacy?.name);
   batComment.value = previousResponse?.comment || "";
@@ -2371,7 +2393,7 @@ function renderBatResults() {
             <td><strong>${escapeHtml(document.pharmacyName)}</strong></td>
             <td>${escapeHtml(status)}</td>
             <td>${escapeHtml(response?.comment || "-")}</td>
-            <td><a class="ghost-btn small-btn" href="${escapeHtml(document.url)}" target="_blank" rel="noopener">Voir le document</a></td>
+            <td><a class="ghost-btn small-btn" href="${escapeHtml(document.url)}" download="${escapeHtml(validationDocumentDownloadName(document))}" data-bat-pdf-link>Télécharger</a></td>
           </tr>
         `;
       }).join("")
@@ -2389,7 +2411,7 @@ function renderBatResults() {
         <td><strong>${escapeHtml(response.pharmacyName || document.pharmacyName)}</strong></td>
         <td>${escapeHtml(normalizeValidationStatus(response.status))}</td>
         <td>${escapeHtml(response.comment || "-")}</td>
-        <td><a class="ghost-btn small-btn" href="${escapeHtml(document.url)}" target="_blank" rel="noopener">PDF</a></td>
+        <td><a class="ghost-btn small-btn" href="${escapeHtml(document.url)}" download="${escapeHtml(validationDocumentDownloadName(document))}" data-bat-pdf-link>Télécharger</a></td>
       </tr>
     `).join("")
     : '<tr><td colspan="5" class="empty-state">Aucune validation pour le moment.</td></tr>';
