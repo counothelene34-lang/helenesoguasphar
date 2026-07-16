@@ -35,6 +35,7 @@ const campaignCards = document.querySelector("#campaignCards");
 const toggleArchivedOrdersBtn = document.querySelector("#toggleArchivedOrdersBtn");
 const archivedOrdersPanel = document.querySelector("#archivedOrdersPanel");
 const backToArchivedOrdersMenuBtn = document.querySelector("#backToArchivedOrdersMenuBtn");
+const downloadArchivedOrdersPdfBtn = document.querySelector("#downloadArchivedOrdersPdfBtn");
 const archivedOrdersRows = document.querySelector("#archivedOrdersRows");
 const archivedOrdersEmpty = document.querySelector("#archivedOrdersEmpty");
 const batCards = document.querySelector("#batCards");
@@ -1364,8 +1365,9 @@ function archivedOrderRowsForCurrentPharmacy() {
       if (!response) return [];
 
       const operation = response.campaignTitle || campaign.title || "Précommande";
+      const completedAt = response.updatedAt || response.createdAt || "-";
       if (campaignIsNotInterested(response)) {
-        return [{ operation, designation: "Pas intéressé", quantity: "-" }];
+        return [{ completedAt, operation, designation: "Pas intéressé", quantity: "-" }];
       }
 
       const products = Array.isArray(response.products)
@@ -1373,10 +1375,11 @@ function archivedOrderRowsForCurrentPharmacy() {
         : [];
 
       if (!products.length) {
-        return [{ operation, designation: "Réponse enregistrée sans quantité", quantity: "-" }];
+        return [{ completedAt, operation, designation: "Réponse enregistrée sans quantité", quantity: "-" }];
       }
 
       return products.map((product) => ({
+        completedAt,
         operation,
         designation: product.designation || product.product || "Produit",
         quantity: product.quantity || ""
@@ -1395,6 +1398,7 @@ function renderArchivedOrdersHistory() {
   archivedOrdersPanel.hidden = !archivedOrdersVisible || !currentPharmacy;
   archivedOrdersRows.innerHTML = rows.map((row) => `
     <tr>
+      <td>${escapeHtml(row.completedAt)}</td>
       <td><strong>${escapeHtml(row.operation)}</strong></td>
       <td>${escapeHtml(row.designation)}</td>
       <td>${escapeHtml(row.quantity)}</td>
@@ -1433,6 +1437,71 @@ function showArchivedOrdersPage() {
   responseSuccess.hidden = true;
   renderArchivedOrdersHistory();
   archivedOrdersPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function exportArchivedOrdersPdf() {
+  const rows = archivedOrderRowsForCurrentPharmacy();
+  if (!rows.length) {
+    alert("Aucune précommande archivée à exporter.");
+    return;
+  }
+
+  const printedAt = new Date().toLocaleString("fr-FR");
+  const pharmacyName = currentPharmacy?.name || "Pharmacie";
+  const tableRows = rows.map((row) => `
+    <tr>
+      <td>${escapeHtml(row.completedAt)}</td>
+      <td>${escapeHtml(row.operation)}</td>
+      <td>${escapeHtml(row.designation)}</td>
+      <td>${escapeHtml(row.quantity)}</td>
+    </tr>
+  `).join("");
+  const printWindow = window.open("", "_blank", "width=980,height=720");
+  if (!printWindow) {
+    alert("Autorisez l'ouverture de la fenêtre pour télécharger le PDF.");
+    return;
+  }
+
+  printWindow.document.write(`
+    <!doctype html>
+    <html lang="fr">
+      <head>
+        <meta charset="utf-8">
+        <title>Historique précommandes - ${escapeHtml(pharmacyName)}</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 28px; color: #142032; }
+          h1 { margin: 0 0 6px; color: #007a3d; font-size: 24px; }
+          p { margin: 0 0 18px; color: #5f6b84; }
+          table { width: 100%; border-collapse: collapse; font-size: 12px; }
+          th { color: #fff; background: #008c45; text-align: left; }
+          th, td { border: 1px solid #cfd8d3; padding: 8px; vertical-align: top; }
+          tbody tr:nth-child(even) { background: #f4fbf7; }
+          @page { size: A4; margin: 14mm; }
+        </style>
+      </head>
+      <body>
+        <h1>Historique des précommandes</h1>
+        <p>${escapeHtml(pharmacyName)} - généré le ${escapeHtml(printedAt)}</p>
+        <table>
+          <thead>
+            <tr>
+              <th>Date de remplissage</th>
+              <th>Opération</th>
+              <th>Désignation du produit</th>
+              <th>Quantité</th>
+            </tr>
+          </thead>
+          <tbody>${tableRows}</tbody>
+        </table>
+        <script>
+          window.addEventListener("load", () => {
+            window.print();
+          });
+        <\/script>
+      </body>
+    </html>
+  `);
+  printWindow.document.close();
 }
 
 function campaignResponseSummary(response) {
@@ -3465,6 +3534,8 @@ toggleArchivedOrdersBtn?.addEventListener("click", () => {
 });
 
 backToArchivedOrdersMenuBtn?.addEventListener("click", showCampaignPicker);
+
+downloadArchivedOrdersPdfBtn?.addEventListener("click", exportArchivedOrdersPdf);
 
 batCards?.addEventListener("click", (event) => {
   if (event.target.closest("[data-bat-pdf-link]")) return;

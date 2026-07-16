@@ -71,8 +71,11 @@
         </div>
         <div id="archivedOrdersBlock" class="archived-orders-block">
           <button id="toggleArchivedOrdersBtn" class="ghost-btn archived-orders-toggle" type="button" aria-expanded="false">
-            <span>Précommandes archivées</span>
-            <span aria-hidden="true">→</span>
+            <span class="archived-orders-label">
+              <span>Précommandes</span>
+              <span>archivées</span>
+            </span>
+            <span class="archived-orders-arrow" aria-hidden="true">→</span>
           </button>
         </div>
       </div>
@@ -83,11 +86,13 @@
             <h2>Historique des précommandes</h2>
             <p>Retrouvez vos réponses sur les campagnes clôturées.</p>
           </div>
+          <button id="downloadArchivedOrdersPdfBtn" class="primary-btn" type="button">Télécharger PDF</button>
         </div>
         <div class="table-wrap archived-orders-table-wrap">
           <table class="archived-orders-table">
             <thead>
               <tr>
+                <th>Date de remplissage</th>
                 <th>Opération</th>
                 <th>Désignation du produit</th>
                 <th>Quantité</th>
