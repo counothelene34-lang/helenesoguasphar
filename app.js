@@ -1553,6 +1553,25 @@ function responseOwnerKey(response) {
   return `${response.campaignId || "herboristerie"}|${response.pharmacyId || pharmacyNameKey(response.pharmacyName)}`;
 }
 
+function responseMatchesCampaign(response, campaign) {
+  if (!response || !campaign) return false;
+  if (response.campaignId === campaign.id) return true;
+  if (!response.campaignId && campaign.id === "herboristerie") return true;
+  return pharmacyNameKey(response.campaignTitle) === pharmacyNameKey(campaign.title);
+}
+
+function responseMatchesPoll(response, poll) {
+  if (!response || !poll) return false;
+  if (response.pollId === poll.id) return true;
+  return pharmacyNameKey(response.pollQuestion) === pharmacyNameKey(poll.question);
+}
+
+function responseMatchesInfoForm(response, infoForm) {
+  if (!response || !infoForm) return false;
+  if (response.formId === infoForm.id) return true;
+  return pharmacyNameKey(response.formTitle) === pharmacyNameKey(infoForm.title);
+}
+
 function latestResponses(responses = []) {
   const byOwner = new Map();
   responses.forEach((response) => {
@@ -2170,7 +2189,7 @@ function pollCard(poll, target) {
 
 function infoFormCard(infoForm, target) {
   const isAdmin = target === "admin";
-  const responses = infoResponses.filter((response) => response.formId === infoForm.id);
+  const responses = infoResponses.filter((response) => responseMatchesInfoForm(response, infoForm));
   const responseCount = pharmacyNamesForResponses(responses).length;
   const currentResponse = !isAdmin && currentPharmacy
     ? responses.find((response) => responseMatchesPharmacy(response, currentPharmacy))
@@ -2423,7 +2442,7 @@ function selectInfoForm(infoFormId) {
   selectedInfoForm = infoForms.find((infoForm) => infoForm.id === infoFormId) || null;
   if (!selectedInfoForm) return;
 
-  const previousResponse = infoResponses.find((response) => response.formId === selectedInfoForm.id && currentPharmacy && responseMatchesPharmacy(response, currentPharmacy));
+  const previousResponse = infoResponses.find((response) => responseMatchesInfoForm(response, selectedInfoForm) && currentPharmacy && responseMatchesPharmacy(response, currentPharmacy));
 
   selectedCampaign = null;
   selectedPoll = null;
@@ -2881,7 +2900,7 @@ async function renderAdmin() {
   if (!adminUnlocked || !selectedAdminCampaign) return;
 
   const responses = (await getResponses())
-    .filter((item) => item.campaignId === selectedAdminCampaign.id || (!item.campaignId && selectedAdminCampaign.id === "herboristerie"));
+    .filter((item) => responseMatchesCampaign(item, selectedAdminCampaign));
   const answeredNames = pharmacyNamesForResponses(responses);
   const notInterestedNames = pharmacyNamesForResponses(responses.filter(campaignIsNotInterested));
   const interested = responses.filter(campaignIsInterested).length;
@@ -2975,7 +2994,7 @@ function renderQuantitySummary(responses = []) {
 async function renderPollResults() {
   if (!adminUnlocked || !selectedAdminPoll) return;
 
-  const responses = (await getPollResponses()).filter((item) => item.pollId === selectedAdminPoll.id);
+  const responses = (await getPollResponses()).filter((item) => responseMatchesPoll(item, selectedAdminPoll));
   const counts = new Map((selectedAdminPoll.options || []).map((option) => [option, 0]));
   responses.forEach((response) => {
     counts.set(response.answer, (counts.get(response.answer) || 0) + 1);
@@ -3025,7 +3044,7 @@ async function renderPollResults() {
 function renderInfoResults() {
   if (!adminUnlocked || !selectedAdminInfoForm) return;
 
-  const responses = infoResponses.filter((item) => item.formId === selectedAdminInfoForm.id);
+  const responses = infoResponses.filter((item) => responseMatchesInfoForm(item, selectedAdminInfoForm));
   const answeredNames = pharmacyNamesForResponses(responses);
   const unansweredNames = unansweredNamesForResponses(responses);
 
@@ -3082,7 +3101,7 @@ async function exportPollToExcel() {
     return;
   }
 
-  const responses = (await getPollResponses()).filter((item) => item.pollId === selectedAdminPoll.id);
+  const responses = (await getPollResponses()).filter((item) => responseMatchesPoll(item, selectedAdminPoll));
   if (!responses.length) {
     adminMessage.textContent = "Aucune donnée de sondage à exporter.";
     return;
@@ -3131,7 +3150,7 @@ function exportInfoToExcel() {
     return;
   }
 
-  const responses = infoResponses.filter((item) => item.formId === selectedAdminInfoForm.id);
+  const responses = infoResponses.filter((item) => responseMatchesInfoForm(item, selectedAdminInfoForm));
   if (!responses.length) {
     adminMessage.textContent = "Aucune fiche pharmacie à exporter.";
     return;
@@ -3284,7 +3303,7 @@ async function exportToExcel() {
   }
 
   const responses = (await getResponses())
-    .filter((item) => item.campaignId === selectedAdminCampaign?.id || (!item.campaignId && selectedAdminCampaign?.id === "herboristerie"));
+    .filter((item) => responseMatchesCampaign(item, selectedAdminCampaign));
   if (!responses.length) {
     adminMessage.textContent = "Aucune donnée à exporter.";
     return;

@@ -245,6 +245,28 @@ function normalizeLookup(value) {
     .toLowerCase();
 }
 
+function responseMatchesCampaign(response, campaignId) {
+  if (!campaignId) return true;
+  if (response.campaignId === campaignId) return true;
+  if (!response.campaignId && campaignId === "herboristerie") return true;
+  const campaign = readOrders().find((order) => order.id === campaignId);
+  return campaign && normalizeLookup(response.campaignTitle) === normalizeLookup(campaign.title);
+}
+
+function responseMatchesPoll(response, pollId) {
+  if (!pollId) return true;
+  if (response.pollId === pollId) return true;
+  const poll = readPolls().find((item) => item.id === pollId);
+  return poll && normalizeLookup(response.pollQuestion) === normalizeLookup(poll.question);
+}
+
+function responseMatchesInfoForm(response, formId) {
+  if (!formId) return true;
+  if (response.formId === formId) return true;
+  const infoForm = readInfoForms().find((item) => item.id === formId);
+  return infoForm && normalizeLookup(response.formTitle) === normalizeLookup(infoForm.title);
+}
+
 function responsePharmacyOwnerKey(response, pharmacies = readPharmacies()) {
   const responseId = String(response?.pharmacyId || "").trim();
   const responseName = normalizeLookup(response?.pharmacyName);
@@ -1149,7 +1171,7 @@ const server = http.createServer(async (request, response) => {
       }
       const campaignId = url.searchParams.get("campaign");
       const responses = campaignId
-        ? latestResponses(readResponses()).filter((item) => item.campaignId === campaignId || (!item.campaignId && campaignId === "herboristerie"))
+        ? latestResponses(readResponses()).filter((item) => responseMatchesCampaign(item, campaignId))
         : latestResponses(readResponses());
       sendExcel(response, responses);
       return;
@@ -1162,7 +1184,7 @@ const server = http.createServer(async (request, response) => {
       }
       const pollId = url.searchParams.get("poll");
       const responses = pollId
-        ? latestPollResponses(readPollResponses()).filter((item) => item.pollId === pollId)
+        ? latestPollResponses(readPollResponses()).filter((item) => responseMatchesPoll(item, pollId))
         : latestPollResponses(readPollResponses());
       sendPollExcel(response, responses);
       return;
@@ -1176,7 +1198,7 @@ const server = http.createServer(async (request, response) => {
       }
       const formId = url.searchParams.get("form");
       const responses = formId
-        ? latestInfoResponses(readInfoResponses()).filter((item) => item.formId === formId)
+        ? latestInfoResponses(readInfoResponses()).filter((item) => responseMatchesInfoForm(item, formId))
         : latestInfoResponses(readInfoResponses());
       sendInfoExcel(response, responses);
       return;
