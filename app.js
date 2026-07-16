@@ -253,6 +253,20 @@ const ADMIN_SECTIONS = {
   }
 };
 
+const ADMIN_GROUP_DEFAULT_SECTION = {
+  new: "new-campaign",
+  current: "campaigns",
+  archives: "archives",
+  pharmacies: "pharmacies"
+};
+
+function adminGroupForSection(section) {
+  if (section === "archives") return "archives";
+  if (section === "pharmacies") return "pharmacies";
+  if (section === "campaigns" || section === "polls" || section === "bat") return "current";
+  return "new";
+}
+
 const BAT_VALIDATION = {
   id: "bat-cadeaux-fin-annee-2026",
   title: "Validation en attente",
@@ -2239,6 +2253,7 @@ function showAdminSection(section) {
   activeAdminSection = section || "new-campaign";
   const sectionCopy = ADMIN_SECTIONS[activeAdminSection] || ADMIN_SECTIONS["new-campaign"];
   const validationConfig = currentValidationConfig();
+  const activeGroup = adminGroupForSection(activeAdminSection);
   const closedActions = showClosedCampaignsBtn?.closest(".closed-campaign-actions");
   const showCampaignList = activeAdminSection === "campaigns" || activeAdminSection === "archives";
   const showPollList = activeAdminSection === "polls" || activeAdminSection === "archives";
@@ -2260,6 +2275,12 @@ function showAdminSection(section) {
   adminInfoBlock.hidden = !showInfoList;
   if (closedActions) closedActions.hidden = true;
 
+  adminDashboardNav?.querySelectorAll("[data-admin-group]").forEach((button) => {
+    button.classList.toggle("active", button.dataset.adminGroup === activeGroup);
+  });
+  adminDashboardNav?.querySelectorAll("[data-admin-subnav]").forEach((subNav) => {
+    subNav.hidden = subNav.dataset.adminSubnav !== activeGroup;
+  });
   adminDashboardNav?.querySelectorAll("[data-admin-section]").forEach((button) => {
     button.classList.toggle("active", button.dataset.adminSection === activeAdminSection);
   });
@@ -3376,6 +3397,13 @@ productRows?.addEventListener("change", (event) => {
 });
 
 adminDashboardNav?.addEventListener("click", (event) => {
+  const groupButton = event.target.closest("[data-admin-group]");
+  if (groupButton) {
+    const nextSection = ADMIN_GROUP_DEFAULT_SECTION[groupButton.dataset.adminGroup] || "new-campaign";
+    showAdminSection(nextSection);
+    return;
+  }
+
   const button = event.target.closest("[data-admin-section]");
   if (!button) return;
   showAdminSection(button.dataset.adminSection);

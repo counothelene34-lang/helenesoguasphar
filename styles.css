@@ -2230,11 +2230,22 @@ tbody tr:hover {
 }
 
 .admin-dashboard-nav {
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+  margin: 18px 0 24px;
+}
+
+.admin-main-nav,
+.admin-sub-nav {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   justify-content: center;
-  margin: 18px 0 24px;
+}
+
+.admin-sub-nav[hidden] {
+  display: none !important;
 }
 
 .admin-dashboard-btn {
@@ -2261,6 +2272,27 @@ tbody tr:hover {
 
 .admin-dashboard-btn.active {
   cursor: default;
+}
+
+.admin-main-btn {
+  min-width: 130px;
+  min-height: 48px;
+  padding-inline: 20px;
+  font-size: 16px;
+}
+
+.admin-sub-nav {
+  max-width: 850px;
+  padding: 8px;
+  background: rgba(238, 248, 243, .64);
+  border: 1px solid rgba(0, 140, 69, .12);
+  border-radius: 999px;
+}
+
+.admin-sub-btn {
+  min-height: 38px;
+  padding: 7px 13px;
+  font-size: 13px;
 }
 
 .metrics {
@@ -2479,6 +2511,15 @@ main,
 
   .admin-dashboard-nav {
     grid-template-columns: 1fr;
+  }
+
+  .admin-main-nav,
+  .admin-sub-nav {
+    width: 100%;
+  }
+
+  .admin-sub-nav {
+    border-radius: 14px;
   }
 
   .metrics {

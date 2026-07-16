@@ -372,14 +372,22 @@
               <p id="adminSectionIntro">Créez une nouvelle campagne, puis ouvrez-la pour importer le bon de commande.</p>
             </div>
             <div id="adminDashboardNav" class="admin-dashboard-nav" aria-label="Menu administrateur">
-              <button class="admin-dashboard-btn active" type="button" data-admin-section="new-campaign">Nouvelle campagne précommande</button>
-              <button class="admin-dashboard-btn" type="button" data-admin-section="new-poll">Nouveau sondage</button>
-              <button class="admin-dashboard-btn" type="button" data-admin-section="new-validation">Nouvelle validation</button>
-              <button class="admin-dashboard-btn" type="button" data-admin-section="campaigns">Campagnes en cours</button>
-              <button class="admin-dashboard-btn" type="button" data-admin-section="bat">Validations en attente</button>
-              <button class="admin-dashboard-btn" type="button" data-admin-section="polls">Sondages en cours</button>
-              <button class="admin-dashboard-btn" type="button" data-admin-section="pharmacies">Pharmacies</button>
-              <button class="admin-dashboard-btn" type="button" data-admin-section="archives">Archivés</button>
+              <div class="admin-main-nav" aria-label="Rubriques administrateur">
+                <button class="admin-dashboard-btn admin-main-btn active" type="button" data-admin-group="new">Nouveau</button>
+                <button class="admin-dashboard-btn admin-main-btn" type="button" data-admin-group="current">En cours</button>
+                <button class="admin-dashboard-btn admin-main-btn" type="button" data-admin-group="archives">Archivés</button>
+                <button class="admin-dashboard-btn admin-main-btn" type="button" data-admin-group="pharmacies">Pharmacies</button>
+              </div>
+              <div class="admin-sub-nav" data-admin-subnav="new" aria-label="Créer un nouvel élément">
+                <button class="admin-dashboard-btn admin-sub-btn active" type="button" data-admin-section="new-campaign">Campagne précommande</button>
+                <button class="admin-dashboard-btn admin-sub-btn" type="button" data-admin-section="new-poll">Sondage</button>
+                <button class="admin-dashboard-btn admin-sub-btn" type="button" data-admin-section="new-validation">Validation</button>
+              </div>
+              <div class="admin-sub-nav" data-admin-subnav="current" aria-label="Éléments en cours" hidden>
+                <button class="admin-dashboard-btn admin-sub-btn" type="button" data-admin-section="campaigns">Campagnes en cours</button>
+                <button class="admin-dashboard-btn admin-sub-btn" type="button" data-admin-section="polls">Sondages en cours</button>
+                <button class="admin-dashboard-btn admin-sub-btn" type="button" data-admin-section="bat">Validations en attente</button>
+              </div>
             </div>
             <div id="adminResetAlert" class="admin-reset-alert" hidden></div>
             <form id="createCampaignForm" class="create-campaign-form">
