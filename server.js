@@ -328,7 +328,7 @@ function latestInfoResponses(responses = []) {
 }
 
 function validationResponseOwnerKey(response, pharmacies = readPharmacies()) {
-  return `${response.documentId || ""}|${responsePharmacyOwnerKey(response, pharmacies)}`;
+  return responsePharmacyOwnerKey(response, pharmacies);
 }
 
 function normalizeValidationResponse(item) {

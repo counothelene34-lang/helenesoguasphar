@@ -1164,7 +1164,20 @@ function batDocumentForPharmacy(pharmacy) {
 }
 
 function batResponseForDocument(document) {
-  return batResponses.find((response) => response.documentId === document?.id) || null;
+  if (!document) return null;
+  const responses = [...batResponses].reverse();
+  const exactResponse = responses.find((response) => response.documentId === document.id);
+  if (exactResponse) return exactResponse;
+
+  const documentPharmacy = activePharmacies()
+    .find((pharmacy) => pharmacyNameKey(pharmacy.name) === pharmacyNameKey(document.pharmacyName));
+  if (documentPharmacy) {
+    const pharmacyResponse = responses.find((response) => responseMatchesPharmacy(response, documentPharmacy));
+    if (pharmacyResponse) return pharmacyResponse;
+  }
+
+  const documentNameKey = pharmacyNameKey(document.pharmacyName);
+  return responses.find((response) => pharmacyNameKey(response.pharmacyName) === documentNameKey) || null;
 }
 
 function normalizeValidationStatus(status) {
@@ -2499,24 +2512,23 @@ function renderBatResults() {
   const documents = batDocumentsForActivePharmacies();
   const unmatchedDocuments = unmatchedValidationDocuments();
   const allDisplayedDocuments = documents.concat(unmatchedDocuments);
-  const responsesByDocument = new Map(batResponses.map((response) => [response.documentId, response]));
   adminBatDetail?.querySelectorAll("[data-toggle-validation-archive]").forEach((button) => {
     button.textContent = validationConfig.archived ? "Rouvrir" : "Archiver";
   });
   const validated = documents
-    .filter((document) => normalizeValidationStatus(responsesByDocument.get(document.id)?.status) === "Validé")
+    .filter((document) => normalizeValidationStatus(batResponseForDocument(document)?.status) === "Validé")
     .map((document) => document.pharmacyName)
     .sort((a, b) => a.localeCompare(b, "fr"));
   const corrections = documents
-    .filter((document) => normalizeValidationStatus(responsesByDocument.get(document.id)?.status) === "Correction demandée")
+    .filter((document) => normalizeValidationStatus(batResponseForDocument(document)?.status) === "Correction demandée")
     .map((document) => document.pharmacyName)
     .sort((a, b) => a.localeCompare(b, "fr"));
   const correctionDetails = documents
-    .map((document) => ({ document, response: responsesByDocument.get(document.id) }))
+    .map((document) => ({ document, response: batResponseForDocument(document) }))
     .filter(({ response }) => normalizeValidationStatus(response?.status) === "Correction demandée")
     .sort((a, b) => a.document.pharmacyName.localeCompare(b.document.pharmacyName, "fr"));
   const unanswered = documents
-    .filter((document) => !responsesByDocument.has(document.id))
+    .filter((document) => !batResponseForDocument(document))
     .map((document) => document.pharmacyName)
     .sort((a, b) => a.localeCompare(b, "fr"));
   const missingDocuments = pharmaciesWithoutValidationDocument();
@@ -2572,7 +2584,7 @@ function renderBatResults() {
 
     batDocumentsTable.innerHTML = allDisplayedDocuments.length
       ? allDisplayedDocuments.map((document) => {
-        const response = responsesByDocument.get(document.id);
+        const response = batResponseForDocument(document);
         const status = document.matched ? (normalizeValidationStatus(response?.status) || "En attente") : "Non reconnu";
         return `
           <tr>
@@ -2587,7 +2599,7 @@ function renderBatResults() {
   }
 
   const answeredRows = documents
-    .map((document) => ({ document, response: responsesByDocument.get(document.id) }))
+    .map((document) => ({ document, response: batResponseForDocument(document) }))
     .filter((item) => item.response);
 
   batResponsesTable.innerHTML = answeredRows.length
@@ -3220,7 +3232,6 @@ function exportPharmacyPasswordsToExcel() {
 
 function exportBatToExcel() {
   const documents = batDocumentsForActivePharmacies();
-  const responsesByDocument = new Map(batResponses.map((response) => [response.documentId, response]));
   if (!documents.length) {
     adminMessage.textContent = "Aucun document à exporter.";
     return;
@@ -3228,7 +3239,7 @@ function exportBatToExcel() {
 
   const headings = ["Pharmacie", "Statut", "Date", "Correction / commentaire", "Document"];
   const body = documents.map((document) => {
-    const response = responsesByDocument.get(document.id);
+    const response = batResponseForDocument(document);
     const status = normalizeValidationStatus(response?.status) || "En attente";
     return `
       <tr>
