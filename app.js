@@ -1750,7 +1750,7 @@ function applyCurrentPharmacyToForms() {
 
 function renderAdminResetAlert() {
   if (!adminResetAlert) return;
-  const requests = pharmacies.filter((pharmacy) => pharmacy.passwordResetRequested);
+  const requests = pharmacies.filter((pharmacy) => pharmacy && pharmacy.passwordResetRequested);
   adminResetAlert.hidden = requests.length === 0;
   if (!requests.length) {
     adminResetAlert.innerHTML = "";
