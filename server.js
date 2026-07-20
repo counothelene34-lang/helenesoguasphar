@@ -393,6 +393,118 @@ function latestValidationResponses(responses = []) {
   return [...byOwner.values()];
 }
 
+function compactLookup(value) {
+  return normalizeLookup(value).replace(/\s+/g, "");
+}
+
+function namesMatch(firstName, secondName) {
+  const first = normalizeLookup(firstName);
+  const second = normalizeLookup(secondName);
+  if (!first || !second) return false;
+  return first === second || compactLookup(first) === compactLookup(second);
+}
+
+function activePharmacies(pharmacies = readPharmacies()) {
+  return pharmacies.filter((pharmacy) => pharmacy && pharmacy.active !== false && pharmacy.name);
+}
+
+function responseMatchesPharmacyRecord(response, pharmacy) {
+  const responseId = String(response?.pharmacyId || "").trim();
+  const pharmacyId = String(pharmacy?.id || "").trim();
+  return (responseId && pharmacyId && responseId === pharmacyId)
+    || namesMatch(response?.pharmacyName, pharmacy?.name);
+}
+
+function validationDocumentsForActivePharmacies(validation, pharmacies = readPharmacies()) {
+  const active = activePharmacies(pharmacies);
+  return (validation.documents || []).filter((document) => active
+    .some((pharmacy) => namesMatch(pharmacy.name, document.pharmacyName)));
+}
+
+function validationResponseForDocument(document, responses, pharmacies = readPharmacies()) {
+  const reversed = [...responses].reverse();
+  const exact = reversed.find((item) => item.documentId && item.documentId === document.id);
+  if (exact) return exact;
+
+  const byUrl = reversed.find((item) => item.documentUrl && item.documentUrl === document.url);
+  if (byUrl) return byUrl;
+
+  const pharmacy = activePharmacies(pharmacies)
+    .find((item) => namesMatch(item.name, document.pharmacyName));
+  if (pharmacy) {
+    const byPharmacy = reversed.find((item) => responseMatchesPharmacyRecord(item, pharmacy));
+    if (byPharmacy) return byPharmacy;
+  }
+
+  return reversed.find((item) => namesMatch(item.pharmacyName, document.pharmacyName)) || null;
+}
+
+function normalizeValidationStatusForSummary(status) {
+  const clean = normalizeLookup(String(status || "").replace(/^BAT\s+/i, ""));
+  if (clean === "valide") return "Validé";
+  if (clean === "correction demandee") return "Correction demandée";
+  return String(status || "").trim();
+}
+
+function validationSummary() {
+  const validation = readValidation();
+  const pharmacies = readPharmacies();
+  const active = activePharmacies(pharmacies);
+  const responses = latestValidationResponses(readValidationResponses());
+  const documents = validationDocumentsForActivePharmacies(validation, pharmacies);
+  const unmatchedDocuments = (validation.documents || []).filter((document) => !document.matched);
+  const rows = documents.map((document) => {
+    const response = validationResponseForDocument(document, responses, pharmacies);
+    return {
+      documentId: document.id,
+      pharmacyName: document.pharmacyName,
+      fileName: document.fileName || "",
+      status: normalizeValidationStatusForSummary(response?.status),
+      comment: response?.comment || "",
+      createdAt: response?.createdAt || "",
+      updatedAt: response?.updatedAt || "",
+      answered: Boolean(response)
+    };
+  });
+  const documentedKeys = new Set((validation.documents || [])
+    .filter((document) => document.matched)
+    .map((document) => normalizeLookup(document.pharmacyName)));
+  const missingDocuments = active
+    .map((pharmacy) => pharmacy.name)
+    .filter((name) => ![...documentedKeys].some((key) => namesMatch(key, name)))
+    .sort((a, b) => a.localeCompare(b, "fr"));
+  const validated = rows
+    .filter((row) => row.status === "Validé")
+    .map((row) => row.pharmacyName)
+    .sort((a, b) => a.localeCompare(b, "fr"));
+  const correctionDetails = rows
+    .filter((row) => row.status === "Correction demandée")
+    .map((row) => ({ pharmacyName: row.pharmacyName, comment: row.comment }))
+    .sort((a, b) => a.pharmacyName.localeCompare(b.pharmacyName, "fr"));
+  const unanswered = rows
+    .filter((row) => !row.answered)
+    .map((row) => row.pharmacyName)
+    .sort((a, b) => a.localeCompare(b, "fr"));
+
+  return {
+    title: validation.title || "",
+    archived: Boolean(validation.archived),
+    documentCount: (validation.documents || []).length,
+    matchedCount: documents.length,
+    unmatchedCount: unmatchedDocuments.length,
+    responseCount: rows.filter((row) => row.answered).length,
+    validatedCount: validated.length,
+    correctionCount: correctionDetails.length,
+    unansweredCount: unanswered.length,
+    missingDocumentCount: missingDocuments.length,
+    validated,
+    correctionDetails,
+    unanswered,
+    missingDocuments,
+    rows
+  };
+}
+
 function normalizeProfileHours(hours) {
   return Array.isArray(hours) ? hours.map((row) => ({
     day: String(row.day || "").trim(),
@@ -921,6 +1033,15 @@ const server = http.createServer(async (request, response) => {
         return;
       }
       sendJson(response, 200, latestValidationResponses(readValidationResponses()));
+      return;
+    }
+
+    if (url.pathname === "/api/validation-summary" && request.method === "GET") {
+      if (request.headers["x-admin-code"] !== ADMIN_CODE) {
+        sendJson(response, 401, { error: "Code administrateur incorrect" });
+        return;
+      }
+      sendJson(response, 200, validationSummary());
       return;
     }
 

@@ -220,6 +220,7 @@ let archivedOrdersVisible = false;
 let adminValidationRefreshTimer = null;
 let lastValidationResponseSource = "";
 let lastValidationResponseError = "";
+let validationServerSummary = null;
 
 const ADMIN_SECTIONS = {
   "new-campaign": {
@@ -527,6 +528,13 @@ async function getValidationResponses(options = {}) {
   return batResponses.length ? batResponses : localBatResponses();
 }
 
+async function getValidationSummary() {
+  if (!API_AVAILABLE || !adminUnlocked) return null;
+  return requestJson("/api/validation-summary", {
+    headers: { "X-Admin-Code": ADMIN_CODE }
+  });
+}
+
 async function refreshAdminValidationData() {
   if (!adminUnlocked) return;
   const validationState = await getValidationState();
@@ -544,7 +552,12 @@ async function refreshAdminValidationData() {
 
 async function refreshAdminValidationResponses() {
   if (!adminUnlocked) return;
-  batResponses = await getValidationResponses({ allowLocalFallback: false });
+  const [responses, summary] = await Promise.all([
+    getValidationResponses({ allowLocalFallback: false }),
+    getValidationSummary()
+  ]);
+  batResponses = responses;
+  validationServerSummary = summary;
 }
 
 async function refreshPharmacyValidationResponses() {
@@ -2611,6 +2624,7 @@ function selectBat(documentId) {
 
 function renderBatResults() {
   const validationConfig = currentValidationConfig();
+  const serverSummary = validationServerSummary;
   const documents = batDocumentsForActivePharmacies();
   const unmatchedDocuments = unmatchedValidationDocuments();
   const allDisplayedDocuments = documents.concat(unmatchedDocuments);
@@ -2636,16 +2650,26 @@ function renderBatResults() {
   const missingDocuments = pharmaciesWithoutValidationDocument();
   const answered = documents.length - unanswered.length;
   const refreshedAt = new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  const summaryCounts = serverSummary || {
+    documentCount: batDocuments.length,
+    matchedCount: documents.length,
+    unmatchedCount: unmatchedDocuments.length,
+    responseCount: answered,
+    validatedCount: validated.length,
+    correctionCount: corrections.length,
+    unansweredCount: unanswered.length,
+    missingDocumentCount: missingDocuments.length
+  };
 
   batResultsSummary.innerHTML = `
-    <div><span>${batDocuments.length}</span><p>document${batDocuments.length > 1 ? "s" : ""} importé${batDocuments.length > 1 ? "s" : ""}</p></div>
-    <div><span>${documents.length}</span><p>rattaché${documents.length > 1 ? "s" : ""}</p></div>
-    <div><span>${unmatchedDocuments.length}</span><p>non reconnu${unmatchedDocuments.length > 1 ? "s" : ""}</p></div>
-    <div><span>${answered}</span><p>réponse${answered > 1 ? "s" : ""}</p></div>
-    <div><span>${validated.length}</span><p>validée${validated.length > 1 ? "s" : ""}</p></div>
-    <div><span>${corrections.length}</span><p>correction${corrections.length > 1 ? "s" : ""}</p></div>
-    <div><span>${unanswered.length}</span><p>sans réponse</p></div>
-    <div><span>${missingDocuments.length}</span><p>sans document</p></div>
+    <div><span>${summaryCounts.documentCount}</span><p>document${summaryCounts.documentCount > 1 ? "s" : ""} importé${summaryCounts.documentCount > 1 ? "s" : ""}</p></div>
+    <div><span>${summaryCounts.matchedCount}</span><p>rattaché${summaryCounts.matchedCount > 1 ? "s" : ""}</p></div>
+    <div><span>${summaryCounts.unmatchedCount}</span><p>non reconnu${summaryCounts.unmatchedCount > 1 ? "s" : ""}</p></div>
+    <div><span>${summaryCounts.responseCount}</span><p>réponse${summaryCounts.responseCount > 1 ? "s" : ""}</p></div>
+    <div><span>${summaryCounts.validatedCount}</span><p>validée${summaryCounts.validatedCount > 1 ? "s" : ""}</p></div>
+    <div><span>${summaryCounts.correctionCount}</span><p>correction${summaryCounts.correctionCount > 1 ? "s" : ""}</p></div>
+    <div><span>${summaryCounts.unansweredCount}</span><p>sans réponse</p></div>
+    <div><span>${summaryCounts.missingDocumentCount}</span><p>sans document</p></div>
   `;
   const summaryToolbar = batResultsSummary?.previousElementSibling;
   if (summaryToolbar && !summaryToolbar.querySelector("[data-refresh-validation-responses]")) {
@@ -2662,20 +2686,28 @@ function renderBatResults() {
   }
   const summaryStatus = summaryToolbar?.querySelector(`#${summaryStatusId}`);
   if (summaryStatus) {
+    const serverResponseCount = serverSummary?.responseCount ?? batResponses.length;
     summaryStatus.textContent = lastValidationResponseError
       ? `Lecture serveur impossible : ${lastValidationResponseError}`
-      : `Données serveur : ${batResponses.length} réponse${batResponses.length > 1 ? "s" : ""} reçue${batResponses.length > 1 ? "s" : ""}.`;
+      : `Données serveur : ${serverResponseCount} réponse${serverResponseCount > 1 ? "s" : ""} reçue${serverResponseCount > 1 ? "s" : ""}.`;
   }
-  batValidatedPharmacies.innerHTML = pharmacyListMarkup(validated, "Aucune validation pour le moment.");
-  batCorrectionPharmacies.innerHTML = correctionDetails.length
-    ? correctionDetails.map(({ document, response }) => `
+  const displayedValidated = serverSummary?.validated || validated;
+  const displayedCorrectionDetails = serverSummary?.correctionDetails || correctionDetails.map(({ document, response }) => ({
+    pharmacyName: document.pharmacyName,
+    comment: response.comment
+  }));
+  const displayedUnanswered = serverSummary?.unanswered || unanswered;
+
+  batValidatedPharmacies.innerHTML = pharmacyListMarkup(displayedValidated, "Aucune validation pour le moment.");
+  batCorrectionPharmacies.innerHTML = displayedCorrectionDetails.length
+    ? displayedCorrectionDetails.map((item) => `
       <li>
-        <strong>${escapeHtml(document.pharmacyName)}</strong>
-        <span class="correction-note">${escapeHtml(response.comment || "Correction demandée sans détail.")}</span>
+        <strong>${escapeHtml(item.pharmacyName)}</strong>
+        <span class="correction-note">${escapeHtml(item.comment || "Correction demandée sans détail.")}</span>
       </li>
     `).join("")
     : "<li>Aucune correction pour le moment.</li>";
-  batUnansweredPharmacies.innerHTML = pharmacyListMarkup(unanswered, "Aucune pharmacie à relancer.");
+  batUnansweredPharmacies.innerHTML = pharmacyListMarkup(displayedUnanswered, "Aucune pharmacie à relancer.");
 
   if (batDocumentsTable) {
     const documentsWrap = batDocumentsTable.closest(".table-wrap");
