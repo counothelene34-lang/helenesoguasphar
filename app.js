@@ -4441,7 +4441,6 @@ batValidationForm?.addEventListener("submit", async (event) => {
     id: previousResponse?.id || createId(),
     validationId: BAT_VALIDATION.id,
     documentId: selectedBatDocument.id,
-    documentUrl: selectedBatDocument.url,
     createdAt: previousResponse?.createdAt || now,
     updatedAt: previousResponse ? now : "",
     pharmacyId: currentPharmacy?.id || "",

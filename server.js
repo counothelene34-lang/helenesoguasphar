@@ -365,7 +365,7 @@ function normalizeValidationResponse(item) {
     id: String(item.id || Date.now()),
     validationId: String(item.validationId || "document-validation"),
     documentId: String(item.documentId || "").trim(),
-    documentUrl: String(item.documentUrl || ""),
+    documentUrl: "",
     createdAt: String(item.createdAt || new Date().toLocaleString("fr-FR")),
     updatedAt: String(item.updatedAt || ""),
     pharmacyId: String(item.pharmacyId || "").trim(),
@@ -373,6 +373,24 @@ function normalizeValidationResponse(item) {
     status: String(item.status || "").trim(),
     comment: String(item.comment || "").trim()
   };
+}
+
+function publicValidationResponse(item) {
+  return {
+    id: String(item.id || ""),
+    validationId: String(item.validationId || ""),
+    documentId: String(item.documentId || ""),
+    createdAt: String(item.createdAt || ""),
+    updatedAt: String(item.updatedAt || ""),
+    pharmacyId: String(item.pharmacyId || ""),
+    pharmacyName: String(item.pharmacyName || ""),
+    status: String(item.status || ""),
+    comment: String(item.comment || "")
+  };
+}
+
+function publicValidationResponses(responses = []) {
+  return responses.map(publicValidationResponse);
 }
 
 function latestValidationResponses(responses = []) {
@@ -1032,7 +1050,7 @@ const server = http.createServer(async (request, response) => {
         sendJson(response, 401, { error: "Code administrateur incorrect" });
         return;
       }
-      sendJson(response, 200, latestValidationResponses(readValidationResponses()));
+      sendJson(response, 200, publicValidationResponses(latestValidationResponses(readValidationResponses())));
       return;
     }
 
@@ -1151,7 +1169,7 @@ const server = http.createServer(async (request, response) => {
           if (pharmacyId && item.pharmacyId === pharmacyId) return true;
           return pharmacyName && normalizeLookup(item.pharmacyName) === pharmacyName;
         });
-      sendJson(response, 200, responses);
+      sendJson(response, 200, publicValidationResponses(responses));
       return;
     }
 
@@ -1272,7 +1290,7 @@ const server = http.createServer(async (request, response) => {
       const updatedResponses = responses.filter((item) => validationResponseOwnerKey(item, pharmacies) !== validationResponseOwnerKey(savedResponse, pharmacies));
       updatedResponses.push(savedResponse);
       writeValidationResponses(updatedResponses);
-      sendJson(response, 201, savedResponse);
+      sendJson(response, 201, publicValidationResponse(savedResponse));
       return;
     }
 
