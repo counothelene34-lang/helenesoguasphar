@@ -218,6 +218,8 @@ let pollResponseCounts = {};
 let activeAdminSection = "new-campaign";
 let archivedOrdersVisible = false;
 let adminValidationRefreshTimer = null;
+let lastValidationResponseSource = "";
+let lastValidationResponseError = "";
 
 const ADMIN_SECTIONS = {
   "new-campaign": {
@@ -499,7 +501,8 @@ async function saveValidationState(nextState) {
   return payload;
 }
 
-async function getValidationResponses() {
+async function getValidationResponses(options = {}) {
+  const allowLocalFallback = options.allowLocalFallback !== false;
   if (API_AVAILABLE && adminUnlocked) {
     try {
       const responses = await requestJson("/api/validation-responses", {
@@ -507,11 +510,19 @@ async function getValidationResponses() {
       });
       if (Array.isArray(responses)) {
         saveLocalBatResponses(responses);
+        lastValidationResponseSource = "serveur";
+        lastValidationResponseError = "";
         return responses;
       }
-    } catch {
-      // Fallback for preview servers without validation API.
+    } catch (error) {
+      lastValidationResponseSource = "local";
+      lastValidationResponseError = error.message || "Lecture serveur impossible.";
+      if (!allowLocalFallback) throw error;
     }
+  }
+  if (!API_AVAILABLE) {
+    lastValidationResponseSource = "aperçu local";
+    lastValidationResponseError = "";
   }
   return batResponses.length ? batResponses : localBatResponses();
 }
@@ -533,7 +544,7 @@ async function refreshAdminValidationData() {
 
 async function refreshAdminValidationResponses() {
   if (!adminUnlocked) return;
-  batResponses = await getValidationResponses();
+  batResponses = await getValidationResponses({ allowLocalFallback: false });
 }
 
 async function refreshPharmacyValidationResponses() {
@@ -2642,7 +2653,18 @@ function renderBatResults() {
   }
   const refreshButton = summaryToolbar?.querySelector("[data-refresh-validation-responses]");
   if (refreshButton) {
-    refreshButton.textContent = `Actualiser les réponses (${refreshedAt})`;
+    const sourceLabel = lastValidationResponseSource ? ` - ${lastValidationResponseSource}` : "";
+    refreshButton.textContent = `Actualiser les réponses (${refreshedAt}${sourceLabel})`;
+  }
+  const summaryStatusId = "validationRefreshStatus";
+  if (summaryToolbar && !summaryToolbar.querySelector(`#${summaryStatusId}`)) {
+    summaryToolbar.insertAdjacentHTML("beforeend", `<span id="${summaryStatusId}" class="status-message compact-status"></span>`);
+  }
+  const summaryStatus = summaryToolbar?.querySelector(`#${summaryStatusId}`);
+  if (summaryStatus) {
+    summaryStatus.textContent = lastValidationResponseError
+      ? `Lecture serveur impossible : ${lastValidationResponseError}`
+      : `Données serveur : ${batResponses.length} réponse${batResponses.length > 1 ? "s" : ""} reçue${batResponses.length > 1 ? "s" : ""}.`;
   }
   batValidatedPharmacies.innerHTML = pharmacyListMarkup(validated, "Aucune validation pour le moment.");
   batCorrectionPharmacies.innerHTML = correctionDetails.length
@@ -3978,9 +4000,15 @@ adminValidationDocumentInput?.addEventListener("change", async () => {
 
 adminBatDetail?.addEventListener("click", async (event) => {
   if (event.target.closest("[data-refresh-validation-responses]")) {
-    await refreshAdminValidationResponses();
+    try {
+      await refreshAdminValidationResponses();
+    } catch (error) {
+      lastValidationResponseError = error.message || "Lecture serveur impossible.";
+    }
     renderBatResults();
-    adminMessage.textContent = "RÃ©ponses de validation actualisÃ©es.";
+    adminMessage.textContent = lastValidationResponseError
+      ? `Impossible d'actualiser les rÃ©ponses serveur : ${lastValidationResponseError}`
+      : "RÃ©ponses de validation actualisÃ©es depuis le serveur.";
     return;
   }
 
