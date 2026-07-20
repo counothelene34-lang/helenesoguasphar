@@ -574,14 +574,10 @@ async function saveValidationResponses(nextResponses) {
 
 async function submitValidationResponse(response) {
   if (API_AVAILABLE) {
-    try {
-      return await requestJson("/api/validation-responses", {
-        method: "POST",
-        body: JSON.stringify(response)
-      });
-    } catch {
-      // Fallback for preview servers without validation API.
-    }
+    return requestJson("/api/validation-responses", {
+      method: "POST",
+      body: JSON.stringify(response)
+    });
   }
   const previousResponse = batResponses.find((item) => item.documentId === response.documentId);
   const saved = {
@@ -709,14 +705,10 @@ async function refreshPharmacyInfoResponses() {
 
 async function appendInfoResponse(response) {
   if (API_AVAILABLE) {
-    try {
-      return await requestJson("/api/info-responses", {
-        method: "POST",
-        body: JSON.stringify(response)
-      });
-    } catch {
-      // Fallback for preview servers without info form API.
-    }
+    return requestJson("/api/info-responses", {
+      method: "POST",
+      body: JSON.stringify(response)
+    });
   }
 
   const existing = localInfoResponses().find((item) => item.formId === response.formId && responseOwnerKey(item) === responseOwnerKey(response));
@@ -1029,15 +1021,10 @@ async function getResponses() {
 
 async function appendResponse(response) {
   if (API_AVAILABLE) {
-    try {
-      return await requestJson("/api/responses", {
-        method: "POST",
-        body: JSON.stringify(response)
-      });
-    } catch (error) {
-      if (error.status === 400) throw error;
-      // Fallback for direct preview servers without API routes.
-    }
+    return requestJson("/api/responses", {
+      method: "POST",
+      body: JSON.stringify(response)
+    });
   }
 
   const responses = localResponses().filter((item) => responseOwnerKey(item) !== responseOwnerKey(response));
@@ -1111,14 +1098,10 @@ async function refreshPollResponseCounts() {
 
 async function appendPollResponse(response) {
   if (API_AVAILABLE) {
-    try {
-      return await requestJson("/api/poll-responses", {
-        method: "POST",
-        body: JSON.stringify(response)
-      });
-    } catch {
-      // Fallback for direct preview servers without API routes.
-    }
+    return requestJson("/api/poll-responses", {
+      method: "POST",
+      body: JSON.stringify(response)
+    });
   }
 
   const responses = [...localPollResponses(), response];
@@ -1166,9 +1149,19 @@ function pharmacyNameKey(name) {
   return String(name || "")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[’'`´]/g, " ")
+    .replace(/[^a-z0-9]+/gi, " ")
     .replace(/\s+/g, " ")
     .trim()
     .toLowerCase();
+}
+
+function pharmacyNamesMatch(firstName, secondName) {
+  const firstKey = pharmacyNameKey(firstName);
+  const secondKey = pharmacyNameKey(secondName);
+  if (!firstKey || !secondKey) return false;
+  return firstKey === secondKey
+    || firstKey.replace(/\s+/g, "") === secondKey.replace(/\s+/g, "");
 }
 
 function activePharmacies() {
@@ -1199,7 +1192,8 @@ function responseIdentityKeys(response) {
 
 function responseMatchesPharmacy(response, pharmacy) {
   const responseKeys = new Set(responseIdentityKeys(response));
-  return pharmacyIdentityKeys(pharmacy).some((key) => responseKeys.has(key));
+  return pharmacyIdentityKeys(pharmacy).some((key) => responseKeys.has(key))
+    || pharmacyNamesMatch(response?.pharmacyName, pharmacy?.name);
 }
 
 function pharmacyNamesForResponses(responses = []) {
@@ -1219,8 +1213,7 @@ function responsePharmacyCountKey(response) {
 
 function batDocumentForPharmacy(pharmacy) {
   if (!pharmacy?.name) return null;
-  const pharmacyKey = pharmacyNameKey(pharmacy.name);
-  return batDocuments.find((document) => pharmacyNameKey(document.pharmacyName) === pharmacyKey) || null;
+  return batDocuments.find((document) => pharmacyNamesMatch(document.pharmacyName, pharmacy.name)) || null;
 }
 
 function batResponseForDocument(document) {
@@ -1228,16 +1221,17 @@ function batResponseForDocument(document) {
   const responses = [...batResponses].reverse();
   const exactResponse = responses.find((response) => response.documentId === document.id);
   if (exactResponse) return exactResponse;
+  const urlResponse = responses.find((response) => response.documentUrl && response.documentUrl === document.url);
+  if (urlResponse) return urlResponse;
 
   const documentPharmacy = activePharmacies()
-    .find((pharmacy) => pharmacyNameKey(pharmacy.name) === pharmacyNameKey(document.pharmacyName));
+    .find((pharmacy) => pharmacyNamesMatch(pharmacy.name, document.pharmacyName));
   if (documentPharmacy) {
     const pharmacyResponse = responses.find((response) => responseMatchesPharmacy(response, documentPharmacy));
     if (pharmacyResponse) return pharmacyResponse;
   }
 
-  const documentNameKey = pharmacyNameKey(document.pharmacyName);
-  return responses.find((response) => pharmacyNameKey(response.pharmacyName) === documentNameKey) || null;
+  return responses.find((response) => pharmacyNamesMatch(response.pharmacyName, document.pharmacyName)) || null;
 }
 
 function normalizeValidationStatus(status) {
@@ -1249,7 +1243,7 @@ function normalizeValidationStatus(status) {
 
 function batDocumentsForActivePharmacies() {
   return batDocuments.filter((document) => activePharmacies()
-    .some((pharmacy) => pharmacyNameKey(pharmacy.name) === pharmacyNameKey(document.pharmacyName)));
+    .some((pharmacy) => pharmacyNamesMatch(pharmacy.name, document.pharmacyName)));
 }
 
 function unmatchedValidationDocuments() {
@@ -1260,7 +1254,7 @@ function pharmaciesWithoutValidationDocument() {
   const documentedKeys = new Set(batDocuments
     .filter((document) => document.matched)
     .map((document) => pharmacyNameKey(document.pharmacyName)));
-  return activePharmacyNames().filter((name) => !documentedKeys.has(pharmacyNameKey(name)));
+  return activePharmacyNames().filter((name) => ![...documentedKeys].some((key) => pharmacyNamesMatch(key, name)));
 }
 
 function bestPharmacyMatchForFile(fileName) {
@@ -2736,7 +2730,7 @@ function updatePollChoiceSelection() {
 }
 
 async function savePollAnswer(poll, answer, pharmacyName, freeText) {
-  await appendPollResponse({
+  const savedResponse = await appendPollResponse({
     id: createId(),
     pollId: poll.id,
     pollQuestion: poll.question,
@@ -2751,6 +2745,7 @@ async function savePollAnswer(poll, answer, pharmacyName, freeText) {
   if (currentPharmacy?.id) {
     pharmacyPollAnswers[poll.id] = answer;
   }
+  return savedResponse;
 }
 
 function showCampaignPicker() {
@@ -4352,7 +4347,13 @@ batValidationForm?.addEventListener("submit", async (event) => {
     comment
   };
 
-  const savedResponse = await submitValidationResponse(response);
+  let savedResponse;
+  try {
+    savedResponse = await submitValidationResponse(response);
+  } catch (error) {
+    batMessage.textContent = error.message || "Enregistrement impossible. Merci de rÃ©essayer.";
+    return;
+  }
   batResponses = batResponses
     .filter((item) => item.documentId !== selectedBatDocument.id)
     .concat(savedResponse);
@@ -4383,7 +4384,12 @@ pollForm.addEventListener("submit", async (event) => {
     return;
   }
 
-  await savePollAnswer(selectedPoll, selectedAnswer, pharmacyName, freeText);
+  try {
+    await savePollAnswer(selectedPoll, selectedAnswer, pharmacyName, freeText);
+  } catch (error) {
+    pollMessage.textContent = error.message || "Enregistrement impossible. Merci de rÃ©essayer.";
+    return;
+  }
   renderCampaignPickers();
   pollForm.reset();
   await renderPollResults();
