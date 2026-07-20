@@ -217,6 +217,7 @@ let adminShowingClosedCampaigns = false;
 let pollResponseCounts = {};
 let activeAdminSection = "new-campaign";
 let archivedOrdersVisible = false;
+let adminValidationRefreshTimer = null;
 
 const ADMIN_SECTIONS = {
   "new-campaign": {
@@ -2336,6 +2337,7 @@ function adminBatOverviewCard() {
 }
 
 function showAdminSection(section) {
+  stopAdminValidationAutoRefresh();
   activeAdminSection = section || "new-campaign";
   const sectionCopy = ADMIN_SECTIONS[activeAdminSection] || ADMIN_SECTIONS["new-campaign"];
   const validationConfig = currentValidationConfig();
@@ -2622,6 +2624,7 @@ function renderBatResults() {
     .sort((a, b) => a.localeCompare(b, "fr"));
   const missingDocuments = pharmaciesWithoutValidationDocument();
   const answered = documents.length - unanswered.length;
+  const refreshedAt = new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 
   batResultsSummary.innerHTML = `
     <div><span>${batDocuments.length}</span><p>document${batDocuments.length > 1 ? "s" : ""} importé${batDocuments.length > 1 ? "s" : ""}</p></div>
@@ -2633,6 +2636,14 @@ function renderBatResults() {
     <div><span>${unanswered.length}</span><p>sans réponse</p></div>
     <div><span>${missingDocuments.length}</span><p>sans document</p></div>
   `;
+  const summaryToolbar = batResultsSummary?.previousElementSibling;
+  if (summaryToolbar && !summaryToolbar.querySelector("[data-refresh-validation-responses]")) {
+    summaryToolbar.insertAdjacentHTML("beforeend", '<button class="ghost-btn" type="button" data-refresh-validation-responses>Actualiser les réponses</button>');
+  }
+  const refreshButton = summaryToolbar?.querySelector("[data-refresh-validation-responses]");
+  if (refreshButton) {
+    refreshButton.textContent = `Actualiser les réponses (${refreshedAt})`;
+  }
   batValidatedPharmacies.innerHTML = pharmacyListMarkup(validated, "Aucune validation pour le moment.");
   batCorrectionPharmacies.innerHTML = correctionDetails.length
     ? correctionDetails.map(({ document, response }) => `
@@ -2710,6 +2721,7 @@ function renderBatResults() {
 }
 
 async function selectAdminBat() {
+  stopAdminValidationAutoRefresh();
   selectedAdminCampaign = null;
   selectedAdminPoll = null;
   selectedAdminInfoForm = null;
@@ -2721,6 +2733,30 @@ async function selectAdminBat() {
   renderBatResults();
   await refreshAdminValidationResponses();
   renderBatResults();
+  startAdminValidationAutoRefresh();
+}
+
+function stopAdminValidationAutoRefresh() {
+  if (adminValidationRefreshTimer) {
+    clearInterval(adminValidationRefreshTimer);
+    adminValidationRefreshTimer = null;
+  }
+}
+
+function startAdminValidationAutoRefresh() {
+  stopAdminValidationAutoRefresh();
+  adminValidationRefreshTimer = setInterval(async () => {
+    if (!adminUnlocked || adminBatDetail.hidden) {
+      stopAdminValidationAutoRefresh();
+      return;
+    }
+    try {
+      await refreshAdminValidationResponses();
+      renderBatResults();
+    } catch {
+      // Keep the current visible data if a refresh fails temporarily.
+    }
+  }, 10000);
 }
 
 function updatePollChoiceSelection() {
@@ -3941,6 +3977,13 @@ adminValidationDocumentInput?.addEventListener("change", async () => {
 });
 
 adminBatDetail?.addEventListener("click", async (event) => {
+  if (event.target.closest("[data-refresh-validation-responses]")) {
+    await refreshAdminValidationResponses();
+    renderBatResults();
+    adminMessage.textContent = "RÃ©ponses de validation actualisÃ©es.";
+    return;
+  }
+
   const deleteButton = event.target.closest("[data-delete-validation]");
   if (deleteButton) {
     const confirmed = confirm("Supprimer définitivement cette validation ?\n\nLe titre, le message, les documents importés et les réponses seront supprimés.");
