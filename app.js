@@ -518,12 +518,20 @@ async function getValidationResponses() {
 async function refreshAdminValidationData() {
   if (!adminUnlocked) return;
   const validationState = await getValidationState();
+  const nextDocuments = Array.isArray(validationState.documents) ? validationState.documents : [];
   validationConfigState = {
     title: validationState.title || "",
     description: validationState.description || "",
     archived: Boolean(validationState.archived)
   };
-  batDocuments = Array.isArray(validationState.documents) ? validationState.documents : [];
+  if (nextDocuments.length || !batDocuments.length) {
+    batDocuments = nextDocuments;
+  }
+  batResponses = await getValidationResponses();
+}
+
+async function refreshAdminValidationResponses() {
+  if (!adminUnlocked) return;
   batResponses = await getValidationResponses();
 }
 
@@ -2382,7 +2390,7 @@ async function showAdminSectionFresh(section) {
       infoResponses = await getInfoResponses();
     }
     if (nextSection === "bat" || nextSection === "archives") {
-      await refreshAdminValidationData();
+      await refreshAdminValidationResponses();
     }
   }
   showAdminSection(nextSection);
@@ -2716,7 +2724,8 @@ async function selectAdminBat() {
   adminPollDetail.hidden = true;
   adminInfoDetail.hidden = true;
   adminBatDetail.hidden = false;
-  await refreshAdminValidationData();
+  renderBatResults();
+  await refreshAdminValidationResponses();
   renderBatResults();
 }
 
@@ -2848,7 +2857,7 @@ async function showAdminCampaignPicker() {
   await refreshPollResponseCounts();
   if (adminUnlocked) {
     infoResponses = await getInfoResponses();
-    await refreshAdminValidationData();
+    await refreshAdminValidationResponses();
   }
   renderAdminResetAlert();
   showAdminSection(activeAdminSection);
