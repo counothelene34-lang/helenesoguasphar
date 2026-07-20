@@ -223,7 +223,12 @@ function readBody(request) {
 }
 
 function sendJson(response, status, payload) {
-  response.writeHead(status, { "Content-Type": MIME_TYPES[".json"] });
+  response.writeHead(status, {
+    "Content-Type": MIME_TYPES[".json"],
+    "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+    "Pragma": "no-cache",
+    "Expires": "0"
+  });
   response.end(JSON.stringify(payload));
 }
 
@@ -628,9 +633,16 @@ function serveStatic(request, response, pathname) {
       return;
     }
 
-    response.writeHead(200, {
-      "Content-Type": MIME_TYPES[path.extname(filePath)] || "application/octet-stream"
-    });
+    const ext = path.extname(filePath);
+    const headers = {
+      "Content-Type": MIME_TYPES[ext] || "application/octet-stream"
+    };
+    if ([".html", ".js", ".css"].includes(ext)) {
+      headers["Cache-Control"] = "no-store, no-cache, must-revalidate, proxy-revalidate";
+      headers.Pragma = "no-cache";
+      headers.Expires = "0";
+    }
+    response.writeHead(200, headers);
     response.end(data);
   });
 }

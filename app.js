@@ -451,6 +451,12 @@ async function getValidationState() {
       // Fallback for preview servers without validation API.
     }
   }
+  if (validationConfigState.title || validationConfigState.description || batDocuments.length) {
+    return {
+      ...validationConfigState,
+      documents: batDocuments
+    };
+  }
   return localValidationState();
 }
 
@@ -503,7 +509,19 @@ async function getValidationResponses() {
       // Fallback for preview servers without validation API.
     }
   }
-  return localBatResponses();
+  return batResponses.length ? batResponses : localBatResponses();
+}
+
+async function refreshAdminValidationData() {
+  if (!adminUnlocked) return;
+  const validationState = await getValidationState();
+  validationConfigState = {
+    title: validationState.title || "",
+    description: validationState.description || "",
+    archived: Boolean(validationState.archived)
+  };
+  batDocuments = Array.isArray(validationState.documents) ? validationState.documents : [];
+  batResponses = await getValidationResponses();
 }
 
 async function refreshPharmacyValidationResponses() {
@@ -749,25 +767,50 @@ function slugify(value) {
 }
 
 async function requestJson(url, options = {}) {
-  const response = await fetch(url, {
-    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
-    ...options
-  });
+  const method = String(options.method || "GET").toUpperCase();
+  const attempts = method === "GET" ? 2 : 1;
+  const requestUrl = method === "GET" && url.startsWith("/api/")
+    ? `${url}${url.includes("?") ? "&" : "?"}_=${Date.now()}`
+    : url;
+  let lastError = null;
+  const { headers: optionHeaders = {}, ...fetchOptions } = options;
 
-  if (!response.ok) {
-    let message = `Erreur serveur ${response.status}`;
-    try {
-      const payload = await response.json();
-      if (payload?.error) message = payload.error;
-    } catch {
-      // Keep the generic server error if the response is not JSON.
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    if (attempt > 0) {
+      await new Promise((resolve) => setTimeout(resolve, 450));
     }
-    const error = new Error(message);
-    error.status = response.status;
-    throw error;
+
+    try {
+      const response = await fetch(requestUrl, {
+        ...fetchOptions,
+        cache: method === "GET" ? "no-store" : "default",
+        headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": "no-cache",
+          ...optionHeaders
+        }
+      });
+
+      if (!response.ok) {
+        let message = `Erreur serveur ${response.status}`;
+        try {
+          const payload = await response.json();
+          if (payload?.error) message = payload.error;
+        } catch {
+          // Keep the generic server error if the response is not JSON.
+        }
+        const error = new Error(message);
+        error.status = response.status;
+        throw error;
+      }
+
+      return response.json();
+    } catch (error) {
+      lastError = error;
+    }
   }
 
-  return response.json();
+  throw lastError;
 }
 
 async function getCampaigns() {
@@ -2320,6 +2363,22 @@ function showAdminSection(section) {
   renderCampaignPickers();
 }
 
+async function showAdminSectionFresh(section) {
+  const nextSection = section || "new-campaign";
+  if (adminUnlocked) {
+    if (nextSection === "polls" || nextSection === "archives") {
+      await refreshPollResponseCounts();
+    }
+    if (nextSection === "polls" || nextSection === "archives") {
+      infoResponses = await getInfoResponses();
+    }
+    if (nextSection === "bat" || nextSection === "archives") {
+      await refreshAdminValidationData();
+    }
+  }
+  showAdminSection(nextSection);
+}
+
 function renderCampaignPickers() {
   const validationConfig = currentValidationConfig();
   const openCampaigns = campaigns.filter((campaign) => !campaign.closed);
@@ -2639,7 +2698,7 @@ function renderBatResults() {
   }
 }
 
-function selectAdminBat() {
+async function selectAdminBat() {
   selectedAdminCampaign = null;
   selectedAdminPoll = null;
   selectedAdminInfoForm = null;
@@ -2648,6 +2707,7 @@ function selectAdminBat() {
   adminPollDetail.hidden = true;
   adminInfoDetail.hidden = true;
   adminBatDetail.hidden = false;
+  await refreshAdminValidationData();
   renderBatResults();
 }
 
@@ -2777,7 +2837,10 @@ async function showAdminCampaignPicker() {
   adminInfoDetail.hidden = true;
   adminBatDetail.hidden = true;
   await refreshPollResponseCounts();
-  if (adminUnlocked) infoResponses = await getInfoResponses();
+  if (adminUnlocked) {
+    infoResponses = await getInfoResponses();
+    await refreshAdminValidationData();
+  }
   renderAdminResetAlert();
   showAdminSection(activeAdminSection);
 }
@@ -3426,23 +3489,23 @@ productRows?.addEventListener("change", (event) => {
   if (input) validateQuantityInput(input);
 });
 
-adminDashboardNav?.addEventListener("click", (event) => {
+adminDashboardNav?.addEventListener("click", async (event) => {
   const groupButton = event.target.closest("[data-admin-group]");
   if (groupButton) {
     const nextSection = ADMIN_GROUP_DEFAULT_SECTION[groupButton.dataset.adminGroup] || "new-campaign";
-    showAdminSection(nextSection);
+    await showAdminSectionFresh(nextSection);
     return;
   }
 
   const button = event.target.closest("[data-admin-section]");
   if (!button) return;
-  showAdminSection(button.dataset.adminSection);
+  await showAdminSectionFresh(button.dataset.adminSection);
 });
 
-adminResetAlert?.addEventListener("click", (event) => {
+adminResetAlert?.addEventListener("click", async (event) => {
   const button = event.target.closest("[data-open-reset-requests]");
   if (!button) return;
-  showAdminSection("pharmacies");
+  await showAdminSectionFresh("pharmacies");
   pharmacyAccountsList?.scrollIntoView({ behavior: "smooth", block: "start" });
 });
 
@@ -3822,7 +3885,7 @@ adminBatCards?.addEventListener("click", async (event) => {
 
   const button = event.target.closest("[data-admin-bat-overview], [data-admin-bat-document]");
   if (!button) return;
-  selectAdminBat();
+  await selectAdminBat();
 });
 
 createValidationForm?.addEventListener("submit", async (event) => {
