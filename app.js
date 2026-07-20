@@ -504,7 +504,10 @@ async function getValidationResponses() {
       const responses = await requestJson("/api/validation-responses", {
         headers: { "X-Admin-Code": ADMIN_CODE }
       });
-      if (Array.isArray(responses)) return responses;
+      if (Array.isArray(responses)) {
+        saveLocalBatResponses(responses);
+        return responses;
+      }
     } catch {
       // Fallback for preview servers without validation API.
     }
@@ -646,9 +649,11 @@ async function getInfoResponses() {
   if (!API_AVAILABLE) return localInfoResponses();
 
   try {
-    return await requestJson("/api/info-responses", {
+    const responses = await requestJson("/api/info-responses", {
       headers: adminUnlocked ? { "X-Admin-Code": ADMIN_CODE } : {}
     });
+    if (Array.isArray(responses)) saveLocalInfoResponses(responses);
+    return responses;
   } catch {
     return localInfoResponses();
   }
@@ -1006,7 +1011,9 @@ async function getResponses() {
     const responses = await requestJson("/api/responses", {
       headers: adminUnlocked ? { "X-Admin-Code": ADMIN_CODE } : {}
     });
-    return latestResponses(responses);
+    const latest = latestResponses(responses);
+    saveLocalResponses(latest);
+    return latest;
   } catch {
     return latestResponses(localResponses());
   }
@@ -1064,9 +1071,11 @@ async function getPollResponses() {
   if (!API_AVAILABLE) return localPollResponses();
 
   try {
-    return await requestJson("/api/poll-responses", {
+    const responses = await requestJson("/api/poll-responses", {
       headers: adminUnlocked ? { "X-Admin-Code": ADMIN_CODE } : {}
     });
+    if (Array.isArray(responses)) saveLocalPollResponses(responses);
+    return responses;
   } catch {
     return localPollResponses();
   }
