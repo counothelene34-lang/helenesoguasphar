@@ -3669,6 +3669,9 @@ pharmacyLoginForm.addEventListener("submit", async (event) => {
     localStorage.setItem(PHARMACY_SESSION_KEY, JSON.stringify(currentPharmacy));
     pharmacyPassword.value = "";
     pharmacyLoginMessage.textContent = "";
+    renderCampaignPickers();
+    showCampaignPicker();
+    renderPharmacyAccess();
     await refreshPharmacyPollAnswers();
     await refreshPharmacyCampaignResponses();
     await refreshPharmacyInfoResponses();
@@ -3713,6 +3716,9 @@ pharmacyPasswordChangeForm.addEventListener("submit", async (event) => {
     newPharmacyPassword.value = "";
     confirmPharmacyPassword.value = "";
     pharmacyLoginMessage.textContent = "";
+    renderCampaignPickers();
+    showCampaignPicker();
+    renderPharmacyAccess();
     await refreshPharmacyPollAnswers();
     await refreshPharmacyCampaignResponses();
     await refreshPharmacyInfoResponses();
@@ -4694,6 +4700,12 @@ quantitySummaryBtn.addEventListener("click", () => {
 });
 
 async function init() {
+  campaignPicker.hidden = false;
+  form.hidden = true;
+  pollForm.hidden = true;
+  profileUpdateForm.hidden = true;
+  batValidationForm.hidden = true;
+  responseSuccess.hidden = true;
   campaigns = await getCampaigns();
   polls = await getPolls();
   infoForms = await getInfoForms();
