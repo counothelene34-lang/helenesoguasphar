@@ -501,6 +501,7 @@ main::before {
 #campaignPicker[hidden],
 #requestForm[hidden],
 #responseSuccess[hidden],
+.hero-actions-row[hidden],
 .hero-band[hidden],
 #pharmacyGate[hidden],
 #pharmacySessionBar[hidden] {

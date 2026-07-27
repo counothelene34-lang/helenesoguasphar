@@ -4700,7 +4700,8 @@ quantitySummaryBtn.addEventListener("click", () => {
 });
 
 async function init() {
-  campaignPicker.hidden = false;
+  campaignPicker.hidden = true;
+  setHeroVisible(false);
   form.hidden = true;
   pollForm.hidden = true;
   profileUpdateForm.hidden = true;

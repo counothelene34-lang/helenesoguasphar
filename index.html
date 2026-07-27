@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260727-start-on-menu">
+  <link rel="stylesheet" href="styles.css?v=20260727-hide-empty-start">
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
   <script type="module">
     import * as pdfjsLib from "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.min.mjs";
@@ -63,7 +63,7 @@
         <button id="logoutPharmacyBtn" class="ghost-btn" type="button">Changer de pharmacie</button>
       </div>
 
-      <div class="hero-actions-row">
+      <div class="hero-actions-row" hidden>
         <div class="hero-band">
           <div class="hero-copy">
             <h1 id="formTitle">Commande, précommande, confirmation</h1>
@@ -104,7 +104,7 @@
         <p id="archivedOrdersEmpty" class="empty-campaigns" hidden>Aucune précommande archivée pour votre pharmacie pour le moment.</p>
       </section>
 
-      <section id="campaignPicker" class="campaign-picker" aria-labelledby="campaignPickerTitle">
+      <section id="campaignPicker" class="campaign-picker" aria-labelledby="campaignPickerTitle" hidden>
         <div class="picker-head">
           <h2 id="campaignPickerTitle">Choisissez une commande à remplir</h2>
           <p>Sélectionnez la commande ou précommande concernée, puis indiquez vos quantités souhaitées. Si vous ne souhaitez pas participer, vous pouvez simplement répondre pas intéressé dans le formulaire merci.</p>
@@ -833,6 +833,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=20260727-start-on-menu"></script>
+  <script src="app.js?v=20260727-hide-empty-start"></script>
 </body>
 </html>
