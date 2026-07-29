@@ -217,6 +217,8 @@ let adminShowingClosedCampaigns = false;
 let pollResponseCounts = {};
 let activeAdminSection = "new-campaign";
 let archivedOrdersVisible = false;
+let archivedOrdersFilterId = "";
+let requestedOperationId = "";
 let adminValidationRefreshTimer = null;
 let lastValidationResponseSource = "";
 let lastValidationResponseError = "";
@@ -794,6 +796,21 @@ function slugify(value) {
     .replace(/^-|-$/g, "");
 
   return slug || `precommande-${Date.now()}`;
+}
+
+function normalizeOperationId(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function findCampaignByOperationId(operationId) {
+  const normalizedId = normalizeOperationId(operationId);
+  if (!normalizedId) return null;
+
+  return campaigns.find((campaign) => {
+    const campaignId = normalizeOperationId(campaign.id);
+    const campaignSlug = normalizeOperationId(slugify(campaign.title));
+    return campaignId === normalizedId || campaignSlug === normalizedId;
+  }) || null;
 }
 
 async function requestJson(url, options = {}) {
@@ -1466,6 +1483,7 @@ function campaignIsInterested(response) {
 function archivedOrderRowsForCurrentPharmacy() {
   return campaigns
     .filter((campaign) => campaign.closed)
+    .filter((campaign) => !archivedOrdersFilterId || campaign.id === archivedOrdersFilterId)
     .flatMap((campaign) => {
       const response = pharmacyCampaignResponses[campaign.id];
       if (!response) return [];
@@ -1523,7 +1541,7 @@ function setHeroVisible(visible) {
   }
 }
 
-function showArchivedOrdersPage() {
+function showArchivedOrdersPage(operationId = "") {
   if (pharmacyAccessRequired()) {
     renderPharmacyAccess();
     return;
@@ -1533,6 +1551,7 @@ function showArchivedOrdersPage() {
   selectedPoll = null;
   selectedInfoForm = null;
   selectedBatDocument = null;
+  archivedOrdersFilterId = operationId || "";
   setHeroVisible(false);
   archivedOrdersVisible = true;
   campaignPicker.hidden = true;
@@ -1543,6 +1562,26 @@ function showArchivedOrdersPage() {
   responseSuccess.hidden = true;
   renderArchivedOrdersHistory();
   archivedOrdersPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function showRequestedOperationOrMenu() {
+  if (pharmacyAccessRequired()) {
+    renderPharmacyAccess();
+    return;
+  }
+
+  const requestedCampaign = findCampaignByOperationId(requestedOperationId);
+  if (!requestedCampaign) {
+    showCampaignPicker();
+    return;
+  }
+
+  if (requestedCampaign.closed) {
+    showArchivedOrdersPage(requestedCampaign.id);
+    return;
+  }
+
+  selectCampaign(requestedCampaign.id);
 }
 
 function exportArchivedOrdersPdf() {
@@ -2853,6 +2892,7 @@ function showCampaignPicker() {
   selectedBatDocument = null;
   currentOrderTemplate = [];
   archivedOrdersVisible = false;
+  archivedOrdersFilterId = "";
   renderArchivedOrdersHistory();
   campaignPicker.hidden = false;
   setHeroVisible(true);
@@ -3677,7 +3717,7 @@ pharmacyLoginForm.addEventListener("submit", async (event) => {
     await refreshPharmacyInfoResponses();
     await refreshPharmacyValidationResponses();
     renderCampaignPickers();
-    showCampaignPicker();
+    showRequestedOperationOrMenu();
     renderPharmacyAccess();
   } catch {
     pharmacyLoginMessage.textContent = "Mot de passe pharmacie incorrect.";
@@ -3724,7 +3764,7 @@ pharmacyPasswordChangeForm.addEventListener("submit", async (event) => {
     await refreshPharmacyInfoResponses();
     await refreshPharmacyValidationResponses();
     renderCampaignPickers();
-    showCampaignPicker();
+    showRequestedOperationOrMenu();
     renderPharmacyAccess();
   } catch {
     pharmacyLoginMessage.textContent = "Impossible d'enregistrer ce mot de passe. Réessayez.";
@@ -4720,6 +4760,7 @@ async function init() {
   batDocuments = Array.isArray(validationState.documents) ? validationState.documents : [];
   batResponses = await getValidationResponses();
   const params = new URLSearchParams(window.location.search);
+  requestedOperationId = String(params.get("operation") || "").trim();
   if (params.get("resetValidation") === "1") {
     resetValidationState();
     params.delete("resetValidation");
@@ -4742,7 +4783,7 @@ async function init() {
   await refreshPharmacyInfoResponses();
   await refreshPharmacyValidationResponses();
   renderCampaignPickers();
-  showCampaignPicker();
+  showRequestedOperationOrMenu();
   await showAdminCampaignPicker();
   renderPharmacyAccess();
 }
