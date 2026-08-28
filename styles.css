@@ -1108,9 +1108,8 @@ main::before {
     position: sticky;
     top: 118px;
     grid-column: 1;
-    grid-row: 1 / span 2;
     width: 100%;
-    max-height: calc(100vh - 140px);
+    max-height: calc(50vh - 90px);
     margin: 0;
     padding: 0;
     overflow-y: auto;
@@ -1121,13 +1120,8 @@ main::before {
     position: sticky;
     top: 118px;
     grid-column: 1;
-    grid-row: 1 / span 2;
-    max-height: calc(100vh - 140px);
+    max-height: calc(50vh - 90px);
     overflow-y: auto;
-  }
-
-  #campaignPicker > .survey-picker-block {
-    display: none;
   }
 
   #campaignPicker > .poll-picker-block > h2,
