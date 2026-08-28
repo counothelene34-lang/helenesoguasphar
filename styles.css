@@ -718,6 +718,23 @@ main::before {
   box-shadow: 0 16px 34px rgba(40, 92, 63, .18);
 }
 
+.whatsapp-poll-head {
+  display: flex;
+  flex-direction: column;
+}
+
+.whatsapp-poll-image-link {
+  display: block;
+  margin-bottom: 10px;
+}
+
+.whatsapp-poll-image {
+  display: block;
+  width: 100%;
+  max-height: 180px;
+  object-fit: cover;
+}
+
 .whatsapp-poll-title {
   padding: 0 16px;
   color: #101b16;
@@ -1137,6 +1154,12 @@ main::before {
   }
 }
 
+.field-hint {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
 .checkbox-line {
   display: flex !important;
   gap: 10px;
@@ -1160,7 +1183,6 @@ main::before {
   display: flex;
   min-height: 190px;
   flex-direction: column;
-  justify-content: space-between;
   padding: 20px;
   background: linear-gradient(180deg, #fff, #f7fbf9);
   border: 1px solid var(--line);
@@ -1427,7 +1449,8 @@ main::before {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-top: 18px;
+  margin-top: auto;
+  padding-top: 18px;
 }
 
 .campaign-actions {

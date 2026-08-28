@@ -124,6 +124,13 @@ const newPollQuestion = document.querySelector("#newPollQuestion");
 const newPollOptions = document.querySelector("#newPollOptions");
 const newPollFreeLabel = document.querySelector("#newPollFreeLabel");
 const newPollFreeRequired = document.querySelector("#newPollFreeRequired");
+const newPollImageFile = document.querySelector("#newPollImageFile");
+const removeNewPollImageBtn = document.querySelector("#removeNewPollImageBtn");
+const newPollImagePreview = document.querySelector("#newPollImagePreview");
+const newPollImagePreviewImg = document.querySelector("#newPollImagePreviewImg");
+const newPollImageMessage = document.querySelector("#newPollImageMessage");
+let newPollImageData = "";
+const createPollMessage = document.querySelector("#createPollMessage");
 const createInfoForm = document.querySelector("#createInfoForm");
 const newInfoTitle = document.querySelector("#newInfoTitle");
 const newInfoIntro = document.querySelector("#newInfoIntro");
@@ -149,6 +156,12 @@ const adminPollTitle = document.querySelector("#adminPollTitle");
 const pollResultsSummary = document.querySelector("#pollResultsSummary");
 const pollResponsesTable = document.querySelector("#pollResponsesTable");
 const exportPollExcelBtn = document.querySelector("#exportPollExcelBtn");
+const pollImageFile = document.querySelector("#pollImageFile");
+const removePollImageBtn = document.querySelector("#removePollImageBtn");
+const pollImageAdminPreview = document.querySelector("#pollImageAdminPreview");
+const pollImageAdminLink = document.querySelector("#pollImageAdminLink");
+const pollImageAdmin = document.querySelector("#pollImageAdmin");
+const pollImageMessage = document.querySelector("#pollImageMessage");
 const adminDetail = document.querySelector("#adminDetail");
 const backToAdminCampaignsBtn = document.querySelector("#backToAdminCampaignsBtn");
 const adminSelectedCampaignName = document.querySelector("#adminSelectedCampaignName");
@@ -1752,6 +1765,16 @@ function refreshCampaignImagePreview(campaign) {
   }
 }
 
+function refreshPollImagePreview(poll) {
+  const imageData = poll?.imageData || "";
+  if (pollImageAdminPreview && pollImageAdmin) {
+    pollImageAdminPreview.hidden = !imageData;
+    pollImageAdminLink.href = imageData || "#";
+    pollImageAdmin.src = imageData;
+    pollImageAdmin.alt = imageData ? `Image ${poll?.question || "sondage"}` : "";
+  }
+}
+
 function openImagePreview(src, alt = "Image") {
   if (!src || !imagePreviewModal || !imagePreviewImg) return;
   imagePreviewImg.src = src;
@@ -2259,11 +2282,20 @@ function pollCard(poll, target) {
     <label class="inline-poll-free-label" for="inlineFreeText-${escapeHtml(poll.id)}">${escapeHtml(poll.freeTextLabel)}</label>
     <textarea id="inlineFreeText-${escapeHtml(poll.id)}" name="inlinePollFreeText" rows="3" ${poll.freeTextRequired ? "required" : ""}></textarea>
   ` : "";
+  const pollImage = poll.imageData
+    ? `<a class="whatsapp-poll-image-link" href="${poll.imageData}" data-preview-image title="Voir la photo du sondage"><img class="whatsapp-poll-image" src="${poll.imageData}" alt="Image ${escapeHtml(poll.question)}"></a>`
+    : "";
+  const adminPollImage = poll.imageData
+    ? `<a class="campaign-card-image" href="${poll.imageData}" data-preview-image title="Voir la photo du sondage"><img src="${poll.imageData}" alt="Image ${escapeHtml(poll.question)}"></a>`
+    : "";
 
   if (!isAdmin) {
     return `
       <article class="whatsapp-poll-card ${localAnswer ? "answered" : "is-open"}">
-        <div class="whatsapp-poll-title">${escapeHtml(poll.question)}</div>
+        <div class="whatsapp-poll-head">
+          ${pollImage}
+          <div class="whatsapp-poll-title">${escapeHtml(poll.question)}</div>
+        </div>
         ${localAnswer ? `
           <div class="whatsapp-poll-options">
             ${optionsPreview}
@@ -2284,6 +2316,7 @@ function pollCard(poll, target) {
 
   return `
     <article class="campaign-card poll-card">
+      ${adminPollImage}
       <div>
         <div class="campaign-card-top">
           <span class="campaign-type ${poll.closed ? "closed" : ""}">${poll.closed ? "Sondage clôturé" : "Sondage"}</span>
@@ -2402,6 +2435,7 @@ function adminBatOverviewCard() {
 function showAdminSection(section) {
   stopAdminValidationAutoRefresh();
   activeAdminSection = section || "new-campaign";
+  if (createPollMessage) createPollMessage.textContent = "";
   const sectionCopy = ADMIN_SECTIONS[activeAdminSection] || ADMIN_SECTIONS["new-campaign"];
   const validationConfig = currentValidationConfig();
   const activeGroup = adminGroupForSection(activeAdminSection);
@@ -2950,6 +2984,8 @@ async function selectAdminPoll(pollId) {
   adminPollDetail.hidden = false;
   adminInfoDetail.hidden = true;
   adminBatDetail.hidden = true;
+  if (pollImageMessage) pollImageMessage.textContent = "";
+  refreshPollImagePreview(selectedAdminPoll);
   await renderPollResults();
 }
 
@@ -4229,6 +4265,37 @@ removeCampaignImageBtn2.addEventListener("click", async () => {
   campaignImageMessage.textContent = "Deuxième image retirée.";
 });
 
+pollImageFile?.addEventListener("change", async () => {
+  const file = pollImageFile.files[0];
+  if (!file || !selectedAdminPoll) return;
+
+  try {
+    pollImageMessage.textContent = "Préparation de l'image...";
+    selectedAdminPoll.imageData = await imageFileToDataUrl(file);
+    polls = polls.map((poll) => poll.id === selectedAdminPoll.id ? selectedAdminPoll : poll);
+    await savePolls(polls);
+    refreshPollImagePreview(selectedAdminPoll);
+    renderCampaignPickers();
+    pollImageMessage.textContent = "Image enregistrée.";
+  } catch (error) {
+    pollImageMessage.textContent = error.message;
+  } finally {
+    pollImageFile.value = "";
+  }
+});
+
+removePollImageBtn?.addEventListener("click", async () => {
+  if (!selectedAdminPoll) return;
+  const confirmed = selectedAdminPoll.imageData ? confirm("Retirer l'image de ce sondage ?") : true;
+  if (!confirmed) return;
+  selectedAdminPoll.imageData = "";
+  polls = polls.map((poll) => poll.id === selectedAdminPoll.id ? selectedAdminPoll : poll);
+  await savePolls(polls);
+  refreshPollImagePreview(selectedAdminPoll);
+  renderCampaignPickers();
+  pollImageMessage.textContent = "Image retirée.";
+});
+
 createCampaignForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const title = newCampaignTitle.value.trim();
@@ -4264,21 +4331,48 @@ createCampaignForm.addEventListener("submit", async (event) => {
   adminMessage.textContent = `Précommande "${title}" ajoutée. Ouvrez-la puis importez son bon Excel.`;
 });
 
+newPollImageFile?.addEventListener("change", async () => {
+  const file = newPollImageFile.files[0];
+  if (!file) return;
+
+  try {
+    newPollImageMessage.textContent = "Préparation de l'image...";
+    newPollImageData = await imageFileToDataUrl(file);
+    newPollImagePreviewImg.src = newPollImageData;
+    newPollImagePreview.hidden = false;
+    removeNewPollImageBtn.hidden = false;
+    newPollImageMessage.textContent = "Image prête, elle sera ajoutée à la création du sondage.";
+  } catch (error) {
+    newPollImageMessage.textContent = error.message;
+  } finally {
+    newPollImageFile.value = "";
+  }
+});
+
+removeNewPollImageBtn?.addEventListener("click", () => {
+  newPollImageData = "";
+  newPollImagePreviewImg.src = "";
+  newPollImagePreview.hidden = true;
+  removeNewPollImageBtn.hidden = true;
+  newPollImageMessage.textContent = "Image retirée.";
+});
+
 createPollForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const question = newPollQuestion.value.trim();
   const options = newPollOptions.value
     .split(/\r?\n/)
+    .flatMap((line) => line.split(/[,;]/))
     .map((option) => option.trim())
     .filter(Boolean);
 
   if (!question) {
-    adminMessage.textContent = "Indiquez la question du sondage.";
+    createPollMessage.textContent = "Indiquez la question du sondage.";
     return;
   }
 
   if (options.length < 2) {
-    adminMessage.textContent = "Indiquez au moins deux réponses possibles, une par ligne.";
+    createPollMessage.textContent = "Indiquez au moins deux réponses possibles (une par ligne, ou séparées par une virgule).";
     return;
   }
 
@@ -4297,14 +4391,22 @@ createPollForm.addEventListener("submit", async (event) => {
     options,
     freeTextLabel: newPollFreeLabel.value.trim(),
     freeTextRequired: newPollFreeRequired.checked,
+    imageData: newPollImageData,
     closed: false
   };
 
   polls = [...polls, poll];
   await savePolls(polls);
   createPollForm.reset();
+  createPollMessage.textContent = "";
+  newPollImageData = "";
+  if (newPollImagePreviewImg) newPollImagePreviewImg.src = "";
+  if (newPollImagePreview) newPollImagePreview.hidden = true;
+  if (removeNewPollImageBtn) removeNewPollImageBtn.hidden = true;
+  if (newPollImageMessage) newPollImageMessage.textContent = "";
   showAdminSection("polls");
   adminMessage.textContent = `Sondage "${question}" créé.`;
+  await selectAdminPoll(id);
 });
 
 createInfoForm?.addEventListener("submit", async (event) => {

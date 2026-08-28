@@ -408,7 +408,19 @@
                 <input id="newPollFreeRequired" type="checkbox">
                 <span>Rendre ce champ obligatoire</span>
               </label>
+              <label for="newPollImageFile">Image visible sur le sondage (facultatif)</label>
+              <div class="upload-actions">
+                <label class="file-btn" for="newPollImageFile">Choisir une image</label>
+                <input id="newPollImageFile" type="file" accept="image/*">
+                <button id="removeNewPollImageBtn" class="ghost-btn" type="button" hidden>Retirer l'image</button>
+              </div>
+              <div id="newPollImagePreview" class="campaign-image-admin-preview" hidden>
+                <img id="newPollImagePreviewImg" alt="">
+              </div>
+              <p id="newPollImageMessage" class="status-message" role="status"></p>
+              <p class="field-hint">Pour les réponses possibles, une par ligne (ou séparées par une virgule) — au moins deux réponses.</p>
               <button class="primary-btn" type="submit">Créer le sondage</button>
+              <p id="createPollMessage" class="status-message" role="status"></p>
             </form>
             <form id="createInfoForm" class="create-campaign-form">
               <label for="newInfoTitle">Nouvelle mise à jour fiche pharmacie</label>
@@ -632,6 +644,22 @@
               <p class="eyebrow">Sondage sélectionné</p>
               <h2 id="adminPollTitle">Sondage</h2>
             </div>
+
+            <section class="admin-message-editor">
+              <label for="pollImageFile">Image visible sur le sondage</label>
+              <div class="upload-actions">
+                <label class="file-btn" for="pollImageFile">Choisir une image</label>
+                <input id="pollImageFile" type="file" accept="image/*">
+                <button id="removePollImageBtn" class="ghost-btn" type="button">Retirer l'image</button>
+              </div>
+              <div id="pollImageAdminPreview" class="campaign-image-admin-preview" hidden>
+                <a id="pollImageAdminLink" href="#" data-preview-image>
+                  <img id="pollImageAdmin" alt="">
+                </a>
+              </div>
+              <p id="pollImageMessage" class="status-message" role="status"></p>
+            </section>
+
             <div id="pollResultsSummary" class="metrics"></div>
             <section class="admin-overview poll-overview">
               <div>

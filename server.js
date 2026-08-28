@@ -1000,6 +1000,7 @@ const server = http.createServer(async (request, response) => {
         options: Array.isArray(poll.options) ? poll.options.map((option) => String(option || "").trim()).filter(Boolean) : [],
         freeTextLabel: String(poll.freeTextLabel || "").trim(),
         freeTextRequired: Boolean(poll.freeTextRequired),
+        imageData: String(poll.imageData || ""),
         closed: Boolean(poll.closed)
       })).filter((poll) => poll.question && poll.options.length) : [];
       writePolls(polls);
