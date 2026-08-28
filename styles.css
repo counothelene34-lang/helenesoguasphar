@@ -1104,46 +1104,46 @@ main::before {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  #campaignPicker > .poll-picker-block {
+  #campaignPicker > .campaign-sidebar {
     position: sticky;
     top: 118px;
     grid-column: 1;
+    grid-row: 1 / span 2;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
     width: 100%;
-    max-height: calc(50vh - 90px);
+    max-height: calc(100vh - 140px);
+    overflow-y: auto;
+  }
+
+  #campaignPicker > .campaign-sidebar > .poll-picker-block {
+    width: 100%;
     margin: 0;
     padding: 0;
-    overflow-y: auto;
     border-top: 0;
   }
 
-  #campaignPicker > .info-picker-block {
-    position: sticky;
-    top: 118px;
-    grid-column: 1;
-    max-height: calc(50vh - 90px);
-    overflow-y: auto;
-  }
-
-  #campaignPicker > .poll-picker-block > h2,
-  #campaignPicker > .poll-picker-block > p {
+  #campaignPicker > .campaign-sidebar .poll-picker-block > h2,
+  #campaignPicker > .campaign-sidebar .poll-picker-block > p {
     display: none;
   }
 
-  #campaignPicker > .poll-picker-block .campaign-grid {
+  #campaignPicker > .campaign-sidebar .campaign-grid {
     display: block;
     margin-top: 0;
   }
 
-  #campaignPicker > .poll-picker-block .whatsapp-poll-card {
+  #campaignPicker > .campaign-sidebar .whatsapp-poll-card {
     width: 100%;
     min-height: 220px;
   }
 
-  #campaignPicker > .poll-picker-block .whatsapp-poll-title {
+  #campaignPicker > .campaign-sidebar .whatsapp-poll-title {
     font-size: 16px;
   }
 
-  #campaignPicker > .poll-picker-block .whatsapp-poll-label {
+  #campaignPicker > .campaign-sidebar .whatsapp-poll-label {
     font-size: 15px;
   }
 }
