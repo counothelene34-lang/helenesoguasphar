@@ -919,17 +919,13 @@ async function getPolls() {
 
 async function savePolls(nextPolls) {
   if (API_AVAILABLE) {
-    try {
-      const savedPolls = await requestJson("/api/polls", {
-        method: "PUT",
-        headers: { "X-Admin-Code": ADMIN_CODE },
-        body: JSON.stringify(nextPolls)
-      });
-      saveLocalPolls(savedPolls);
-      return savedPolls;
-    } catch {
-      // Fallback for preview servers without poll API.
-    }
+    const savedPolls = await requestJson("/api/polls", {
+      method: "PUT",
+      headers: { "X-Admin-Code": ADMIN_CODE },
+      body: JSON.stringify(nextPolls)
+    });
+    saveLocalPolls(savedPolls);
+    return savedPolls;
   }
 
   saveLocalPolls(nextPolls);
@@ -3963,9 +3959,16 @@ adminPollCards.addEventListener("click", async (event) => {
     if (!poll) return;
     const confirmed = confirm(`Supprimer définitivement le sondage "${poll.question}" ?`);
     if (!confirmed) return;
+    const previousPolls = polls;
     polls = polls.filter((item) => item.id !== poll.id);
     if (selectedAdminPoll?.id === poll.id) selectedAdminPoll = null;
-    await savePolls(polls);
+    try {
+      await savePolls(polls);
+    } catch (error) {
+      polls = previousPolls;
+      adminMessage.textContent = `Le sondage n'a pas pu être supprimé sur le serveur : ${error.message || "erreur inconnue"}. Réessayez.`;
+      return;
+    }
     showAdminCampaignPicker();
     adminMessage.textContent = `Sondage "${poll.question}" supprimé.`;
     return;
@@ -3980,9 +3983,17 @@ adminPollCards.addEventListener("click", async (event) => {
       ? `Clôturer le sondage "${poll.question}" ?\n\nIl ne sera plus visible par les adhérents, mais restera consultable côté admin.`
       : `Rouvrir le sondage "${poll.question}" ?\n\nIl redeviendra visible par les adhérents.`);
     if (!confirmed) return;
+    const previousClosed = poll.closed;
     poll.closed = nextClosed;
     polls = polls.map((item) => item.id === poll.id ? poll : item);
-    await savePolls(polls);
+    try {
+      await savePolls(polls);
+    } catch (error) {
+      poll.closed = previousClosed;
+      polls = polls.map((item) => item.id === poll.id ? poll : item);
+      adminMessage.textContent = `Le changement n'a pas pu être enregistré sur le serveur : ${error.message || "erreur inconnue"}. Réessayez.`;
+      return;
+    }
     renderCampaignPickers();
     adminMessage.textContent = nextClosed ? `Sondage "${poll.question}" clôturé.` : `Sondage "${poll.question}" rouvert.`;
     return;
@@ -4395,8 +4406,16 @@ createPollForm.addEventListener("submit", async (event) => {
     closed: false
   };
 
+  const previousPolls = polls;
   polls = [...polls, poll];
-  await savePolls(polls);
+  try {
+    await savePolls(polls);
+  } catch (error) {
+    polls = previousPolls;
+    createPollMessage.textContent = `Le sondage n'a pas pu être enregistré sur le serveur : ${error.message || "erreur inconnue"}. Vérifiez votre connexion et réessayez.`;
+    return;
+  }
+
   createPollForm.reset();
   createPollMessage.textContent = "";
   newPollImageData = "";
