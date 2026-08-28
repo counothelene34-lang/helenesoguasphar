@@ -162,6 +162,9 @@ const pollImageAdminPreview = document.querySelector("#pollImageAdminPreview");
 const pollImageAdminLink = document.querySelector("#pollImageAdminLink");
 const pollImageAdmin = document.querySelector("#pollImageAdmin");
 const pollImageMessage = document.querySelector("#pollImageMessage");
+const pollTitleEdit = document.querySelector("#pollTitleEdit");
+const pollTitleMessage = document.querySelector("#pollTitleMessage");
+const savePollTitleBtn = document.querySelector("#savePollTitleBtn");
 const adminDetail = document.querySelector("#adminDetail");
 const backToAdminCampaignsBtn = document.querySelector("#backToAdminCampaignsBtn");
 const adminSelectedCampaignName = document.querySelector("#adminSelectedCampaignName");
@@ -2975,6 +2978,8 @@ async function selectAdminPoll(pollId) {
   selectedAdminCampaign = null;
   selectedAdminInfoForm = null;
   adminPollTitle.textContent = selectedAdminPoll.question;
+  pollTitleEdit.value = selectedAdminPoll.question;
+  if (pollTitleMessage) pollTitleMessage.textContent = "";
   adminCampaignPicker.hidden = true;
   adminDetail.hidden = true;
   adminPollDetail.hidden = false;
@@ -4305,6 +4310,26 @@ removePollImageBtn?.addEventListener("click", async () => {
   refreshPollImagePreview(selectedAdminPoll);
   renderCampaignPickers();
   pollImageMessage.textContent = "Image retirée.";
+});
+
+savePollTitleBtn?.addEventListener("click", async () => {
+  if (!selectedAdminPoll) return;
+  const title = pollTitleEdit.value.trim();
+  if (!title) {
+    pollTitleMessage.textContent = "Indiquez un titre pour le sondage.";
+    return;
+  }
+  try {
+    pollTitleMessage.textContent = "Enregistrement...";
+    selectedAdminPoll.question = title;
+    polls = polls.map((poll) => poll.id === selectedAdminPoll.id ? selectedAdminPoll : poll);
+    await savePolls(polls);
+    adminPollTitle.textContent = title;
+    renderCampaignPickers();
+    pollTitleMessage.textContent = "Titre enregistré.";
+  } catch (error) {
+    pollTitleMessage.textContent = error.message;
+  }
 });
 
 createCampaignForm.addEventListener("submit", async (event) => {
