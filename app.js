@@ -185,6 +185,13 @@ const campaignImageAdminPreview2 = document.querySelector("#campaignImageAdminPr
 const campaignImageAdminLink2 = document.querySelector("#campaignImageAdminLink2");
 const campaignImageAdmin2 = document.querySelector("#campaignImageAdmin2");
 const campaignImageMessage = document.querySelector("#campaignImageMessage");
+const campaignPeriodsList = document.querySelector("#campaignPeriodsList");
+const addCampaignPeriodForm = document.querySelector("#addCampaignPeriodForm");
+const newPeriodStart = document.querySelector("#newPeriodStart");
+const newPeriodEnd = document.querySelector("#newPeriodEnd");
+const campaignPeriodsMessage = document.querySelector("#campaignPeriodsMessage");
+const campaignPeriodFilterLabel = document.querySelector("#campaignPeriodFilterLabel");
+const campaignPeriodFilter = document.querySelector("#campaignPeriodFilter");
 const removeCampaignImageBtn = document.querySelector("#removeCampaignImageBtn");
 const removeCampaignImageBtn2 = document.querySelector("#removeCampaignImageBtn2");
 const adminMessage = document.querySelector("#adminMessage");
@@ -221,11 +228,13 @@ let pendingPasswordPharmacy = null;
 let pendingInitialPassword = "";
 let pharmacyPollAnswers = {};
 let pharmacyCampaignResponses = {};
+let pharmacyPeriodResponses = {};
 let selectedCampaign = null;
 let selectedPoll = null;
 let selectedInfoForm = null;
 let selectedBatDocument = null;
 let selectedAdminCampaign = null;
+let selectedAdminPeriodId = "";
 let selectedAdminPoll = null;
 let selectedAdminInfoForm = null;
 let currentOrderTemplate = [];
@@ -998,6 +1007,7 @@ async function refreshPharmacyPollAnswers() {
 
 async function refreshPharmacyCampaignResponses() {
   pharmacyCampaignResponses = {};
+  pharmacyPeriodResponses = {};
   if (!currentPharmacy) return;
 
   try {
@@ -1013,10 +1023,16 @@ async function refreshPharmacyCampaignResponses() {
 
     latestResponses(responses).forEach((response) => {
       if (!response.campaignId) return;
+      pharmacyPeriodResponses[`${response.campaignId}|${response.periodId || ""}`] = response;
+      const campaign = campaigns.find((item) => item.id === response.campaignId);
+      const activePeriod = campaign ? currentPeriod(campaign) : null;
+      const expectedPeriodId = activePeriod ? activePeriod.id : "";
+      if (String(response.periodId || "") !== String(expectedPeriodId)) return;
       pharmacyCampaignResponses[response.campaignId] = response;
     });
   } catch {
     pharmacyCampaignResponses = {};
+    pharmacyPeriodResponses = {};
   }
 }
 
@@ -1492,15 +1508,22 @@ function campaignIsInterested(response) {
   return !campaignIsNotInterested(response);
 }
 
+function archivedPeriodsForCampaign(campaign) {
+  const periods = sortedPeriods(campaign);
+  if (!periods.length) return campaign.closed ? [{ id: "" }] : [];
+  const today = todayIso();
+  const active = campaign.closed ? null : currentPeriod(campaign);
+  return periods.filter((period) => period.startDate <= today && period !== active);
+}
+
 function archivedOrderRowsForCurrentPharmacy() {
   return campaigns
-    .filter((campaign) => campaign.closed)
     .filter((campaign) => !archivedOrdersFilterId || campaign.id === archivedOrdersFilterId)
-    .flatMap((campaign) => {
-      const response = pharmacyCampaignResponses[campaign.id];
+    .flatMap((campaign) => archivedPeriodsForCampaign(campaign).flatMap((period) => {
+      const response = pharmacyPeriodResponses[`${campaign.id}|${period.id || ""}`];
       if (!response) return [];
 
-      const operation = response.campaignTitle || campaign.title || "Précommande";
+      const operation = `${response.campaignTitle || campaign.title || "Précommande"}${period.id ? ` — ${periodLabel(period)}` : ""}`;
       const completedAt = response.updatedAt || response.createdAt || "-";
       if (campaignIsNotInterested(response)) {
         return [{ completedAt, operation, designation: "Pas intéressé", quantity: "-" }];
@@ -1520,7 +1543,7 @@ function archivedOrderRowsForCurrentPharmacy() {
         designation: product.designation || product.product || "Produit",
         quantity: product.quantity || ""
       }));
-    });
+    }));
 }
 
 function renderArchivedOrdersHistory() {
@@ -1588,7 +1611,7 @@ function showRequestedOperationOrMenu() {
     return;
   }
 
-  if (requestedCampaign.closed) {
+  if (!campaignIsOpenForPharmacy(requestedCampaign)) {
     showArchivedOrdersPage(requestedCampaign.id);
     return;
   }
@@ -1680,7 +1703,114 @@ function campaignResponseSummary(response) {
 }
 
 function responseOwnerKey(response) {
-  return `${response.campaignId || "herboristerie"}|${response.pharmacyId || pharmacyNameKey(response.pharmacyName)}`;
+  return `${response.campaignId || "herboristerie"}|${response.periodId || ""}|${response.pharmacyId || pharmacyNameKey(response.pharmacyName)}`;
+}
+
+function todayIso() {
+  const now = new Date();
+  const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 10);
+}
+
+function sortedPeriods(campaign) {
+  return Array.isArray(campaign?.periods)
+    ? [...campaign.periods].filter((period) => period && period.startDate).sort((a, b) => a.startDate.localeCompare(b.startDate))
+    : [];
+}
+
+function currentPeriod(campaign) {
+  const today = todayIso();
+  const matches = sortedPeriods(campaign).filter((period) => period.startDate <= today && (!period.endDate || period.endDate >= today));
+  return matches.length ? matches[matches.length - 1] : null;
+}
+
+function futurePeriods(campaign) {
+  const today = todayIso();
+  return sortedPeriods(campaign).filter((period) => period.startDate > today);
+}
+
+function pastPeriods(campaign) {
+  const today = todayIso();
+  const active = currentPeriod(campaign);
+  return sortedPeriods(campaign).filter((period) => period !== active && (period.endDate ? period.endDate < today : period.startDate <= today));
+}
+
+function formatDateFr(iso) {
+  if (!iso) return "";
+  const date = new Date(`${iso}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return iso;
+  return date.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+}
+
+function periodLabel(period) {
+  if (!period?.startDate) return "";
+  const date = new Date(`${period.startDate}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return "";
+  const formatted = date.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+  return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+}
+
+function campaignIsOpenForPharmacy(campaign) {
+  if (!campaign || campaign.closed) return false;
+  if (!Array.isArray(campaign.periods) || !campaign.periods.length) return true;
+  return Boolean(currentPeriod(campaign));
+}
+
+function campaignIsVisibleForPharmacy(campaign) {
+  if (!campaign || campaign.closed) return false;
+  if (!Array.isArray(campaign.periods) || !campaign.periods.length) return true;
+  return Boolean(currentPeriod(campaign)) || futurePeriods(campaign).length > 0;
+}
+
+function periodStatusLabel(campaign, period) {
+  const today = todayIso();
+  if (period.startDate > today) return "À venir";
+  if (period.id === currentPeriod(campaign)?.id) return "En cours";
+  return "Terminée";
+}
+
+function renderCampaignPeriodsAdmin(campaign) {
+  if (!campaignPeriodsList) return;
+  const periods = sortedPeriods(campaign).slice().reverse();
+
+  campaignPeriodsList.innerHTML = periods.length
+    ? periods.map((period) => {
+        const status = periodStatusLabel(campaign, period);
+        return `
+          <div class="period-row">
+            <span class="period-dates">${escapeHtml(formatDateFr(period.startDate))} → ${escapeHtml(formatDateFr(period.endDate) || "sans date de clôture")}</span>
+            <span class="period-status period-status-${status === "En cours" ? "active" : status === "À venir" ? "upcoming" : "past"}">${status}</span>
+            <button class="ghost-btn" type="button" data-delete-period="${escapeHtml(period.id)}">Supprimer</button>
+          </div>
+        `;
+      }).join("")
+    : '<p class="empty-campaigns">Aucune période programmée pour le moment. L\'opération reste visible en continu jusqu\'à ce qu\'une période soit ajoutée.</p>';
+
+  if (!campaignPeriodFilterLabel || !campaignPeriodFilter) return;
+  if (!periods.length) {
+    campaignPeriodFilterLabel.hidden = true;
+    campaignPeriodFilter.hidden = true;
+    selectedAdminPeriodId = "";
+    return;
+  }
+
+  const preferredId = currentPeriod(campaign)?.id || periods[0].id;
+  if (!periods.some((period) => period.id === selectedAdminPeriodId)) {
+    selectedAdminPeriodId = preferredId;
+  }
+
+  campaignPeriodFilterLabel.hidden = false;
+  campaignPeriodFilter.hidden = false;
+  campaignPeriodFilter.innerHTML = periods.map((period) => `
+    <option value="${escapeHtml(period.id)}" ${period.id === selectedAdminPeriodId ? "selected" : ""}>
+      ${escapeHtml(periodLabel(period))} (${escapeHtml(periodStatusLabel(campaign, period))}) — clôture ${escapeHtml(formatDateFr(period.endDate) || "non définie")}
+    </option>
+  `).join("");
+}
+
+function responseMatchesAdminPeriod(item) {
+  if (!selectedAdminCampaign || !Array.isArray(selectedAdminCampaign.periods) || !selectedAdminCampaign.periods.length) return true;
+  return String(item.periodId || "") === String(selectedAdminPeriodId);
 }
 
 function responseMatchesCampaign(response, campaign) {
@@ -2219,14 +2349,28 @@ function campaignCard(campaign, target) {
     .filter(Boolean)
     .map((imageData, index) => `<a class="campaign-card-image" href="${imageData}" data-preview-image title="Voir la photo ${index + 1}"><img src="${imageData}" alt="Image ${index + 1} ${escapeHtml(campaign.title)}"></a>`)
     .join("");
-  const statusLabel = campaign.closed ? "Clôturée" : (campaign.type || "Commande");
+  const isOpenNow = isAdmin || campaignIsOpenForPharmacy(campaign);
+  const statusLabel = campaign.closed ? "Clôturée" : (isOpenNow ? (campaign.type || "Commande") : "Bientôt disponible");
   const displayStatusLabel = isCompleted ? "Réalisée" : statusLabel;
   const summary = campaignResponseSummary(completedResponse);
   const completedDate = completedResponse?.updatedAt
     ? `Modifiée le ${escapeHtml(completedResponse.updatedAt)}`
     : `Réalisée le ${escapeHtml(completedResponse?.createdAt || "")}`;
-  const cardAction = !isAdmin && !isCompleted
+  const cardAction = !isAdmin && !isCompleted && isOpenNow
     ? `data-form-campaign="${escapeHtml(campaign.id)}" role="button" tabindex="0"`
+    : "";
+  const activePeriod = currentPeriod(campaign);
+  const upcomingPeriods = futurePeriods(campaign);
+  const periodInfoMarkup = !isAdmin && Array.isArray(campaign.periods) && campaign.periods.length
+    ? `
+      ${activePeriod?.endDate ? `<p class="period-closing-info">Clôture le <strong>${escapeHtml(formatDateFr(activePeriod.endDate))}</strong></p>` : ""}
+      ${upcomingPeriods.length ? `
+        <div class="next-periods-block">
+          <strong>Prochaine${upcomingPeriods.length > 1 ? "s" : ""} précommande${upcomingPeriods.length > 1 ? "s" : ""} programmée${upcomingPeriods.length > 1 ? "s" : ""} :</strong>
+          <ul>${upcomingPeriods.map((period) => `<li>Du ${escapeHtml(formatDateFr(period.startDate))} au ${escapeHtml(formatDateFr(period.endDate) || "date de clôture à définir")}</li>`).join("")}</ul>
+        </div>
+      ` : ""}
+    `
     : "";
   return `
     <article class="campaign-card ${isCompleted ? "completed" : ""} ${cardAction ? "clickable" : ""}" ${cardAction}>
@@ -2238,6 +2382,7 @@ function campaignCard(campaign, target) {
         </div>
         <h3>${escapeHtml(campaign.title)}</h3>
         <p>${escapeHtml(campaign.description || campaign.pharmacyMessage || "")}</p>
+        ${periodInfoMarkup}
         ${isCompleted ? `<div class="campaign-done-summary"><strong>Réponse déjà envoyée</strong><span>${escapeHtml(summary)}</span></div>` : ""}
       </div>
       <div class="campaign-foot">
@@ -2246,9 +2391,11 @@ function campaignCard(campaign, target) {
           ${isAdmin ? `<button class="ghost-btn" type="button" data-toggle-closed-campaign="${escapeHtml(campaign.id)}">${campaign.closed ? "Rouvrir" : "Clôturer"}</button>` : ""}
           ${isCompleted
             ? `<button class="primary-btn" type="button" data-form-campaign="${escapeHtml(campaign.id)}">Modifier ma commande</button>`
-            : `<button class="primary-btn" type="button" data-${target}-campaign="${escapeHtml(campaign.id)}">
-                ${target === "admin" ? "Voir le suivi" : "Remplir"}
-              </button>`}
+            : (isOpenNow
+              ? `<button class="primary-btn" type="button" data-${target}-campaign="${escapeHtml(campaign.id)}">
+                  ${target === "admin" ? "Voir le suivi" : "Remplir"}
+                </button>`
+              : "")}
         </div>
       </div>
     </article>
@@ -2490,7 +2637,7 @@ async function showAdminSectionFresh(section) {
 
 function renderCampaignPickers() {
   const validationConfig = currentValidationConfig();
-  const openCampaigns = campaigns.filter((campaign) => !campaign.closed);
+  const openCampaigns = campaigns.filter((campaign) => campaignIsVisibleForPharmacy(campaign));
   const adminCampaigns = campaigns.filter((campaign) => activeAdminSection === "archives" ? campaign.closed : !campaign.closed);
   const openPolls = polls.filter((poll) => !poll.closed);
   const adminPolls = polls.filter((poll) => activeAdminSection === "archives" ? poll.closed : !poll.closed);
@@ -2954,6 +3101,7 @@ function showSuccessScreen() {
 async function selectAdminCampaign(campaignId) {
   selectedAdminCampaign = campaigns.find((campaign) => campaign.id === campaignId) || campaigns[0];
   selectedAdminPoll = null;
+  selectedAdminPeriodId = "";
   currentOrderTemplate = selectedAdminCampaign?.template || [];
   adminSelectedCampaignName.textContent = selectedAdminCampaign.title;
   campaignPharmacyMessage.value = selectedAdminCampaign.pharmacyMessage || selectedAdminCampaign.description || "";
@@ -2961,6 +3109,8 @@ async function selectAdminCampaign(campaignId) {
   campaignImageFile.value = "";
   campaignImageFile2.value = "";
   refreshCampaignImagePreview(selectedAdminCampaign);
+  campaignPeriodsMessage.textContent = "";
+  renderCampaignPeriodsAdmin(selectedAdminCampaign);
   adminCampaignPicker.hidden = true;
   adminDetail.hidden = false;
   adminPollDetail.hidden = true;
@@ -3143,7 +3293,8 @@ async function renderAdmin() {
   if (!adminUnlocked || !selectedAdminCampaign) return;
 
   const responses = (await getResponses())
-    .filter((item) => responseMatchesCampaign(item, selectedAdminCampaign));
+    .filter((item) => responseMatchesCampaign(item, selectedAdminCampaign))
+    .filter(responseMatchesAdminPeriod);
   const answeredNames = pharmacyNamesForResponses(responses);
   const notInterestedNames = pharmacyNamesForResponses(responses.filter(campaignIsNotInterested));
   const interested = responses.filter(campaignIsInterested).length;
@@ -3540,13 +3691,15 @@ function exportBatToExcel() {
 
 async function exportToExcel() {
   if (API_AVAILABLE && adminUnlocked && selectedAdminCampaign) {
-    window.location.href = `/api/export.xls?code=${encodeURIComponent(ADMIN_CODE)}&campaign=${encodeURIComponent(selectedAdminCampaign.id)}`;
+    const periodParam = selectedAdminPeriodId ? `&period=${encodeURIComponent(selectedAdminPeriodId)}` : "";
+    window.location.href = `/api/export.xls?code=${encodeURIComponent(ADMIN_CODE)}&campaign=${encodeURIComponent(selectedAdminCampaign.id)}${periodParam}`;
     adminMessage.textContent = "Export Excel généré.";
     return;
   }
 
   const responses = (await getResponses())
-    .filter((item) => responseMatchesCampaign(item, selectedAdminCampaign));
+    .filter((item) => responseMatchesCampaign(item, selectedAdminCampaign))
+    .filter(responseMatchesAdminPeriod);
   if (!responses.length) {
     adminMessage.textContent = "Aucune donnée à exporter.";
     return;
@@ -4219,6 +4372,60 @@ saveCampaignMessageBtn.addEventListener("click", async () => {
   adminMessage.textContent = "Message pharmacie enregistré.";
 });
 
+addCampaignPeriodForm?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (!selectedAdminCampaign) return;
+
+  const startDate = newPeriodStart.value;
+  const endDate = newPeriodEnd.value;
+  if (!startDate || !endDate) {
+    campaignPeriodsMessage.textContent = "Indiquez une date de début et une date de clôture.";
+    return;
+  }
+  if (endDate < startDate) {
+    campaignPeriodsMessage.textContent = "La date de clôture doit être après la date de début.";
+    return;
+  }
+
+  const period = { id: createId(), startDate, endDate };
+  selectedAdminCampaign.periods = [...(selectedAdminCampaign.periods || []), period];
+  selectedAdminCampaign.closed = false;
+  campaigns = campaigns.map((campaign) => campaign.id === selectedAdminCampaign.id ? selectedAdminCampaign : campaign);
+
+  try {
+    campaignPeriodsMessage.textContent = "Enregistrement...";
+    await saveCampaigns(campaigns);
+    renderCampaignPeriodsAdmin(selectedAdminCampaign);
+    renderCampaignPickers();
+    newPeriodStart.value = "";
+    newPeriodEnd.value = "";
+    campaignPeriodsMessage.textContent = "Nouvelle période ajoutée. Les commandes repartent à zéro pour cette période.";
+  } catch (error) {
+    campaignPeriodsMessage.textContent = error.message;
+  }
+});
+
+campaignPeriodsList?.addEventListener("click", async (event) => {
+  const deleteButton = event.target.closest("[data-delete-period]");
+  if (!deleteButton || !selectedAdminCampaign) return;
+  const periodId = deleteButton.dataset.deletePeriod;
+  const confirmed = confirm("Supprimer définitivement cette période et son archive ?");
+  if (!confirmed) return;
+
+  selectedAdminCampaign.periods = (selectedAdminCampaign.periods || []).filter((period) => period.id !== periodId);
+  campaigns = campaigns.map((campaign) => campaign.id === selectedAdminCampaign.id ? selectedAdminCampaign : campaign);
+  await saveCampaigns(campaigns);
+  renderCampaignPeriodsAdmin(selectedAdminCampaign);
+  await renderAdmin();
+  renderCampaignPickers();
+  campaignPeriodsMessage.textContent = "Période supprimée.";
+});
+
+campaignPeriodFilter?.addEventListener("change", async () => {
+  selectedAdminPeriodId = campaignPeriodFilter.value;
+  await renderAdmin();
+});
+
 campaignImageFile.addEventListener("change", async () => {
   const file = campaignImageFile.files[0];
   if (!file || !selectedAdminCampaign) return;
@@ -4798,6 +5005,7 @@ form.addEventListener("submit", async (event) => {
     id: existingResponse?.id || createId(),
     campaignId: selectedCampaign.id,
     campaignTitle: selectedCampaign.title,
+    periodId: currentPeriod(selectedCampaign)?.id || "",
     createdAt: existingResponse?.createdAt || now,
     updatedAt: existingResponse ? now : "",
     pharmacyId: currentPharmacy?.id || "",

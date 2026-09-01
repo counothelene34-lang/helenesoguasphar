@@ -507,6 +507,24 @@
             <p id="campaignImageMessage" class="status-message" role="status"></p>
           </section>
 
+          <section class="admin-message-editor" id="campaignPeriodsSection">
+            <label>Périodes de cette opération</label>
+            <p class="form-help">Chaque période a sa date de début (l'opération devient visible pour les pharmacies) et sa date de clôture (elle disparaît automatiquement). Ajouter une nouvelle période remet les commandes à zéro ; les périodes passées restent consultables en archive.</p>
+            <div id="campaignPeriodsList" class="periods-list"></div>
+            <form id="addCampaignPeriodForm" class="add-period-form">
+              <div>
+                <label for="newPeriodStart">Date de début</label>
+                <input id="newPeriodStart" type="date" required>
+              </div>
+              <div>
+                <label for="newPeriodEnd">Date de clôture</label>
+                <input id="newPeriodEnd" type="date" required>
+              </div>
+              <button class="primary-btn" type="submit">Ajouter cette période</button>
+            </form>
+            <p id="campaignPeriodsMessage" class="status-message" role="status"></p>
+          </section>
+
           <div class="metrics">
             <div>
               <span id="totalResponses">0</span>
@@ -587,6 +605,8 @@
             <div>
               <h2>Détail des commandes</h2>
               <p>Le détail complet est disponible via l'export Excel.</p>
+              <label for="campaignPeriodFilter" id="campaignPeriodFilterLabel" hidden>Période affichée</label>
+              <select id="campaignPeriodFilter" hidden></select>
             </div>
             <div class="toolbar-actions">
               <button id="exportExcelBtn" class="primary-btn" type="button">Exporter Excel</button>

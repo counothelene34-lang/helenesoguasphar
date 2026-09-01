@@ -71,6 +71,7 @@ function defaultOrders() {
       imageData: "",
       imageData2: "",
       closed: false,
+      periods: [],
       template: readOrderTemplate()
     }
   ];
@@ -291,7 +292,12 @@ function responsePharmacyOwnerKey(response, pharmacies = readPharmacies()) {
 }
 
 function responseOwnerKey(response, pharmacies = readPharmacies()) {
-  return `${response.campaignId || "herboristerie"}|${responsePharmacyOwnerKey(response, pharmacies)}`;
+  return `${response.campaignId || "herboristerie"}|${response.periodId || ""}|${responsePharmacyOwnerKey(response, pharmacies)}`;
+}
+
+function responseMatchesPeriod(response, periodId) {
+  if (!periodId) return true;
+  return String(response.periodId || "") === String(periodId);
 }
 
 function latestResponses(responses = []) {
@@ -979,6 +985,11 @@ const server = http.createServer(async (request, response) => {
         imageData: String(order.imageData || ""),
         imageData2: String(order.imageData2 || ""),
         closed: Boolean(order.closed),
+        periods: Array.isArray(order.periods) ? order.periods.map((period) => ({
+          id: String(period.id || Date.now()),
+          startDate: String(period.startDate || "").trim(),
+          endDate: String(period.endDate || "").trim()
+        })).filter((period) => period.startDate) : [],
         template: Array.isArray(order.template) ? order.template : []
       })) : [];
       writeOrders(orders);
@@ -1075,6 +1086,7 @@ const server = http.createServer(async (request, response) => {
         id: String(item.id || Date.now()),
         campaignId: String(item.campaignId || "herboristerie"),
         campaignTitle: String(item.campaignTitle || "Herboristerie"),
+        periodId: String(item.periodId || "").trim(),
         createdAt: String(item.createdAt || new Date().toLocaleString("fr-FR")),
         updatedAt: String(item.updatedAt || ""),
         pharmacyId: String(item.pharmacyId || "").trim(),
@@ -1201,6 +1213,7 @@ const server = http.createServer(async (request, response) => {
         id: String(payload.id || Date.now()),
         campaignId,
         campaignTitle: String(payload.campaignTitle || "Herboristerie"),
+        periodId: String(payload.periodId || "").trim(),
         createdAt: String(payload.createdAt || new Date().toLocaleString("fr-FR")),
         updatedAt: String(payload.updatedAt || ""),
         pharmacyId: String(payload.pharmacyId || "").trim(),
@@ -1324,9 +1337,10 @@ const server = http.createServer(async (request, response) => {
         return;
       }
       const campaignId = url.searchParams.get("campaign");
-      const responses = campaignId
-        ? latestResponses(readResponses()).filter((item) => responseMatchesCampaign(item, campaignId))
-        : latestResponses(readResponses());
+      const periodId = url.searchParams.get("period");
+      const responses = latestResponses(readResponses())
+        .filter((item) => responseMatchesCampaign(item, campaignId))
+        .filter((item) => responseMatchesPeriod(item, periodId));
       sendExcel(response, responses);
       return;
     }

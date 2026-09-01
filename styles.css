@@ -1173,6 +1173,96 @@ main::before {
   gap: 10px;
 }
 
+.periods-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 10px 0;
+}
+
+.period-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--soft);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.period-dates {
+  font-weight: 600;
+  color: var(--ink);
+  margin-right: auto;
+}
+
+.period-status {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+
+.period-status-active {
+  background: var(--green-soft);
+  color: var(--green-dark);
+}
+
+.period-status-upcoming {
+  background: #eaf1ff;
+  color: #2454b8;
+}
+
+.period-status-past {
+  background: #f1f1f1;
+  color: var(--muted);
+}
+
+.add-period-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.add-period-form label {
+  display: block;
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.add-period-form input[type="date"] {
+  width: 100%;
+}
+
+.period-closing-info {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: var(--red);
+}
+
+.next-periods-block {
+  margin-top: 10px;
+  padding: 10px 14px;
+  background: var(--green-soft);
+  border-radius: 10px;
+  font-size: 14px;
+  color: var(--green-dark);
+}
+
+.next-periods-block ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+}
+
+@media (max-width: 640px) {
+  .add-period-form {
+    grid-template-columns: 1fr;
+  }
+}
+
 .campaign-card {
   display: flex;
   min-height: 190px;
