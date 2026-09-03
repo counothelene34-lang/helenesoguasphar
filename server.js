@@ -261,6 +261,16 @@ function responseMatchesCampaign(response, campaignId) {
   return campaign && normalizeLookup(response.campaignTitle) === normalizeLookup(campaign.title);
 }
 
+function normalizePollAnswersMap(answers) {
+  if (!answers || typeof answers !== "object" || Array.isArray(answers)) return {};
+  const normalized = {};
+  Object.keys(answers).forEach((key) => {
+    const value = String(answers[key] || "").trim();
+    if (value) normalized[String(key)] = value;
+  });
+  return normalized;
+}
+
 function responseMatchesPoll(response, pollId) {
   if (!pollId) return true;
   if (response.pollId === pollId) return true;
@@ -1004,16 +1014,24 @@ const server = http.createServer(async (request, response) => {
       }
 
       const payload = JSON.parse(await readBody(request));
-      const polls = Array.isArray(payload) ? payload.map((poll) => ({
-        id: String(poll.id || Date.now()),
-        question: String(poll.question || "Sondage").trim(),
-        type: "Sondage",
-        options: Array.isArray(poll.options) ? poll.options.map((option) => String(option || "").trim()).filter(Boolean) : [],
-        freeTextLabel: String(poll.freeTextLabel || "").trim(),
-        freeTextRequired: Boolean(poll.freeTextRequired),
-        imageData: String(poll.imageData || ""),
-        closed: Boolean(poll.closed)
-      })).filter((poll) => poll.question && poll.options.length) : [];
+      const polls = Array.isArray(payload) ? payload.map((poll) => {
+        const questions = Array.isArray(poll.questions) ? poll.questions.map((question, index) => ({
+          id: String(question.id || `question-${index + 1}`),
+          label: String(question.label || "").trim(),
+          options: Array.isArray(question.options) ? question.options.map((option) => String(option || "").trim()).filter(Boolean) : []
+        })).filter((question) => question.options.length) : [];
+        return {
+          id: String(poll.id || Date.now()),
+          question: String(poll.question || "Sondage").trim(),
+          type: "Sondage",
+          options: Array.isArray(poll.options) ? poll.options.map((option) => String(option || "").trim()).filter(Boolean) : [],
+          questions,
+          freeTextLabel: String(poll.freeTextLabel || "").trim(),
+          freeTextRequired: Boolean(poll.freeTextRequired),
+          imageData: String(poll.imageData || ""),
+          closed: Boolean(poll.closed)
+        };
+      }).filter((poll) => poll.question && (poll.options.length || poll.questions.length)) : [];
       writePolls(polls);
       sendJson(response, 200, polls);
       return;
@@ -1122,6 +1140,7 @@ const server = http.createServer(async (request, response) => {
         pharmacyId: String(item.pharmacyId || "").trim(),
         pharmacyName: String(item.pharmacyName || "").trim(),
         answer: String(item.answer || "").trim(),
+        answers: normalizePollAnswersMap(item.answers),
         freeText: String(item.freeText || "").trim()
       })) : [];
       const latest = latestPollResponses(responses);
@@ -1168,7 +1187,8 @@ const server = http.createServer(async (request, response) => {
         })
         .map((item) => ({
           pollId: item.pollId,
-          answer: item.answer
+          answer: item.answer,
+          answers: item.answers || null
         }));
       sendJson(response, 200, responses);
       return;
@@ -1250,6 +1270,7 @@ const server = http.createServer(async (request, response) => {
         pharmacyId: String(payload.pharmacyId || "").trim(),
         pharmacyName: String(payload.pharmacyName || "").trim(),
         answer: String(payload.answer || "").trim(),
+        answers: normalizePollAnswersMap(payload.answers),
         freeText: String(payload.freeText || "").trim()
       };
       const pharmacies = readPharmacies();

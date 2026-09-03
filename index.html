@@ -401,9 +401,10 @@
             </form>
             <form id="createPollForm" class="create-campaign-form">
               <label for="newPollQuestion">Nouveau sondage</label>
-              <input id="newPollQuestion" type="text" placeholder="Ex. Présence à l'assemblée générale du ..." autocomplete="off">
-              <label for="newPollOptions">Réponses possibles</label>
-              <textarea id="newPollOptions" rows="3" placeholder="Oui présent(e)&#10;Non pas présent(e)"></textarea>
+              <input id="newPollQuestion" type="text" placeholder="Ex. Assemblée générale du ..." autocomplete="off">
+              <div id="pollQuestionBlocks" class="poll-question-blocks"></div>
+              <button id="addPollQuestionBtn" class="ghost-btn" type="button">+ Ajouter une autre question</button>
+              <p class="field-hint">Pour chaque question, indiquez les réponses possibles, une par ligne (ou séparées par une virgule) — au moins deux réponses. Ajoutez plusieurs questions si besoin, par exemple « Présence à l'AG » et « Choix du repas » : la pharmacie répondra aux deux dans le même sondage.</p>
               <label for="newPollFreeLabel">Champ libre visible par la pharmacie</label>
               <input id="newPollFreeLabel" type="text" placeholder="Ex. Nom de la ou les personnes présentes">
               <label class="checkbox-line">
@@ -420,7 +421,6 @@
                 <img id="newPollImagePreviewImg" alt="">
               </div>
               <p id="newPollImageMessage" class="status-message" role="status"></p>
-              <p class="field-hint">Pour les réponses possibles, une par ligne (ou séparées par une virgule) — au moins deux réponses.</p>
               <button class="primary-btn" type="submit">Créer le sondage</button>
               <p id="createPollMessage" class="status-message" role="status"></p>
             </form>

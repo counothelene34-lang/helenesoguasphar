@@ -897,6 +897,48 @@ main::before {
   width: 100%;
 }
 
+.inline-poll-question + .inline-poll-question {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px dashed rgba(112, 179, 101, .34);
+}
+
+.inline-poll-question-label {
+  margin-bottom: 8px;
+  color: #101b16;
+  font-weight: 900;
+}
+
+.poll-question-blocks {
+  display: grid;
+  gap: 14px;
+}
+
+.poll-question-block {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  background: rgba(255, 255, 255, .6);
+  border: 1px solid #b8cbc4;
+  border-radius: 10px;
+}
+
+.poll-question-block-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.poll-question-block-head label {
+  margin: 0;
+}
+
+.poll-remove-question-btn {
+  padding: 4px 10px;
+  font-size: 13px;
+}
+
 .inline-poll-message {
   margin: 0;
 }
