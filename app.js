@@ -41,6 +41,19 @@ const archivedOrdersEmpty = document.querySelector("#archivedOrdersEmpty");
 const batCards = document.querySelector("#batCards");
 const pollCards = document.querySelector("#pollCards");
 const infoCards = document.querySelector("#infoCards");
+const satisfactionEntryBtn = document.querySelector("#satisfactionEntryBtn");
+const satisfactionEntryStatus = document.querySelector("#satisfactionEntryStatus");
+const satisfactionPage = document.querySelector("#satisfactionPage");
+const backToSatisfactionMenuBtn = document.querySelector("#backToSatisfactionMenuBtn");
+const satisfactionPageTitle = document.querySelector("#satisfactionPageTitle");
+const satisfactionPageIntro = document.querySelector("#satisfactionPageIntro");
+const satisfactionForm = document.querySelector("#satisfactionForm");
+const satisfactionQuestions = document.querySelector("#satisfactionQuestions");
+const satisfactionFreeTextBlock = document.querySelector("#satisfactionFreeTextBlock");
+const satisfactionFreeTextLabel = document.querySelector("#satisfactionFreeTextLabel");
+const satisfactionFreeText = document.querySelector("#satisfactionFreeText");
+const satisfactionSubmitRow = document.querySelector("#satisfactionSubmitRow");
+const satisfactionFormMessage = document.querySelector("#satisfactionFormMessage");
 const backToCampaignsBtn = document.querySelector("#backToCampaignsBtn");
 const campaignNotice = document.querySelector("#campaignNotice");
 const responseSuccess = document.querySelector("#responseSuccess");
@@ -121,6 +134,7 @@ const createCampaignForm = document.querySelector("#createCampaignForm");
 const newCampaignTitle = document.querySelector("#newCampaignTitle");
 const createPollForm = document.querySelector("#createPollForm");
 const newPollQuestion = document.querySelector("#newPollQuestion");
+const newPollIsSatisfaction = document.querySelector("#newPollIsSatisfaction");
 const pollQuestionBlocks = document.querySelector("#pollQuestionBlocks");
 const addPollQuestionBtn = document.querySelector("#addPollQuestionBtn");
 const newPollFreeLabel = document.querySelector("#newPollFreeLabel");
@@ -155,6 +169,7 @@ const adminPollDetail = document.querySelector("#adminPollDetail");
 const backToAdminPollsBtn = document.querySelector("#backToAdminPollsBtn");
 const adminPollTitle = document.querySelector("#adminPollTitle");
 const pollResultsSummary = document.querySelector("#pollResultsSummary");
+const pollChartsContainer = document.querySelector("#pollChartsContainer");
 const pollResponsesTable = document.querySelector("#pollResponsesTable");
 const exportPollExcelBtn = document.querySelector("#exportPollExcelBtn");
 const pollImageFile = document.querySelector("#pollImageFile");
@@ -1595,6 +1610,7 @@ function showArchivedOrdersPage(operationId = "") {
   campaignPicker.hidden = true;
   form.hidden = true;
   pollForm.hidden = true;
+  if (satisfactionPage) satisfactionPage.hidden = true;
   profileUpdateForm.hidden = true;
   batValidationForm.hidden = true;
   responseSuccess.hidden = true;
@@ -1951,6 +1967,7 @@ function renderPharmacyAccess() {
     campaignPicker.hidden = true;
     form.hidden = true;
     pollForm.hidden = true;
+  if (satisfactionPage) satisfactionPage.hidden = true;
     profileUpdateForm.hidden = true;
     batValidationForm.hidden = true;
     responseSuccess.hidden = true;
@@ -2410,17 +2427,23 @@ function pollQuestionList(poll) {
     return poll.questions.map((item, index) => ({
       id: item.id || `question-${index + 1}`,
       label: item.label || poll.question,
+      type: ["choix_unique", "choix_multiple", "texte_libre"].includes(item.type) ? item.type : "choix_unique",
       options: Array.isArray(item.options) ? item.options : []
     }));
   }
-  return [{ id: "main", label: poll.question, options: poll.options || [] }];
+  return [{ id: "main", label: poll.question, type: "choix_unique", options: poll.options || [] }];
+}
+
+function formatPollAnswerValue(value) {
+  if (Array.isArray(value)) return value.length ? value.join(", ") : "—";
+  return value || "—";
 }
 
 function pollAnswersToText(poll, answers) {
   const list = pollQuestionList(poll);
   if (!answers) return "";
-  if (list.length <= 1) return answers[list[0]?.id] || "";
-  return list.map((question) => `${question.label} : ${answers[question.id] || "—"}`).join(" | ");
+  if (list.length <= 1) return formatPollAnswerValue(answers[list[0]?.id]);
+  return list.map((question) => `${question.label} : ${formatPollAnswerValue(answers[question.id])}`).join(" | ");
 }
 
 function getPollLocalAnswers(poll) {
@@ -2431,6 +2454,66 @@ function getPollLocalAnswers(poll) {
   return { [list[0]?.id || "main"]: raw };
 }
 
+function buildPollAnswersPreviewMarkup(questionList, showQuestionLabels, localAnswers) {
+  return questionList.map((question) => {
+    const answerValue = localAnswers?.[question.id];
+    if (question.type === "texte_libre") {
+      return `
+        <div class="inline-poll-question">
+          ${showQuestionLabels ? `<div class="inline-poll-question-label">${escapeHtml(question.label)}</div>` : ""}
+          <div class="whatsapp-poll-freetext-answer">${escapeHtml(answerValue || "Pas de r\u00e9ponse.")}</div>
+        </div>
+      `;
+    }
+    const selectedValues = Array.isArray(answerValue) ? answerValue : (answerValue ? [answerValue] : []);
+    return `
+      <div class="inline-poll-question">
+        ${showQuestionLabels ? `<div class="inline-poll-question-label">${escapeHtml(question.label)}</div>` : ""}
+        ${question.options.map((option) => `
+          <div class="whatsapp-poll-option ${selectedValues.includes(option) ? "is-answered" : ""}">
+            <span class="whatsapp-poll-circle" aria-hidden="true">${selectedValues.includes(option) ? "\u2713" : ""}</span>
+            <span class="whatsapp-poll-label">${escapeHtml(option)}</span>
+            <span class="whatsapp-poll-count">${selectedValues.includes(option) ? "\u2713" : "0"}</span>
+            <span class="whatsapp-poll-bar" aria-hidden="true"></span>
+          </div>
+        `).join("")}
+      </div>
+    `;
+  }).join("");
+}
+
+function buildPollQuestionsFormMarkup(questionList, showQuestionLabels) {
+  return questionList.map((question) => {
+    let controlsMarkup;
+    if (question.type === "texte_libre") {
+      controlsMarkup = `
+        <textarea class="inline-poll-textanswer" data-question-id="${escapeHtml(question.id)}" rows="3" placeholder="Votre r\u00e9ponse"></textarea>
+      `;
+    } else {
+      const inputType = question.type === "choix_multiple" ? "checkbox" : "radio";
+      controlsMarkup = `
+        <div class="whatsapp-poll-options inline-poll-options">
+          ${question.options.map((option, index) => `
+            <label class="whatsapp-poll-option inline-whatsapp-option">
+              <input type="${inputType}" name="inlinePollAnswer-${escapeHtml(question.id)}" data-question-id="${escapeHtml(question.id)}" value="${escapeHtml(option)}" ${inputType === "radio" && index === 0 ? "required" : ""}>
+              <span class="whatsapp-poll-circle" aria-hidden="true"></span>
+              <span class="whatsapp-poll-label">${escapeHtml(option)}</span>
+              <span class="whatsapp-poll-count">0</span>
+              <span class="whatsapp-poll-bar" aria-hidden="true"></span>
+            </label>
+          `).join("")}
+        </div>
+      `;
+    }
+    return `
+      <div class="inline-poll-question" data-question-id="${escapeHtml(question.id)}">
+        ${showQuestionLabels ? `<div class="inline-poll-question-label">${escapeHtml(question.label)}${question.type === "choix_multiple" ? ' <span class="poll-chart-type-tag">plusieurs r\u00e9ponses possibles</span>' : ""}</div>` : ""}
+        ${controlsMarkup}
+      </div>
+    `;
+  }).join("");
+}
+
 function pollCard(poll, target) {
   const isAdmin = target === "admin";
   const questionList = pollQuestionList(poll);
@@ -2439,35 +2522,8 @@ function pollCard(poll, target) {
   const localAnswers = !isAdmin ? getPollLocalAnswers(poll) : null;
   const showQuestionLabels = questionList.length > 1;
 
-  const optionsPreview = questionList.map((question) => `
-    <div class="inline-poll-question">
-      ${showQuestionLabels ? `<div class="inline-poll-question-label">${escapeHtml(question.label)}</div>` : ""}
-      ${question.options.map((option) => `
-        <div class="whatsapp-poll-option ${localAnswers?.[question.id] === option ? "is-answered" : ""}">
-          <span class="whatsapp-poll-circle" aria-hidden="true">${localAnswers?.[question.id] === option ? "\u2713" : ""}</span>
-          <span class="whatsapp-poll-label">${escapeHtml(option)}</span>
-          <span class="whatsapp-poll-count">${localAnswers?.[question.id] === option ? "\u2713" : "0"}</span>
-          <span class="whatsapp-poll-bar" aria-hidden="true"></span>
-        </div>
-      `).join("")}
-    </div>
-  `).join("");
-  const inlineQuestions = questionList.map((question) => `
-    <div class="inline-poll-question" data-question-id="${escapeHtml(question.id)}">
-      ${showQuestionLabels ? `<div class="inline-poll-question-label">${escapeHtml(question.label)}</div>` : ""}
-      <div class="whatsapp-poll-options inline-poll-options">
-        ${question.options.map((option, index) => `
-          <label class="whatsapp-poll-option inline-whatsapp-option">
-            <input type="radio" name="inlinePollAnswer-${escapeHtml(question.id)}" data-question-id="${escapeHtml(question.id)}" value="${escapeHtml(option)}" ${index === 0 ? "required" : ""}>
-            <span class="whatsapp-poll-circle" aria-hidden="true"></span>
-            <span class="whatsapp-poll-label">${escapeHtml(option)}</span>
-            <span class="whatsapp-poll-count">0</span>
-            <span class="whatsapp-poll-bar" aria-hidden="true"></span>
-          </label>
-        `).join("")}
-      </div>
-    </div>
-  `).join("");
+  const optionsPreview = buildPollAnswersPreviewMarkup(questionList, showQuestionLabels, localAnswers);
+  const inlineQuestions = buildPollQuestionsFormMarkup(questionList, showQuestionLabels);
   const inlineFreeText = poll.freeTextLabel ? `
     <label class="inline-poll-free-label" for="inlineFreeText-${escapeHtml(poll.id)}">${escapeHtml(poll.freeTextLabel)}</label>
     <textarea id="inlineFreeText-${escapeHtml(poll.id)}" name="inlinePollFreeText" rows="3" ${poll.freeTextRequired ? "required" : ""}></textarea>
@@ -2509,7 +2565,7 @@ function pollCard(poll, target) {
       ${adminPollImage}
       <div>
         <div class="campaign-card-top">
-          <span class="campaign-type ${poll.closed ? "closed" : ""}">${poll.closed ? "Sondage clôturé" : "Sondage"}</span>
+          <span class="campaign-type ${poll.closed ? "closed" : ""}">${poll.category === "satisfaction" ? (poll.closed ? "Questionnaire de satisfaction clôturé" : "Questionnaire de satisfaction") : (poll.closed ? "Sondage clôturé" : "Sondage")}</span>
           <button class="delete-campaign-btn" type="button" title="Supprimer le sondage" aria-label="Supprimer le sondage ${escapeHtml(poll.question)}" data-delete-poll="${escapeHtml(poll.id)}">&#128465;</button>
         </div>
         <h3>${escapeHtml(poll.question)}</h3>
@@ -2683,8 +2739,9 @@ function renderCampaignPickers() {
   const validationConfig = currentValidationConfig();
   const openCampaigns = campaigns.filter((campaign) => campaignIsVisibleForPharmacy(campaign));
   const adminCampaigns = campaigns.filter((campaign) => activeAdminSection === "archives" ? campaign.closed : !campaign.closed);
-  const openPolls = polls.filter((poll) => !poll.closed);
+  const openPolls = polls.filter((poll) => !poll.closed && poll.category !== "satisfaction");
   const adminPolls = polls.filter((poll) => activeAdminSection === "archives" ? poll.closed : !poll.closed);
+  const satisfactionPoll = polls.find((poll) => poll.category === "satisfaction");
   const openInfoForms = infoForms.filter((infoForm) => !infoForm.closed);
   const adminInfoForms = infoForms.filter((infoForm) => activeAdminSection === "archives" ? infoForm.closed : !infoForm.closed);
   const currentBatDocument = currentPharmacy ? batDocumentForPharmacy(currentPharmacy) : null;
@@ -2733,6 +2790,83 @@ function renderCampaignPickers() {
   }
 
   showClosedCampaignsBtn.textContent = adminShowingClosedCampaigns ? "Campagnes actives" : "Campagnes clôturées";
+
+  renderSatisfactionEntry(satisfactionPoll);
+  if (satisfactionPage && !satisfactionPage.hidden && selectedPoll?.id === satisfactionPoll?.id) {
+    renderSatisfactionQuestions(satisfactionPoll);
+  }
+}
+
+function renderSatisfactionEntry(poll) {
+  if (!satisfactionEntryBtn) return;
+  if (!poll || poll.closed || (pharmacyAccessRequired && pharmacyAccessRequired())) {
+    satisfactionEntryBtn.hidden = true;
+    return;
+  }
+  satisfactionEntryBtn.hidden = false;
+  const answered = Boolean(getPollLocalAnswers(poll));
+  if (satisfactionEntryStatus) satisfactionEntryStatus.textContent = answered ? "déjà répondu — merci !" : "à remplir";
+  satisfactionEntryBtn.classList.toggle("is-answered", answered);
+}
+
+function renderSatisfactionQuestions(poll) {
+  if (!poll || !satisfactionQuestions) return;
+  const questionList = pollQuestionList(poll);
+  const localAnswers = getPollLocalAnswers(poll);
+  satisfactionPageTitle.textContent = poll.question;
+  if (satisfactionFormMessage) satisfactionFormMessage.textContent = "";
+
+  if (localAnswers) {
+    satisfactionPageIntro.textContent = "Merci d'avoir répondu au questionnaire de satisfaction.";
+    satisfactionQuestions.innerHTML = buildPollAnswersPreviewMarkup(questionList, true, localAnswers);
+    if (satisfactionFreeTextBlock) satisfactionFreeTextBlock.hidden = true;
+    if (satisfactionSubmitRow) satisfactionSubmitRow.hidden = true;
+    return;
+  }
+
+  satisfactionPageIntro.textContent = "Merci de répondre à chaque question ci-dessous.";
+  satisfactionQuestions.innerHTML = buildPollQuestionsFormMarkup(questionList, true);
+  if (satisfactionFreeTextBlock) {
+    satisfactionFreeTextBlock.hidden = !poll.freeTextLabel;
+    if (poll.freeTextLabel) {
+      satisfactionFreeTextLabel.textContent = poll.freeTextLabel;
+      satisfactionFreeText.required = Boolean(poll.freeTextRequired);
+    }
+  }
+  if (satisfactionSubmitRow) satisfactionSubmitRow.hidden = false;
+}
+
+function openSatisfactionPage(pollId) {
+  if (pharmacyAccessRequired()) {
+    renderPharmacyAccess();
+    return;
+  }
+  const poll = polls.find((item) => item.id === pollId && item.category === "satisfaction");
+  if (!poll || !satisfactionPage) return;
+
+  selectedCampaign = null;
+  selectedPoll = poll;
+  selectedInfoForm = null;
+  selectedBatDocument = null;
+  archivedOrdersVisible = false;
+
+  campaignPicker.hidden = true;
+  setHeroVisible(false);
+  form.hidden = true;
+  pollForm.hidden = true;
+  if (satisfactionPage) satisfactionPage.hidden = true;
+  profileUpdateForm.hidden = true;
+  batValidationForm.hidden = true;
+  responseSuccess.hidden = true;
+  if (archivedOrdersPanel) archivedOrdersPanel.hidden = true;
+
+  satisfactionForm.dataset.inlinePollForm = poll.id;
+  const pharmacyHidden = satisfactionForm.querySelector('input[name="inlinePollPharmacy"]');
+  if (pharmacyHidden) pharmacyHidden.value = currentPharmacy?.name || "";
+
+  renderSatisfactionQuestions(poll);
+  satisfactionPage.hidden = false;
+  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 function selectCampaign(campaignId) {
@@ -2748,6 +2882,7 @@ function selectCampaign(campaignId) {
   setHeroVisible(false);
   form.hidden = false;
   pollForm.hidden = true;
+  if (satisfactionPage) satisfactionPage.hidden = true;
   profileUpdateForm.hidden = true;
   batValidationForm.hidden = true;
   responseSuccess.hidden = true;
@@ -2783,6 +2918,7 @@ function selectPoll(pollId) {
   setHeroVisible(true);
   form.hidden = true;
   pollForm.hidden = true;
+  if (satisfactionPage) satisfactionPage.hidden = true;
   profileUpdateForm.hidden = true;
   batValidationForm.hidden = true;
   responseSuccess.hidden = true;
@@ -2809,6 +2945,7 @@ function selectInfoForm(infoFormId) {
   setHeroVisible(false);
   form.hidden = true;
   pollForm.hidden = true;
+  if (satisfactionPage) satisfactionPage.hidden = true;
   profileUpdateForm.hidden = false;
   batValidationForm.hidden = true;
   responseSuccess.hidden = true;
@@ -2855,6 +2992,7 @@ function selectBat(documentId) {
   setHeroVisible(false);
   form.hidden = true;
   pollForm.hidden = true;
+  if (satisfactionPage) satisfactionPage.hidden = true;
   profileUpdateForm.hidden = true;
   batValidationForm.hidden = false;
   responseSuccess.hidden = true;
@@ -3124,6 +3262,7 @@ function showCampaignPicker() {
   setHeroVisible(true);
   form.hidden = true;
   pollForm.hidden = true;
+  if (satisfactionPage) satisfactionPage.hidden = true;
   profileUpdateForm.hidden = true;
   batValidationForm.hidden = true;
   responseSuccess.hidden = true;
@@ -3137,6 +3276,7 @@ function showCampaignPicker() {
 function showSuccessScreen() {
   form.hidden = true;
   pollForm.hidden = true;
+  if (satisfactionPage) satisfactionPage.hidden = true;
   profileUpdateForm.hidden = true;
   batValidationForm.hidden = true;
   campaignPicker.hidden = false;
@@ -3431,6 +3571,90 @@ function renderQuantitySummary(responses = []) {
     .join("");
 }
 
+const POLL_CHART_COLORS = [
+  "#2a78d6", // bleu
+  "#008300", // vert
+  "#e87ba4", // magenta
+  "#eda100", // jaune
+  "#1baf7a", // aqua
+  "#eb6834", // orange
+  "#4a3aa7", // violet
+  "#e34948"  // rouge
+];
+
+function pollChartColor(index) {
+  return POLL_CHART_COLORS[index % POLL_CHART_COLORS.length];
+}
+
+function renderPollQuestionChart(question, responses, questionList) {
+  if (question.type === "texte_libre") {
+    const answers = responses
+      .map((response) => ({
+        pharmacyName: response.pharmacyName,
+        text: response.answers ? response.answers[question.id] : (questionList.length === 1 ? response.answer : "")
+      }))
+      .filter((item) => item.text && !Array.isArray(item.text));
+
+    return `
+      <div class="poll-chart-card">
+        <h3>${escapeHtml(question.label)}</h3>
+        <p class="poll-chart-meta">${answers.length} réponse${answers.length > 1 ? "s" : ""} sur cette question</p>
+        <ul class="poll-freetext-list">
+          ${answers.length
+            ? answers.map((item) => `<li><strong>${escapeHtml(item.pharmacyName)}</strong> — ${escapeHtml(item.text)}</li>`).join("")
+            : '<li class="empty-state">Aucune réponse pour le moment.</li>'}
+        </ul>
+      </div>
+    `;
+  }
+
+  const counts = new Map(question.options.map((option) => [option, 0]));
+  let answeredCount = 0;
+  responses.forEach((response) => {
+    const raw = response.answers ? response.answers[question.id] : (questionList.length === 1 ? response.answer : undefined);
+    const values = Array.isArray(raw) ? raw : (raw ? [raw] : []);
+    if (!values.length) return;
+    answeredCount += 1;
+    values.forEach((value) => {
+      if (counts.has(value)) counts.set(value, counts.get(value) + 1);
+    });
+  });
+
+  const bars = question.options.map((option, index) => {
+    const count = counts.get(option) || 0;
+    const pct = answeredCount ? Math.round((count / answeredCount) * 100) : 0;
+    const color = pollChartColor(index);
+    return `
+      <div class="poll-bar-row">
+        <div class="poll-bar-label">${escapeHtml(option)}</div>
+        <div class="poll-bar-track">
+          <div class="poll-bar-fill" style="width:${pct}%; background:${color};"></div>
+        </div>
+        <div class="poll-bar-value">${count} <span>(${pct}%)</span></div>
+      </div>
+    `;
+  }).join("");
+
+  return `
+    <div class="poll-chart-card">
+      <h3>${escapeHtml(question.label)}${question.type === "choix_multiple" ? ' <span class="poll-chart-type-tag">choix multiple</span>' : ""}</h3>
+      <p class="poll-chart-meta">${answeredCount} réponse${answeredCount > 1 ? "s" : ""} sur cette question${question.type === "choix_multiple" ? " — plusieurs choix possibles, le total peut dépasser 100 %" : ""}</p>
+      <div class="poll-bar-chart">${bars}</div>
+    </div>
+  `;
+}
+
+function renderPollCharts(questionList, responses) {
+  if (!pollChartsContainer) return;
+  if (!responses.length || !questionList.length) {
+    pollChartsContainer.innerHTML = "";
+    return;
+  }
+  pollChartsContainer.innerHTML = questionList
+    .map((question) => renderPollQuestionChart(question, responses, questionList))
+    .join("");
+}
+
 async function renderPollResults() {
   if (!adminUnlocked || !selectedAdminPoll) return;
 
@@ -3452,10 +3676,14 @@ async function renderPollResults() {
     `<div><span>${responses.length}</span><p>Réponse${responses.length > 1 ? "s" : ""}</p></div>`,
     `<div><span>${pollUnansweredNames.length}</span><p>sans réponse</p></div>`,
     ...questionList.flatMap((question) => {
+      if (question.type === "texte_libre") return [];
       const counts = new Map(question.options.map((option) => [option, 0]));
       responses.forEach((response) => {
-        const value = response.answers ? response.answers[question.id] : (questionList.length === 1 ? response.answer : undefined);
-        if (value && counts.has(value)) counts.set(value, counts.get(value) + 1);
+        const raw = response.answers ? response.answers[question.id] : (questionList.length === 1 ? response.answer : undefined);
+        const values = Array.isArray(raw) ? raw : (raw ? [raw] : []);
+        values.forEach((value) => {
+          if (counts.has(value)) counts.set(value, counts.get(value) + 1);
+        });
       });
       return question.options.map((option) => `
         <div>
@@ -3466,6 +3694,7 @@ async function renderPollResults() {
     })
   ];
   pollResultsSummary.innerHTML = metricCards.join("");
+  renderPollCharts(questionList, responses);
 
   if (!responses.length) {
     pollResponsesTable.innerHTML = '<tr><td colspan="4" class="empty-state">Aucune réponse enregistrée pour le moment.</td></tr>';
@@ -4079,6 +4308,31 @@ pollCards.addEventListener("change", (event) => {
   });
 });
 
+function collectInlinePollAnswers(poll, inlineForm) {
+  const questionList = pollQuestionList(poll);
+  const answers = {};
+  let missingRequired = false;
+  questionList.forEach((question) => {
+    if (question.type === "texte_libre") {
+      const value = inlineForm.querySelector(`.inline-poll-textanswer[data-question-id="${CSS.escape(question.id)}"]`)?.value.trim() || "";
+      if (value) answers[question.id] = value;
+      return;
+    }
+    if (question.type === "choix_multiple") {
+      const values = Array.from(inlineForm.querySelectorAll(`input[type="checkbox"][data-question-id="${CSS.escape(question.id)}"]:checked`)).map((input) => input.value);
+      if (values.length) answers[question.id] = values;
+      else missingRequired = true;
+      return;
+    }
+    const checked = inlineForm.querySelector(`input[type="radio"][data-question-id="${CSS.escape(question.id)}"]:checked`)?.value;
+    if (checked) answers[question.id] = checked;
+    else missingRequired = true;
+  });
+  const pharmacyName = currentPharmacy?.name || inlineForm.querySelector('[name="inlinePollPharmacy"]')?.value.trim() || "";
+  const freeText = inlineForm.querySelector('[name="inlinePollFreeText"]')?.value.trim() || "";
+  return { answers, missingRequired, pharmacyName, freeText };
+}
+
 pollCards.addEventListener("submit", async (event) => {
   const inlineForm = event.target.closest("[data-inline-poll-form]");
   if (!inlineForm) return;
@@ -4088,17 +4342,10 @@ pollCards.addEventListener("submit", async (event) => {
   const message = inlineForm.querySelector(".inline-poll-message");
   if (!poll) return;
 
-  const questionList = pollQuestionList(poll);
-  const answers = {};
-  questionList.forEach((question) => {
-    const checked = inlineForm.querySelector(`input[data-question-id="${CSS.escape(question.id)}"]:checked`)?.value;
-    if (checked) answers[question.id] = checked;
-  });
-  const pharmacyName = currentPharmacy?.name || inlineForm.querySelector('[name="inlinePollPharmacy"]')?.value.trim() || "";
-  const freeText = inlineForm.querySelector('[name="inlinePollFreeText"]')?.value.trim() || "";
+  const { answers, missingRequired, pharmacyName, freeText } = collectInlinePollAnswers(poll, inlineForm);
 
-  if (!pharmacyName || Object.keys(answers).length < questionList.length) {
-    if (message) message.textContent = "Le nom de la pharmacie et toutes les réponses sont obligatoires.";
+  if (!pharmacyName || missingRequired) {
+    if (message) message.textContent = "Le nom de la pharmacie et toutes les réponses obligatoires sont nécessaires.";
     return;
   }
 
@@ -4111,6 +4358,36 @@ pollCards.addEventListener("submit", async (event) => {
   selectedPoll = null;
   renderCampaignPickers();
   await renderPollResults();
+});
+
+satisfactionEntryBtn?.addEventListener("click", () => {
+  const poll = polls.find((item) => item.category === "satisfaction" && !item.closed);
+  if (poll) openSatisfactionPage(poll.id);
+});
+
+backToSatisfactionMenuBtn?.addEventListener("click", showCampaignPicker);
+
+satisfactionForm?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const poll = polls.find((item) => item.id === satisfactionForm.dataset.inlinePollForm);
+  if (!poll) return;
+
+  const { answers, missingRequired, pharmacyName, freeText } = collectInlinePollAnswers(poll, satisfactionForm);
+
+  if (!pharmacyName || missingRequired) {
+    if (satisfactionFormMessage) satisfactionFormMessage.textContent = "Le nom de la pharmacie et toutes les réponses obligatoires sont nécessaires.";
+    return;
+  }
+
+  if (poll.freeTextRequired && !freeText) {
+    if (satisfactionFormMessage) satisfactionFormMessage.textContent = "Merci de remplir le champ demandé.";
+    return;
+  }
+
+  await savePollAnswer(poll, answers, pharmacyName, freeText);
+  renderCampaignPickers();
+  renderSatisfactionQuestions(poll);
+  if (satisfactionFormMessage) satisfactionFormMessage.textContent = "Merci, votre réponse a bien été enregistrée.";
 });
 
 infoCards?.addEventListener("click", (event) => {
@@ -4666,8 +4943,16 @@ function createPollQuestionBlockElement() {
       <button type="button" class="ghost-btn poll-remove-question-btn" data-remove-question hidden>Retirer cette question</button>
     </div>
     <input type="text" class="poll-question-label" placeholder="Ex. Présence à l'assemblée générale">
-    <label>Réponses possibles</label>
-    <textarea class="poll-question-options" rows="3" placeholder="Oui présent(e)&#10;Non pas présent(e)"></textarea>
+    <label>Type de question</label>
+    <select class="poll-question-type">
+      <option value="choix_unique">Choix unique (une seule réponse cochable)</option>
+      <option value="choix_multiple">Choix multiple (plusieurs réponses cochables)</option>
+      <option value="texte_libre">Texte libre (réponse écrite, sans graphique)</option>
+    </select>
+    <div class="poll-question-options-block">
+      <label>Réponses possibles (une par ligne, même longue avec des virgules dedans)</label>
+      <textarea class="poll-question-options" rows="3" placeholder="Oui présent(e)&#10;Non pas présent(e)"></textarea>
+    </div>
   `;
   return wrapper;
 }
@@ -4702,6 +4987,13 @@ pollQuestionBlocks.addEventListener("click", (event) => {
   refreshPollQuestionRemoveButtons();
 });
 
+pollQuestionBlocks.addEventListener("change", (event) => {
+  const select = event.target.closest(".poll-question-type");
+  if (!select) return;
+  const optionsBlock = select.closest("[data-poll-question-block]")?.querySelector(".poll-question-options-block");
+  if (optionsBlock) optionsBlock.hidden = select.value === "texte_libre";
+});
+
 createPollForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const question = newPollQuestion.value.trim();
@@ -4715,9 +5007,9 @@ createPollForm.addEventListener("submit", async (event) => {
   const usedIds = new Set();
   const questions = blocks.map((block, blockIndex) => {
     const label = block.querySelector(".poll-question-label").value.trim();
-    const options = block.querySelector(".poll-question-options").value
+    const type = block.querySelector(".poll-question-type")?.value || "choix_unique";
+    const options = type === "texte_libre" ? [] : block.querySelector(".poll-question-options").value
       .split(/\r?\n/)
-      .flatMap((line) => line.split(/[,;]/))
       .map((option) => option.trim())
       .filter(Boolean);
     const baseId = label ? slugify(label) : `question-${blockIndex + 1}`;
@@ -4728,11 +5020,11 @@ createPollForm.addEventListener("submit", async (event) => {
       suffix += 1;
     }
     usedIds.add(questionId);
-    return { id: questionId, label: label || question, options };
-  }).filter((item) => item.options.length >= 2);
+    return { id: questionId, label: label || question, type, options };
+  }).filter((item) => item.type === "texte_libre" || item.options.length >= 2);
 
   if (!questions.length) {
-    createPollMessage.textContent = "Indiquez au moins deux réponses possibles (une par ligne, ou séparées par une virgule) pour au moins une question.";
+    createPollMessage.textContent = "Indiquez au moins deux réponses possibles (une par ligne, même longue) pour chaque question à choix, ou choisissez le type texte libre.";
     return;
   }
 
@@ -4748,6 +5040,7 @@ createPollForm.addEventListener("submit", async (event) => {
     id,
     question,
     type: "Sondage",
+    category: newPollIsSatisfaction?.checked ? "satisfaction" : "sondage",
     options: questions.length === 1 ? questions[0].options : [],
     questions,
     freeTextLabel: newPollFreeLabel.value.trim(),
@@ -5217,6 +5510,7 @@ async function init() {
   setHeroVisible(false);
   form.hidden = true;
   pollForm.hidden = true;
+  if (satisfactionPage) satisfactionPage.hidden = true;
   profileUpdateForm.hidden = true;
   batValidationForm.hidden = true;
   responseSuccess.hidden = true;

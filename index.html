@@ -69,14 +69,25 @@
             <h1 id="formTitle">Commande, précommande, confirmation</h1>
           </div>
         </div>
-        <div id="archivedOrdersBlock" class="archived-orders-block">
-          <button id="toggleArchivedOrdersBtn" class="ghost-btn archived-orders-toggle" type="button" aria-expanded="false">
-            <span class="archived-orders-label">
-              <span>Précommandes</span>
-              <span>archivées</span>
-            </span>
-            <span class="archived-orders-arrow" aria-hidden="true">→</span>
-          </button>
+        <div class="hero-secondary-actions">
+          <div id="archivedOrdersBlock" class="archived-orders-block">
+            <button id="toggleArchivedOrdersBtn" class="ghost-btn archived-orders-toggle" type="button" aria-expanded="false">
+              <span class="archived-orders-label">
+                <span>Précommandes</span>
+                <span>archivées</span>
+              </span>
+              <span class="archived-orders-arrow" aria-hidden="true">→</span>
+            </button>
+          </div>
+          <div id="satisfactionEntryBlock" class="archived-orders-block satisfaction-entry-block">
+            <button id="satisfactionEntryBtn" class="ghost-btn archived-orders-toggle satisfaction-entry-toggle" type="button" hidden>
+              <span class="archived-orders-label">
+                <span>Questionnaire de satisfaction</span>
+                <span id="satisfactionEntryStatus">à remplir</span>
+              </span>
+              <span class="archived-orders-arrow" aria-hidden="true">→</span>
+            </button>
+          </div>
         </div>
       </div>
       <section id="archivedOrdersPanel" class="form-shell archived-orders-page" hidden>
@@ -102,6 +113,27 @@
           </table>
         </div>
         <p id="archivedOrdersEmpty" class="empty-campaigns" hidden>Aucune précommande archivée pour votre pharmacie pour le moment.</p>
+      </section>
+
+      <section id="satisfactionPage" class="form-shell satisfaction-page" hidden>
+        <button id="backToSatisfactionMenuBtn" class="back-strong-btn" type="button">← Retour au menu</button>
+        <section class="question-block profile-intro-block">
+          <span class="poll-kicker">Questionnaire de satisfaction</span>
+          <h2 id="satisfactionPageTitle">Questionnaire de satisfaction</h2>
+          <p id="satisfactionPageIntro">Merci de répondre à chaque question ci-dessous.</p>
+        </section>
+        <form id="satisfactionForm" data-inline-poll-form="">
+          <input type="hidden" name="inlinePollPharmacy" value="">
+          <div id="satisfactionQuestions"></div>
+          <div id="satisfactionFreeTextBlock" class="question-block" hidden>
+            <label id="satisfactionFreeTextLabel" for="satisfactionFreeText">Commentaire</label>
+            <textarea id="satisfactionFreeText" name="inlinePollFreeText" rows="3"></textarea>
+          </div>
+          <div id="satisfactionSubmitRow" class="form-actions">
+            <button class="primary-btn" type="submit">Envoyer mes réponses</button>
+          </div>
+          <p id="satisfactionFormMessage" class="status-message inline-poll-message" role="status"></p>
+        </form>
       </section>
 
       <section id="campaignPicker" class="campaign-picker" aria-labelledby="campaignPickerTitle" hidden>
@@ -411,6 +443,10 @@
                 <input id="newPollFreeRequired" type="checkbox">
                 <span>Rendre ce champ obligatoire</span>
               </label>
+              <label class="checkbox-line">
+                <input id="newPollIsSatisfaction" type="checkbox">
+                <span>C'est le questionnaire de satisfaction annuel (affiché à part, dans sa propre page, pas mélangé aux sondages rapides)</span>
+              </label>
               <label for="newPollImageFile">Image visible sur le sondage (facultatif)</label>
               <div class="upload-actions">
                 <label class="file-btn" for="newPollImageFile">Choisir une image</label>
@@ -690,6 +726,7 @@
             </section>
 
             <div id="pollResultsSummary" class="metrics"></div>
+            <div id="pollChartsContainer" class="poll-charts"></div>
             <section class="admin-overview poll-overview">
               <div>
                 <h2>Vue d'ensemble</h2>

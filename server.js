@@ -261,11 +261,20 @@ function responseMatchesCampaign(response, campaignId) {
   return campaign && normalizeLookup(response.campaignTitle) === normalizeLookup(campaign.title);
 }
 
+function normalizePollAnswerValue(value) {
+  if (Array.isArray(value)) {
+    const cleaned = value.map((item) => String(item || "").trim()).filter(Boolean);
+    return cleaned.length ? cleaned : null;
+  }
+  const text = String(value || "").trim();
+  return text || null;
+}
+
 function normalizePollAnswersMap(answers) {
   if (!answers || typeof answers !== "object" || Array.isArray(answers)) return {};
   const normalized = {};
   Object.keys(answers).forEach((key) => {
-    const value = String(answers[key] || "").trim();
+    const value = normalizePollAnswerValue(answers[key]);
     if (value) normalized[String(key)] = value;
   });
   return normalized;
@@ -1015,15 +1024,20 @@ const server = http.createServer(async (request, response) => {
 
       const payload = JSON.parse(await readBody(request));
       const polls = Array.isArray(payload) ? payload.map((poll) => {
-        const questions = Array.isArray(poll.questions) ? poll.questions.map((question, index) => ({
-          id: String(question.id || `question-${index + 1}`),
-          label: String(question.label || "").trim(),
-          options: Array.isArray(question.options) ? question.options.map((option) => String(option || "").trim()).filter(Boolean) : []
-        })).filter((question) => question.options.length) : [];
+        const questions = Array.isArray(poll.questions) ? poll.questions.map((question, index) => {
+          const type = ["choix_unique", "choix_multiple", "texte_libre"].includes(question.type) ? question.type : "choix_unique";
+          return {
+            id: String(question.id || `question-${index + 1}`),
+            label: String(question.label || "").trim(),
+            type,
+            options: type === "texte_libre" ? [] : (Array.isArray(question.options) ? question.options.map((option) => String(option || "").trim()).filter(Boolean) : [])
+          };
+        }).filter((question) => question.type === "texte_libre" || question.options.length) : [];
         return {
           id: String(poll.id || Date.now()),
           question: String(poll.question || "Sondage").trim(),
           type: "Sondage",
+          category: poll.category === "satisfaction" ? "satisfaction" : "sondage",
           options: Array.isArray(poll.options) ? poll.options.map((option) => String(option || "").trim()).filter(Boolean) : [],
           questions,
           freeTextLabel: String(poll.freeTextLabel || "").trim(),
