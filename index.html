@@ -69,33 +69,59 @@
             <h1 id="formTitle">Commande, précommande, confirmation</h1>
           </div>
         </div>
-        <div class="hero-secondary-actions">
-          <div id="archivedOrdersBlock" class="archived-orders-block">
-            <button id="toggleArchivedOrdersBtn" class="ghost-btn archived-orders-toggle" type="button" aria-expanded="false">
-              <span class="archived-orders-label">
-                <span>Précommandes</span>
-                <span>archivées</span>
-              </span>
-              <span class="archived-orders-arrow" aria-hidden="true">→</span>
-            </button>
-          </div>
-          <div id="satisfactionEntryBlock" class="archived-orders-block satisfaction-entry-block">
-            <button id="satisfactionEntryBtn" class="ghost-btn archived-orders-toggle satisfaction-entry-toggle" type="button" hidden>
-              <span class="archived-orders-label">
-                <span>Questionnaire de satisfaction</span>
-                <span id="satisfactionEntryStatus">à remplir</span>
-              </span>
-              <span class="archived-orders-arrow" aria-hidden="true">→</span>
-            </button>
-          </div>
+        <div class="hero-menu" role="navigation">
+          <button id="viewPrecommandes" class="hero-menu-btn" type="button">
+            <span class="hero-menu-label">Précommandes en cours</span>
+          </button>
+          <button id="viewSondages" class="hero-menu-btn" type="button">
+            <span class="hero-menu-label">Sondages en cours</span>
+          </button>
+          <button id="viewArchives" class="hero-menu-btn" type="button">
+            <span class="hero-menu-label">Archivés</span>
+          </button>
         </div>
       </div>
+      <section id="precommandandesListPage" class="form-shell campaign-list-page" hidden>
+        <button id="backToPrecomandesMenuBtn" class="back-strong-btn" type="button">← Retour au menu</button>
+        <div class="section-head">
+          <div>
+            <h2>Précommandes en cours</h2>
+            <p>Retrouvez les précommandes disponibles, triées du plus récent.</p>
+          </div>
+        </div>
+        <div id="precommandandesListRows" class="campaign-list-container" aria-live="polite"></div>
+        <p id="precommandandesEmpty" class="empty-campaigns" hidden>Aucune précommande disponible pour le moment.</p>
+      </section>
+
+      <section id="satisfactionListPage" class="form-shell campaign-list-page" hidden>
+        <button id="backToSatisfactionListMenuBtn" class="back-strong-btn" type="button">← Retour au menu</button>
+        <div class="section-head">
+          <div>
+            <h2>Enquête de satisfaction Soguasphar</h2>
+            <p id="satisfactionListIntro">Cette enquête a pour objectif de recueillir votre avis sur la centrale SOGUASPHAR afin d'identifier les points à améliorer et de mieux répondre aux besoins des pharmacies. Merci pour votre participation !</p>
+          </div>
+        </div>
+        <div id="satisfactionCard" class="satisfaction-card-wrapper"></div>
+      </section>
+
+      <section id="sondagesListPage" class="form-shell campaign-list-page" hidden>
+        <button id="backToSondagesMenuBtn" class="back-strong-btn" type="button">← Retour au menu</button>
+        <div class="section-head">
+          <div>
+            <h2>Sondages en cours</h2>
+            <p>Retrouvez les sondages disponibles, triés du plus récent.</p>
+          </div>
+        </div>
+        <div id="sondagesListRows" class="campaign-list-container" aria-live="polite"></div>
+        <p id="sondagesEmpty" class="empty-campaigns" hidden>Aucun sondage disponible pour le moment.</p>
+      </section>
+
       <section id="archivedOrdersPanel" class="form-shell archived-orders-page" hidden>
         <button id="backToArchivedOrdersMenuBtn" class="back-strong-btn" type="button">← Retour au menu</button>
         <div class="section-head">
           <div>
-            <h2>Historique des précommandes</h2>
-            <p>Retrouvez vos réponses sur les campagnes clôturées.</p>
+            <h2>Archivés</h2>
+            <p>Retrouvez vos réponses sur les campagnes et sondages clôturés.</p>
           </div>
           <button id="downloadArchivedOrdersPdfBtn" class="primary-btn" type="button">Télécharger PDF</button>
         </div>
@@ -406,6 +432,17 @@
               <p id="adminSectionIntro">Créez une nouvelle campagne, puis ouvrez-la pour importer le bon de commande.</p>
             </div>
             <div id="adminDashboardNav" class="admin-dashboard-nav" aria-label="Menu administrateur">
+              <div id="adminSummaryBar" class="admin-summary-bar" aria-label="Sommaire">
+                <button class="admin-summary-card" type="button" data-admin-section="campaigns">
+                  <span class="admin-summary-label">Précommandes en cours</span>
+                </button>
+                <button class="admin-summary-card" type="button" data-admin-section="polls">
+                  <span class="admin-summary-label">Sondages en cours</span>
+                </button>
+                <button class="admin-summary-card" type="button" data-admin-section="archives">
+                  <span class="admin-summary-label">Archivés</span>
+                </button>
+              </div>
               <div class="admin-main-nav" aria-label="Rubriques administrateur">
                 <button class="admin-dashboard-btn admin-main-btn active" type="button" data-admin-group="new">Nouveau</button>
                 <button class="admin-dashboard-btn admin-main-btn" type="button" data-admin-group="current">En cours</button>

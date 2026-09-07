@@ -243,18 +243,39 @@ main::before {
 
 .hero-actions-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 12px;
+  grid-template-columns: 1fr;
+  gap: 20px;
   margin-bottom: 0;
 }
 
-.hero-secondary-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 10px;
+.hero-menu {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.hero-menu-btn {
+  padding: 24px 20px;
+  background: var(--green);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 140, 69, 0.2);
+}
+
+.hero-menu-btn:hover {
+  background: var(--green-dark);
+  box-shadow: 0 4px 12px rgba(0, 140, 69, 0.3);
+  transform: translateY(-2px);
+}
+
+.hero-menu-btn:active {
+  transform: translateY(0);
 }
 
 .archived-orders-block {
@@ -330,6 +351,27 @@ main::before {
 
 .archived-orders-page {
   margin-top: 14px;
+}
+
+.campaign-list-page {
+  margin-top: 14px;
+}
+
+.campaign-list-container {
+  column-count: 2;
+  column-gap: 14px;
+  margin-top: 18px;
+}
+
+.campaign-list-container > * {
+  break-inside: avoid;
+  margin-bottom: 14px;
+}
+
+@media (max-width: 720px) {
+  .campaign-list-container {
+    column-count: 1;
+  }
 }
 
 .archived-orders-panel .section-head {
@@ -732,6 +774,26 @@ main::before {
   box-shadow: 0 16px 34px rgba(40, 92, 63, .18);
 }
 
+.satisfaction-list-card,
+.satisfaction-list-card.is-open,
+.satisfaction-list-card.answered {
+  cursor: pointer;
+  padding-bottom: 14px;
+  align-self: start;
+}
+
+.satisfaction-logo {
+  display: block;
+  max-width: 140px;
+  height: auto;
+  margin: 16px auto 4px;
+}
+
+.satisfaction-list-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 34px rgba(40, 92, 63, .2);
+}
+
 .whatsapp-poll-head {
   display: flex;
   flex-direction: column;
@@ -846,6 +908,15 @@ main::before {
   font-size: 15px;
   font-weight: 900;
   text-align: center;
+}
+
+.satisfaction-card-description {
+  padding: 12px 14px;
+  font-size: 13px;
+  color: #555;
+  text-align: center;
+  border-top: 1px solid rgba(98, 180, 91, .16);
+  line-height: 1.4;
 }
 
 .inline-poll-form {
@@ -2428,6 +2499,50 @@ tbody tr:hover {
   gap: 10px;
   justify-items: center;
   margin: 18px 0 24px;
+}
+
+.admin-summary-bar {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(140px, 1fr));
+  gap: 12px;
+  width: 100%;
+  max-width: 640px;
+  margin-bottom: 6px;
+}
+
+.admin-summary-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 20px 12px;
+  background: var(--green);
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 140, 69, 0.2);
+  transition: all 0.2s ease;
+}
+
+.admin-summary-card:hover {
+  background: var(--green-dark);
+  box-shadow: 0 4px 12px rgba(0, 140, 69, 0.3);
+  transform: translateY(-2px);
+}
+
+.admin-summary-label {
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+  text-align: center;
+}
+
+@media (max-width: 560px) {
+  .admin-summary-bar {
+    grid-template-columns: 1fr;
+    max-width: 320px;
+  }
 }
 
 .admin-main-nav,

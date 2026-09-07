@@ -12,6 +12,12 @@ const VALIDATION_ARCHIVED_KEY = "soguasphar_validation_archived_preview";
 const ADMIN_CODE = "SOGUASPHAR2026";
 const API_AVAILABLE = location.protocol === "http:" || location.protocol === "https:";
 const PHARMACY_SESSION_KEY = "soguasphar_current_pharmacy";
+// Préfixe du dossier où la page est servie (ex. "/preco-test/" en copie de test, "/" sur le vrai site),
+// pour que les appels à "/api/..." fonctionnent aussi quand l'app est servie dans un sous-dossier.
+const BASE_PREFIX = (() => {
+  const path = location.pathname;
+  return path.endsWith("/") ? path : path.slice(0, path.lastIndexOf("/") + 1);
+})();
 
 const form = document.querySelector("#requestForm");
 const pharmacyGate = document.querySelector("#pharmacyGate");
@@ -32,12 +38,26 @@ const heroActionsRow = document.querySelector(".hero-actions-row");
 const heroBand = document.querySelector(".hero-band");
 const campaignPicker = document.querySelector("#campaignPicker");
 const campaignCards = document.querySelector("#campaignCards");
+const viewPrecommandesBtn = document.querySelector("#viewPrecommandes");
+const viewSondagesBtn = document.querySelector("#viewSondages");
+const viewArchivesBtn = document.querySelector("#viewArchives");
 const toggleArchivedOrdersBtn = document.querySelector("#toggleArchivedOrdersBtn");
 const archivedOrdersPanel = document.querySelector("#archivedOrdersPanel");
 const backToArchivedOrdersMenuBtn = document.querySelector("#backToArchivedOrdersMenuBtn");
 const downloadArchivedOrdersPdfBtn = document.querySelector("#downloadArchivedOrdersPdfBtn");
 const archivedOrdersRows = document.querySelector("#archivedOrdersRows");
 const archivedOrdersEmpty = document.querySelector("#archivedOrdersEmpty");
+const precommandandesListPage = document.querySelector("#precommandandesListPage");
+const backToPrecomandesMenuBtn = document.querySelector("#backToPrecomandesMenuBtn");
+const precommandandesListRows = document.querySelector("#precommandandesListRows");
+const precommandandesEmpty = document.querySelector("#precommandandesEmpty");
+const satisfactionListPage = document.querySelector("#satisfactionListPage");
+const backToSatisfactionListMenuBtn = document.querySelector("#backToSatisfactionListMenuBtn");
+const satisfactionCard = document.querySelector("#satisfactionCard");
+const sondagesListPage = document.querySelector("#sondagesListPage");
+const backToSondagesMenuBtn = document.querySelector("#backToSondagesMenuBtn");
+const sondagesListRows = document.querySelector("#sondagesListRows");
+const sondagesEmpty = document.querySelector("#sondagesEmpty");
 const batCards = document.querySelector("#batCards");
 const pollCards = document.querySelector("#pollCards");
 const infoCards = document.querySelector("#infoCards");
@@ -857,9 +877,10 @@ function findCampaignByOperationId(operationId) {
 async function requestJson(url, options = {}) {
   const method = String(options.method || "GET").toUpperCase();
   const attempts = method === "GET" ? 2 : 1;
+  const resolvedUrl = url.startsWith("/api/") ? `${BASE_PREFIX}${url.slice(1)}` : url;
   const requestUrl = method === "GET" && url.startsWith("/api/")
-    ? `${url}${url.includes("?") ? "&" : "?"}_=${Date.now()}`
-    : url;
+    ? `${resolvedUrl}${resolvedUrl.includes("?") ? "&" : "?"}_=${Date.now()}`
+    : resolvedUrl;
   let lastError = null;
   const { headers: optionHeaders = {}, ...fetchOptions } = options;
 
@@ -1565,13 +1586,15 @@ function archivedOrderRowsForCurrentPharmacy() {
 }
 
 function renderArchivedOrdersHistory() {
-  if (!toggleArchivedOrdersBtn || !archivedOrdersPanel || !archivedOrdersRows || !archivedOrdersEmpty) return;
+  if (!archivedOrdersPanel || !archivedOrdersRows || !archivedOrdersEmpty) return;
 
   const rows = archivedOrderRowsForCurrentPharmacy();
-  const archivedOrdersBlock = toggleArchivedOrdersBtn.closest(".archived-orders-block");
-  if (archivedOrdersBlock) archivedOrdersBlock.hidden = !currentPharmacy;
-  toggleArchivedOrdersBtn.hidden = !currentPharmacy;
-  toggleArchivedOrdersBtn.setAttribute("aria-expanded", archivedOrdersVisible ? "true" : "false");
+  if (toggleArchivedOrdersBtn) {
+    const archivedOrdersBlock = toggleArchivedOrdersBtn.closest(".archived-orders-block");
+    if (archivedOrdersBlock) archivedOrdersBlock.hidden = !currentPharmacy;
+    toggleArchivedOrdersBtn.hidden = !currentPharmacy;
+    toggleArchivedOrdersBtn.setAttribute("aria-expanded", archivedOrdersVisible ? "true" : "false");
+  }
   archivedOrdersPanel.hidden = !archivedOrdersVisible || !currentPharmacy;
   archivedOrdersRows.innerHTML = rows.map((row) => `
     <tr>
@@ -1614,8 +1637,96 @@ function showArchivedOrdersPage(operationId = "") {
   profileUpdateForm.hidden = true;
   batValidationForm.hidden = true;
   responseSuccess.hidden = true;
+  if (precommandandesListPage) precommandandesListPage.hidden = true;
+  if (sondagesListPage) sondagesListPage.hidden = true;
   renderArchivedOrdersHistory();
   archivedOrdersPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function renderPrecommandesListPage() {
+  if (!precommandandesListRows || !precommandandesEmpty) return;
+  const openCampaigns = campaigns.filter((campaign) => campaignIsVisibleForPharmacy(campaign));
+  const sorted = [...openCampaigns].reverse();
+  precommandandesListRows.innerHTML = sorted.length
+    ? sorted.map((campaign) => campaignCard(campaign, "form")).join("")
+    : "";
+  precommandandesEmpty.hidden = Boolean(sorted.length);
+}
+
+function showPrecommandesListPage() {
+  if (pharmacyAccessRequired()) {
+    renderPharmacyAccess();
+    return;
+  }
+
+  selectedCampaign = null;
+  selectedPoll = null;
+  selectedInfoForm = null;
+  selectedBatDocument = null;
+  archivedOrdersVisible = false;
+  setHeroVisible(false);
+  campaignPicker.hidden = true;
+  form.hidden = true;
+  pollForm.hidden = true;
+  if (satisfactionPage) satisfactionPage.hidden = true;
+  profileUpdateForm.hidden = true;
+  batValidationForm.hidden = true;
+  responseSuccess.hidden = true;
+  if (archivedOrdersPanel) archivedOrdersPanel.hidden = true;
+  if (sondagesListPage) sondagesListPage.hidden = true;
+  renderPrecommandesListPage();
+  precommandandesListPage.hidden = false;
+  precommandandesListPage.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function satisfactionListCard(poll) {
+  const answered = Boolean(getPollLocalAnswers(poll));
+  return `
+    <article class="whatsapp-poll-card satisfaction-list-card ${answered ? "answered" : "is-open"}" data-open-satisfaction="${escapeHtml(poll.id)}" role="button" tabindex="0">
+      <img src="logo-soguasphar.png" alt="Soguasphar" class="satisfaction-logo">
+      <div class="whatsapp-poll-head">
+        <div class="whatsapp-poll-title">${escapeHtml(poll.question)}</div>
+      </div>
+      <div class="whatsapp-poll-answered">${answered ? "Déjà répondu — merci !" : "Enquête de satisfaction Soguasphar — à remplir"}</div>
+      <div class="satisfaction-card-description">Cette enquête a pour objectif de recueillir votre avis sur la centrale SOGUASPHAR afin d'identifier les points à améliorer et de mieux répondre aux besoins des pharmacies. Merci pour votre participation !</div>
+    </article>
+  `;
+}
+
+function renderSondagesListPage() {
+  if (!sondagesListRows || !sondagesEmpty) return;
+  const openPolls = polls.filter((poll) => !poll.closed);
+  const sorted = [...openPolls].reverse();
+  sondagesListRows.innerHTML = sorted.length
+    ? sorted.map((poll) => poll.category === "satisfaction" ? satisfactionListCard(poll) : pollCard(poll, "form")).join("")
+    : "";
+  sondagesEmpty.hidden = Boolean(sorted.length);
+}
+
+function showSondagesListPage() {
+  if (pharmacyAccessRequired()) {
+    renderPharmacyAccess();
+    return;
+  }
+
+  selectedCampaign = null;
+  selectedPoll = null;
+  selectedInfoForm = null;
+  selectedBatDocument = null;
+  archivedOrdersVisible = false;
+  setHeroVisible(false);
+  campaignPicker.hidden = true;
+  form.hidden = true;
+  pollForm.hidden = true;
+  if (satisfactionPage) satisfactionPage.hidden = true;
+  profileUpdateForm.hidden = true;
+  batValidationForm.hidden = true;
+  responseSuccess.hidden = true;
+  if (archivedOrdersPanel) archivedOrdersPanel.hidden = true;
+  if (precommandandesListPage) precommandandesListPage.hidden = true;
+  renderSondagesListPage();
+  sondagesListPage.hidden = false;
+  sondagesListPage.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function showRequestedOperationOrMenu() {
@@ -1971,6 +2082,8 @@ function renderPharmacyAccess() {
     profileUpdateForm.hidden = true;
     batValidationForm.hidden = true;
     responseSuccess.hidden = true;
+  if (precommandandesListPage) precommandandesListPage.hidden = true;
+  if (sondagesListPage) sondagesListPage.hidden = true;
   }
 }
 
@@ -2752,6 +2865,8 @@ function renderCampaignPickers() {
     : '<p class="empty-campaigns">Aucune précommande disponible pour le moment.</p>';
 
   renderArchivedOrdersHistory();
+  renderPrecommandesListPage();
+  renderSondagesListPage();
 
   pollCards.innerHTML = openPolls.length
     ? openPolls.map((poll) => pollCard(poll, "form")).join("")
@@ -2795,6 +2910,13 @@ function renderCampaignPickers() {
   if (satisfactionPage && !satisfactionPage.hidden && selectedPoll?.id === satisfactionPoll?.id) {
     renderSatisfactionQuestions(satisfactionPoll);
   }
+
+  renderAdminSummary();
+}
+
+function renderAdminSummary() {
+  // Les 3 boutons du sommaire (Précommandes en cours / Sondages en cours / Archivés)
+  // sont statiques : ils mènent directement à leur rubrique, sans compteur à jour.
 }
 
 function renderSatisfactionEntry(poll) {
@@ -2858,6 +2980,8 @@ function openSatisfactionPage(pollId) {
   profileUpdateForm.hidden = true;
   batValidationForm.hidden = true;
   responseSuccess.hidden = true;
+  if (precommandandesListPage) precommandandesListPage.hidden = true;
+  if (sondagesListPage) sondagesListPage.hidden = true;
   if (archivedOrdersPanel) archivedOrdersPanel.hidden = true;
 
   satisfactionForm.dataset.inlinePollForm = poll.id;
@@ -2886,6 +3010,8 @@ function selectCampaign(campaignId) {
   profileUpdateForm.hidden = true;
   batValidationForm.hidden = true;
   responseSuccess.hidden = true;
+  if (precommandandesListPage) precommandandesListPage.hidden = true;
+  if (sondagesListPage) sondagesListPage.hidden = true;
   document.querySelector("#formTitle").textContent = "Commande, précommande, confirmation";
   if (selectedCampaign.pharmacyMessage) {
     campaignNotice.hidden = false;
@@ -2922,6 +3048,8 @@ function selectPoll(pollId) {
   profileUpdateForm.hidden = true;
   batValidationForm.hidden = true;
   responseSuccess.hidden = true;
+  if (precommandandesListPage) precommandandesListPage.hidden = true;
+  if (sondagesListPage) sondagesListPage.hidden = true;
   renderCampaignPickers();
   const openedCard = Array.from(pollCards.querySelectorAll("[data-inline-poll-form]"))
     .find((item) => item.dataset.inlinePollForm === selectedPoll.id);
@@ -2949,6 +3077,8 @@ function selectInfoForm(infoFormId) {
   profileUpdateForm.hidden = false;
   batValidationForm.hidden = true;
   responseSuccess.hidden = true;
+  if (precommandandesListPage) precommandandesListPage.hidden = true;
+  if (sondagesListPage) sondagesListPage.hidden = true;
 
   profileUpdateForm.reset();
   profileFormTitle.textContent = selectedInfoForm.title;
@@ -2996,6 +3126,8 @@ function selectBat(documentId) {
   profileUpdateForm.hidden = true;
   batValidationForm.hidden = false;
   responseSuccess.hidden = true;
+  if (precommandandesListPage) precommandandesListPage.hidden = true;
+  if (sondagesListPage) sondagesListPage.hidden = true;
 
   batFormTitle.textContent = currentValidationConfig().title;
   batPdfTitle.textContent = `Document - ${selectedBatDocument.pharmacyName}`;
@@ -3266,6 +3398,8 @@ function showCampaignPicker() {
   profileUpdateForm.hidden = true;
   batValidationForm.hidden = true;
   responseSuccess.hidden = true;
+  if (precommandandesListPage) precommandandesListPage.hidden = true;
+  if (sondagesListPage) sondagesListPage.hidden = true;
   campaignNotice.hidden = true;
   campaignNotice.textContent = "";
   refreshCampaignImagePreview(null);
@@ -3282,6 +3416,8 @@ function showSuccessScreen() {
   campaignPicker.hidden = false;
   setHeroVisible(true);
   responseSuccess.hidden = false;
+  if (precommandandesListPage) precommandandesListPage.hidden = true;
+  if (sondagesListPage) sondagesListPage.hidden = true;
 }
 
 async function selectAdminCampaign(campaignId) {
@@ -4273,7 +4409,86 @@ toggleArchivedOrdersBtn?.addEventListener("click", () => {
   showArchivedOrdersPage();
 });
 
+viewPrecommandesBtn?.addEventListener("click", () => {
+  showPrecommandesListPage();
+});
+
+viewSondagesBtn?.addEventListener("click", () => {
+  showSondagesListPage();
+});
+
+viewArchivesBtn?.addEventListener("click", () => {
+  showArchivedOrdersPage();
+});
+
 backToArchivedOrdersMenuBtn?.addEventListener("click", showCampaignPicker);
+backToPrecomandesMenuBtn?.addEventListener("click", showCampaignPicker);
+backToSondagesMenuBtn?.addEventListener("click", showCampaignPicker);
+
+precommandandesListRows?.addEventListener("click", (event) => {
+  if (event.target.closest("[data-preview-image]")) return;
+  const button = event.target.closest("[data-form-campaign]");
+  if (!button) return;
+  selectCampaign(button.dataset.formCampaign);
+});
+
+precommandandesListRows?.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter" && event.key !== " ") return;
+  if (event.target.closest("[data-preview-image], button, input, textarea")) return;
+  const card = event.target.closest("[data-form-campaign]");
+  if (!card) return;
+  event.preventDefault();
+  selectCampaign(card.dataset.formCampaign);
+});
+
+sondagesListRows?.addEventListener("click", (event) => {
+  const card = event.target.closest("[data-open-satisfaction]");
+  if (!card) return;
+  openSatisfactionPage(card.dataset.openSatisfaction);
+});
+
+sondagesListRows?.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter" && event.key !== " ") return;
+  const card = event.target.closest("[data-open-satisfaction]");
+  if (!card) return;
+  event.preventDefault();
+  openSatisfactionPage(card.dataset.openSatisfaction);
+});
+
+sondagesListRows?.addEventListener("change", (event) => {
+  const inlineForm = event.target.closest("[data-inline-poll-form]");
+  if (!inlineForm) return;
+  inlineForm.querySelectorAll(".poll-choice").forEach((choice) => {
+    choice.classList.toggle("is-selected", Boolean(choice.querySelector("input")?.checked));
+  });
+});
+
+sondagesListRows?.addEventListener("submit", async (event) => {
+  const inlineForm = event.target.closest("[data-inline-poll-form]");
+  if (!inlineForm) return;
+  event.preventDefault();
+
+  const poll = polls.find((item) => item.id === inlineForm.dataset.inlinePollForm);
+  const message = inlineForm.querySelector(".inline-poll-message");
+  if (!poll) return;
+
+  const { answers, missingRequired, pharmacyName, freeText } = collectInlinePollAnswers(poll, inlineForm);
+
+  if (!pharmacyName || missingRequired) {
+    if (message) message.textContent = "Le nom de la pharmacie et toutes les réponses obligatoires sont nécessaires.";
+    return;
+  }
+
+  if (poll.freeTextRequired && !freeText) {
+    if (message) message.textContent = "Merci de remplir le champ demandé.";
+    return;
+  }
+
+  await savePollAnswer(poll, answers, pharmacyName, freeText);
+  selectedPoll = null;
+  renderCampaignPickers();
+  await renderPollResults();
+});
 
 downloadArchivedOrdersPdfBtn?.addEventListener("click", exportArchivedOrdersPdf);
 
@@ -5514,6 +5729,8 @@ async function init() {
   profileUpdateForm.hidden = true;
   batValidationForm.hidden = true;
   responseSuccess.hidden = true;
+  if (precommandandesListPage) precommandandesListPage.hidden = true;
+  if (sondagesListPage) sondagesListPage.hidden = true;
   campaigns = await getCampaigns();
   polls = await getPolls();
   infoForms = await getInfoForms();
