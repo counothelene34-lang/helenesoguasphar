@@ -1,0 +1,317 @@
+[
+  {
+    "id": "pharmacy-001-azar",
+    "name": "AZAR",
+    "password": "Isacommande97@",
+    "active": true,
+    "mustChangePassword": false
+  },
+  {
+    "id": "pharmacy-002-bamb",
+    "name": "BAMBOU VERT",
+    "password": "Bambou2024",
+    "active": true,
+    "mustChangePassword": false
+  },
+  {
+    "id": "pharmacy-003-bert",
+    "name": "BERTHELOT F",
+    "password": "mINOUETTE271§",
+    "active": true,
+    "mustChangePassword": false
+  },
+  {
+    "id": "pharmacy-004-cape",
+    "name": "CAPET",
+    "password": "capet971",
+    "active": true,
+    "mustChangePassword": false
+  },
+  {
+    "id": "pharmacy-005-comb",
+    "name": "COMBE",
+    "password": "Helena112233",
+    "active": true,
+    "mustChangePassword": false
+  },
+  {
+    "id": "pharmacy-006-deco",
+    "name": "DE CONVENANCE",
+    "password": "DECO-6RKC",
+    "active": true,
+    "mustChangePassword": true
+  },
+  {
+    "id": "pharmacy-007-dedo",
+    "name": "DE DOUVILLE",
+    "password": "Douville971!",
+    "active": true,
+    "mustChangePassword": false
+  },
+  {
+    "id": "pharmacy-008-dela",
+    "name": "DE LA CITÉ DES MÉTIERS",
+    "password": "Equipe971",
+    "active": true,
+    "mustChangePassword": false
+  },
+  {
+    "id": "pharmacy-009-dela",
+    "name": "DE LA MELISSE",
+    "password": "lamelisse114",
+    "active": true,
+    "mustChangePassword": false
+  },
+  {
+    "id": "pharmacy-010-dela",
+    "name": "DE LA PLAGE",
+    "password": "e57r9Vv3JQRHTqd",
+    "active": true,
+    "mustChangePassword": false
+  },
+  {
+    "id": "pharmacy-011-dela",
+    "name": "DE LA POINTE",
+    "password": "DELA-K6PR",
+    "active": true,
+    "mustChangePassword": true
+  },
+  {
+    "id": "pharmacy-012-dela",
+    "name": "DE LA SOURCE",
+    "password": "Lasource*1",
+    "active": true,
+    "mustChangePassword": false
+  },
+  {
+    "id": "pharmacy-013-deri",
+    "name": "DE RIGAUD",
+    "password": "DERIGAUDsoguasphar",
+    "active": true,
+    "mustChangePassword": false
+  },
+  {
+    "id": "pharmacy-014-desi",
+    "name": "DES ISLES",
+    "password": "DESI-KUYU",
+    "active": true,
+    "mustChangePassword": true
+  },
+  {
+    "id": "pharmacy-015-deva",
+    "name": "DEVAUX Sylvie",
+    "password": "5snJCV7FZsTh2Vu",
+    "active": true,
+    "mustChangePassword": false
+  },
+  {
+    "id": "pharmacy-016-dorv",
+    "name": "DORVILLE",
+    "password": "Dorvmdpad",
+    "active": true,
+    "mustChangePassword": false
+  },
+  {
+    "id": "pharmacy-017-duce",
+    "name": "DU CENTRE",
+    "password": "19Nolivos!",
+    "active": true,
+    "mustChangePassword": false
+  },
+  {
+    "id": "pharmacy-018-duch",
+    "name": "DU CHAMP D’ARBAUD",
+    "password": "DB96@!",
+    "active": true,
+    "mustChangePassword": false
+  },
+  {
+    "id": "pharmacy-019-dugo",
+    "name": "DU GOSIER",
+    "password": "zuwvE5-dinnof-komnet",
+    "active": true,
+    "mustChangePassword": false
+  },
+  {
+    "id": "pharmacy-020-duma",
+    "name": "DU MARCHE",
+    "password": "Soguaspro97111!",
+    "active": true,
+    "mustChangePassword": false
+  },
+  {
+    "id": "pharmacy-021-dupe",
+    "name": "DU PELICAN",
+    "password": "SOGU97+",
+    "active": true,
+    "mustChangePassword": false
+  },
+  {
+    "id": "pharmacy-022-duph",
+    "name": "DU PHARE",
+    "password": "L8srtN$bd9rejGRpG?&T&rYXb$aQ",
+    "active": true,
+    "mustChangePassword": false
+  },
+  {
+    "id": "pharmacy-023-dupl",
+    "name": "DU PLATEAU",
+    "password": "j5gWpFBFu7fPEAM",
+    "active": true,
+    "mustChangePassword": false
+  },
+  {
+    "id": "pharmacy-024-duse",
+    "name": "DU SEMAPHORE",
+    "password": "Sema.Pharma0222",
+    "active": true,
+    "mustChangePassword": false
+  },
+  {
+    "id": "pharmacy-025-duso",
+    "name": "DU SOLEIL",
+    "password": "DUSO-H9UB",
+    "active": true,
+    "mustChangePassword": true
+  },
+  {
+    "id": "pharmacy-026-dust",
+    "name": "DU STADE",
+    "password": "dINDAINE",
+    "active": true,
+    "mustChangePassword": false
+  },
+  {
+    "id": "pharmacy-027-ebou",
+    "name": "EBOUE",
+    "password": "EBOU-2NG5",
+    "active": true,
+    "mustChangePassword": true
+  },
+  {
+    "id": "pharmacy-028-fleu",
+    "name": "FLEUR DE CANNE",
+    "password": "Pharma6fdc",
+    "active": true,
+    "mustChangePassword": false
+  },
+  {
+    "id": "pharmacy-029-fouc",
+    "name": "FOUCAN",
+    "password": "FOUC-YXTQ",
+    "active": true,
+    "mustChangePassword": true
+  },
+  {
+    "id": "pharmacy-030-gamb",
+    "name": "GAMBETTA",
+    "password": "tixwiw-poszo0-wujGyn",
+    "active": true,
+    "mustChangePassword": false
+  },
+  {
+    "id": "pharmacy-031-gira",
+    "name": "GIRARD DUGAMIN",
+    "password": "soguasphar",
+    "active": true,
+    "mustChangePassword": false
+  },
+  {
+    "id": "pharmacy-032-heli",
+    "name": "HELIOS",
+    "password": "hELIOS1*",
+    "active": true,
+    "mustChangePassword": false
+  },
+  {
+    "id": "pharmacy-033-issa",
+    "name": "ISSA",
+    "password": "ISSA-955T",
+    "active": true,
+    "mustChangePassword": true
+  },
+  {
+    "id": "pharmacy-034-lali",
+    "name": "LA LICORNE",
+    "password": "LALI-QFWE",
+    "active": true,
+    "mustChangePassword": true
+  },
+  {
+    "id": "pharmacy-035-laro",
+    "name": "LA ROSIERE",
+    "password": "xUpbu1-kaqkum-husmyd",
+    "active": true,
+    "mustChangePassword": false
+  },
+  {
+    "id": "pharmacy-036-mang",
+    "name": "MANGOU",
+    "password": "MANG-TL9N",
+    "active": true,
+    "mustChangePassword": true
+  },
+  {
+    "id": "pharmacy-037-medi",
+    "name": "MEDICIS",
+    "password": "Medicis97128@",
+    "active": true,
+    "mustChangePassword": false
+  },
+  {
+    "id": "pharmacy-038-mont",
+    "name": "MONTOUT",
+    "password": "MONTPAS",
+    "active": true,
+    "mustChangePassword": false
+  },
+  {
+    "id": "pharmacy-039-port",
+    "name": "PORT LOUIS",
+    "password": "Pharma!251465",
+    "active": true,
+    "mustChangePassword": false
+  },
+  {
+    "id": "pharmacy-040-reyn",
+    "name": "REYNAUD COPAVER",
+    "password": "Ane13lore!",
+    "active": true,
+    "mustChangePassword": false
+  },
+  {
+    "id": "pharmacy-041-rose",
+    "name": "ROSE DES VENTS",
+    "password": "Farmacie2010@",
+    "active": true,
+    "mustChangePassword": false
+  },
+  {
+    "id": "pharmacy-042-sain",
+    "name": "SAINTE ANNE",
+    "password": "7G7nZt3hz23L446",
+    "active": true,
+    "mustChangePassword": false
+  },
+  {
+    "id": "pharmacy-043-sami",
+    "name": "SAMINADIN",
+    "password": "PHARMASAM",
+    "active": true,
+    "mustChangePassword": false
+  },
+  {
+    "id": "pharmacy-044-vila",
+    "name": "VILA",
+    "password": "PHARMA13",
+    "active": true,
+    "mustChangePassword": false
+  },
+  {
+    "id": "pharmacy-045-phar",
+    "name": "PHARMACIE TEST",
+    "password": "SOGUASPHARTEST",
+    "active": true,
+    "mustChangePassword": false
+  }
+]

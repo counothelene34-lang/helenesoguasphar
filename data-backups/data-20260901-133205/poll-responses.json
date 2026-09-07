@@ -1,0 +1,349 @@
+[
+  {
+    "id": "da4c1b1f-4354-4863-ad8f-1f8a73d6d493",
+    "pollId": "presence-assemblee-generale",
+    "pollQuestion": "Présence à l'assemblée générale du ...",
+    "createdAt": "03/06/2026 10:53:19",
+    "pharmacyId": "",
+    "pharmacyName": "SOGUASPHAR",
+    "answer": "Oui présent(e)",
+    "freeText": "COUNOT"
+  },
+  {
+    "id": "c9c19b7e-4354-46d0-b912-bc3a19bc2999",
+    "pollId": "commande-de-carte-de-fidelite",
+    "pollQuestion": "Commande de carte de fidélité",
+    "createdAt": "03/06/2026 11:03:23",
+    "pharmacyId": "",
+    "pharmacyName": "SOGUASPHAR",
+    "answer": "50",
+    "freeText": ""
+  },
+  {
+    "id": "a543461f-76e1-4b6d-8b4d-c9bbada254fb",
+    "pollId": "repas",
+    "pollQuestion": "REPAS",
+    "createdAt": "03/06/2026 11:04:47",
+    "pharmacyId": "",
+    "pharmacyName": "SOGUASPHAR",
+    "answer": "Présente",
+    "freeText": "COUNOT"
+  },
+  {
+    "id": "97e81551-2a80-4932-9f17-c776e45c0d5a",
+    "pollId": "repas",
+    "pollQuestion": "REPAS",
+    "createdAt": "03/06/2026 11:13:41",
+    "pharmacyId": "",
+    "pharmacyName": "sogua",
+    "answer": "Présente",
+    "freeText": "helene"
+  },
+  {
+    "id": "9103ffe4-8672-49a1-8641-962a05db30d0",
+    "pollId": "presence-assemblee-generale",
+    "pollQuestion": "Présence à l'assemblée générale du ...",
+    "createdAt": "03/06/2026 11:30:54",
+    "pharmacyId": "",
+    "pharmacyName": "SOGUASPHAR",
+    "answer": "Oui présent(e)",
+    "freeText": "^helene"
+  },
+  {
+    "id": "bab3846b-3bd7-4ef3-8538-bbb9c6f44a0c",
+    "pollId": "commande-de-carte-de-fidelite",
+    "pollQuestion": "Commande de carte de fidélité",
+    "createdAt": "03/06/2026 11:43:11",
+    "pharmacyId": "",
+    "pharmacyName": "helene",
+    "answer": "50",
+    "freeText": ""
+  },
+  {
+    "id": "35333aed-e211-4bc7-a9d4-c86175462ffc",
+    "pollId": "commande-carte-de-fidelite-soguascard",
+    "pollQuestion": "Commande Carte de fidélité SOGUASCARD",
+    "createdAt": "03/06/2026 19:09:31",
+    "pharmacyId": "pharmacy-045-phar",
+    "pharmacyName": "PHARMACIE TEST",
+    "answer": "Non merci",
+    "freeText": ""
+  },
+  {
+    "id": "96674b67-0cd2-44ef-b99e-4f8d5ceaddd5",
+    "pollId": "commande-carte-de-fidelite-soguascard",
+    "pollQuestion": "Commande Carte de fidélité SOGUASCARD",
+    "createdAt": "03/06/2026 21:45:24",
+    "pharmacyId": "pharmacy-014-desi",
+    "pharmacyName": "DES ISLES",
+    "answer": "Non merci",
+    "freeText": ""
+  },
+  {
+    "id": "b034f70e-a1b5-44e0-842c-1bac323bf5a5",
+    "pollId": "commande-de-cartes-fidelite-soguascard",
+    "pollQuestion": "Commande de cartes fidélité SOGUASCARD",
+    "createdAt": "08/06/2026 16:07:40",
+    "pharmacyId": "pharmacy-044-vila",
+    "pharmacyName": "VILA",
+    "answer": "Non merci",
+    "freeText": ""
+  },
+  {
+    "id": "99ae3415-6f4e-4bec-92ac-8341ca7fe151",
+    "pollId": "commande-de-cartes-fidelite-soguascard",
+    "pollQuestion": "Commande de cartes fidélité SOGUASCARD",
+    "createdAt": "10/06/2026 18:43:38",
+    "pharmacyId": "pharmacy-045-phar",
+    "pharmacyName": "PHARMACIE TEST",
+    "answer": "Non merci",
+    "freeText": ""
+  },
+  {
+    "id": "ed675957-d31d-465d-9452-490150f62ab6",
+    "pollId": "commande-de-cartes-fidelite-soguascard",
+    "pollQuestion": "Commande de cartes fidélité SOGUASCARD",
+    "createdAt": "10/06/2026 19:20:56",
+    "pharmacyId": "pharmacy-019-dugo",
+    "pharmacyName": "DU GOSIER",
+    "answer": "Non merci",
+    "freeText": ""
+  },
+  {
+    "id": "e29af31f-b34b-4ea6-a9ee-82b3d792c573",
+    "pollId": "commande-de-cartes-fidelite-soguascard",
+    "pollQuestion": "Commande de cartes fidélité SOGUASCARD",
+    "createdAt": "11/06/2026 08:27:50",
+    "pharmacyId": "pharmacy-030-gamb",
+    "pharmacyName": "GAMBETTA",
+    "answer": "Non merci",
+    "freeText": ""
+  },
+  {
+    "id": "f97b71d8-5b87-409a-9ab4-764930c8754b",
+    "pollId": "commande-de-cartes-fidelite-soguascard",
+    "pollQuestion": "Commande de cartes fidélité SOGUASCARD",
+    "createdAt": "11/06/2026 09:42:36",
+    "pharmacyId": "pharmacy-038-mont",
+    "pharmacyName": "MONTOUT",
+    "answer": "Non merci",
+    "freeText": ""
+  },
+  {
+    "id": "dc70067e-2224-4fcd-9cfc-f3fd1acf8bbd",
+    "pollId": "commande-de-cartes-fidelite-soguascard",
+    "pollQuestion": "Commande de cartes fidélité SOGUASCARD",
+    "createdAt": "12/06/2026 09:09:59",
+    "pharmacyId": "pharmacy-008-dela",
+    "pharmacyName": "DE LA CITÉ DES MÉTIERS",
+    "answer": "50",
+    "freeText": ""
+  },
+  {
+    "id": "71ff9926-3493-4bdf-9bb3-9f6466bf3db8",
+    "pollId": "commande-de-cartes-fidelite-soguascard",
+    "pollQuestion": "Commande de cartes fidélité SOGUASCARD",
+    "createdAt": "13/06/2026 11:27:55",
+    "pharmacyId": "pharmacy-002-bamb",
+    "pharmacyName": "BAMBOU VERT",
+    "answer": "Non merci",
+    "freeText": ""
+  },
+  {
+    "id": "3214bb0b-685d-466c-a89f-3c9932814ca8",
+    "pollId": "commande-de-cartes-fidelite-soguascard",
+    "pollQuestion": "Commande de cartes fidélité SOGUASCARD",
+    "createdAt": "15/06/2026 08:50:21",
+    "pharmacyId": "pharmacy-042-sain",
+    "pharmacyName": "SAINTE ANNE",
+    "answer": "Non merci",
+    "freeText": ""
+  },
+  {
+    "id": "c5def8b6-119a-4a94-9615-ed183800d5d6",
+    "pollId": "commande-de-cartes-fidelite-soguascard",
+    "pollQuestion": "Commande de cartes fidélité SOGUASCARD",
+    "createdAt": "15/06/2026 09:29:50",
+    "pharmacyId": "pharmacy-040-reyn",
+    "pharmacyName": "REYNAUD COPAVER",
+    "answer": "100",
+    "freeText": ""
+  },
+  {
+    "id": "2419df87-083e-4869-aab1-faad63b34001",
+    "pollId": "commande-de-cartes-fidelite-soguascard",
+    "pollQuestion": "Commande de cartes fidélité SOGUASCARD",
+    "createdAt": "15/06/2026 11:52:33",
+    "pharmacyId": "pharmacy-041-rose",
+    "pharmacyName": "ROSE DES VENTS",
+    "answer": "50",
+    "freeText": ""
+  },
+  {
+    "id": "50b438e2-9b0c-4f21-b605-cc4be8c05f6b",
+    "pollId": "commande-de-cartes-fidelite-soguascard",
+    "pollQuestion": "Commande de cartes fidélité SOGUASCARD",
+    "createdAt": "15/06/2026 12:19:07",
+    "pharmacyId": "pharmacy-043-sami",
+    "pharmacyName": "SAMINADIN",
+    "answer": "50",
+    "freeText": ""
+  },
+  {
+    "id": "4e595cea-285b-456c-97e2-bce2f9082bfd",
+    "pollId": "commande-de-cartes-fidelite-soguascard",
+    "pollQuestion": "Commande de cartes fidélité SOGUASCARD",
+    "createdAt": "15/06/2026 12:26:14",
+    "pharmacyId": "pharmacy-010-dela",
+    "pharmacyName": "DE LA PLAGE",
+    "answer": "Non merci",
+    "freeText": ""
+  },
+  {
+    "id": "5e650658-3ba6-451e-b752-12145327a8f5",
+    "pollId": "commande-de-cartes-fidelite-soguascard",
+    "pollQuestion": "Commande de cartes fidélité SOGUASCARD",
+    "createdAt": "15/06/2026 12:41:55",
+    "pharmacyId": "pharmacy-020-duma",
+    "pharmacyName": "DU MARCHE",
+    "answer": "Non merci",
+    "freeText": ""
+  },
+  {
+    "id": "81762810-ae11-4473-bcf3-3590245d141e",
+    "pollId": "commande-de-cartes-fidelite-soguascard",
+    "pollQuestion": "Commande de cartes fidélité SOGUASCARD",
+    "createdAt": "15/06/2026 13:33:31",
+    "pharmacyId": "pharmacy-037-medi",
+    "pharmacyName": "MEDICIS",
+    "answer": "50",
+    "freeText": ""
+  },
+  {
+    "id": "9a634b80-2a75-45de-83e3-2437ebdb6b46",
+    "pollId": "commande-de-cartes-fidelite-soguascard",
+    "pollQuestion": "Commande de cartes fidélité SOGUASCARD",
+    "createdAt": "15/06/2026 18:29:47",
+    "pharmacyId": "pharmacy-023-dupl",
+    "pharmacyName": "DU PLATEAU",
+    "answer": "50",
+    "freeText": ""
+  },
+  {
+    "id": "08b1308b-71a7-4e3c-8e9f-db2b3722462e",
+    "pollId": "commande-de-cartes-fidelite-soguascard",
+    "pollQuestion": "Commande de cartes fidélité SOGUASCARD",
+    "createdAt": "17/06/2026 17:53:50",
+    "pharmacyId": "pharmacy-028-fleu",
+    "pharmacyName": "FLEUR DE CANNE",
+    "answer": "100",
+    "freeText": ""
+  },
+  {
+    "id": "32f593a5-9e9f-4077-ac6c-04f994ed4d7b",
+    "pollId": "commande-de-cartes-fidelite-soguascard",
+    "pollQuestion": "Commande de cartes fidélité SOGUASCARD",
+    "createdAt": "18/06/2026 10:39:33",
+    "pharmacyId": "pharmacy-031-gira",
+    "pharmacyName": "GIRARD DUGAMIN",
+    "answer": "50",
+    "freeText": ""
+  },
+  {
+    "id": "6e48f855-ef72-417f-be77-b2049fe7207b",
+    "pollId": "presence-a-la-reunion-de-mi-annee-le-11122",
+    "pollQuestion": "Présence a la réunion de mi- année le 11122",
+    "createdAt": "25/06/2026 11:24:22",
+    "pharmacyId": "pharmacy-045-phar",
+    "pharmacyName": "PHARMACIE TEST",
+    "answer": "Oui présent(e)",
+    "freeText": "Hélène counot"
+  },
+  {
+    "id": "e1bba549-4473-4b04-bb11-ac4296cc13a4",
+    "pollId": "presence-a-la-reunion-de-mi-annee",
+    "pollQuestion": "Présence a la réunion de mi-année",
+    "createdAt": "25/06/2026 12:07:36",
+    "pharmacyId": "pharmacy-045-phar",
+    "pharmacyName": "PHARMACIE TEST",
+    "answer": "Oui présent",
+    "freeText": "helene"
+  },
+  {
+    "id": "289f5b53-ceb1-4f46-b492-a96bc56a276f",
+    "pollId": "participation-au-calendrier-de-l-avent-2026",
+    "pollQuestion": "Participation au Calendrier de l’Avent 2026",
+    "createdAt": "28/08/2026 13:28:43",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-042-sain",
+    "pharmacyName": "SAINTE ANNE",
+    "answer": "Oui, je participe et je m’engage à communiquer au sein de la pharmacie et sur les réseaux sociaux.",
+    "freeText": ""
+  },
+  {
+    "id": "ba0ebc0d-9534-4a07-87ca-28bcdb006a95",
+    "pollId": "participation-au-calendrier-de-l-avent-2026",
+    "pollQuestion": "Participation au Calendrier de l'Avent 2026",
+    "createdAt": "28/08/2026 15:24:25",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-032-heli",
+    "pharmacyName": "HELIOS",
+    "answer": "Oui, je participe et je m’engage à communiquer au sein de la pharmacie et sur les réseaux sociaux.",
+    "freeText": ""
+  },
+  {
+    "id": "27926071-8722-4764-80d8-1c87b6c2d368",
+    "pollId": "participation-au-calendrier-de-l-avent-2026",
+    "pollQuestion": "Participation au Calendrier de l'Avent 2026",
+    "createdAt": "28/08/2026 15:25:15",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-019-dugo",
+    "pharmacyName": "DU GOSIER",
+    "answer": "Oui, je participe et je m’engage à communiquer au sein de la pharmacie et sur les réseaux sociaux.",
+    "freeText": ""
+  },
+  {
+    "id": "6903c642-29c3-47a1-a655-9ba163bfde11",
+    "pollId": "participation-au-calendrier-de-l-avent-2026",
+    "pollQuestion": "Participation au Calendrier de l'Avent 2026, réponse avant le 15 Septembre",
+    "createdAt": "28/08/2026 15:53:39",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-039-port",
+    "pharmacyName": "PORT LOUIS",
+    "answer": "Oui, je participe et je m’engage à communiquer au sein de la pharmacie et sur les réseaux sociaux.",
+    "freeText": ""
+  },
+  {
+    "id": "ea0fa42c-3202-443e-b596-db051d9796d8",
+    "pollId": "participation-au-calendrier-de-l-avent-2026",
+    "pollQuestion": "Participation au Calendrier de l'Avent 2026, réponse avant le 15 Septembre",
+    "createdAt": "28/08/2026 18:11:04",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-013-deri",
+    "pharmacyName": "DE RIGAUD",
+    "answer": "Oui, je participe et je m’engage à communiquer au sein de la pharmacie et sur les réseaux sociaux.",
+    "freeText": ""
+  },
+  {
+    "id": "6df56183-111a-4450-9947-291344ea5208",
+    "pollId": "participation-au-calendrier-de-l-avent-2026",
+    "pollQuestion": "Participation au Calendrier de l'Avent 2026, réponse avant le 15 Septembre",
+    "createdAt": "29/08/2026 09:30:17",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-028-fleu",
+    "pharmacyName": "FLEUR DE CANNE",
+    "answer": "Oui, je participe et je m’engage à communiquer au sein de la pharmacie et sur les réseaux sociaux.",
+    "freeText": ""
+  },
+  {
+    "id": "b99176bd-be44-4e6f-b631-196834bdb313",
+    "pollId": "participation-au-calendrier-de-l-avent-2026",
+    "pollQuestion": "Participation au Calendrier de l'Avent 2026, réponse avant le 15 Septembre",
+    "createdAt": "31/08/2026 18:30:13",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-020-duma",
+    "pharmacyName": "DU MARCHE",
+    "answer": "Oui, je participe et je m’engage à communiquer au sein de la pharmacie et sur les réseaux sociaux.",
+    "freeText": ""
+  }
+]

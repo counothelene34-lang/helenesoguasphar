@@ -1,0 +1,16 @@
+[
+  {
+    "id": "commande-de-cartes-fidelite-soguascard",
+    "question": "Commande de cartes fidélité SOGUASCARD",
+    "type": "Sondage",
+    "options": [
+      "50",
+      "100",
+      "150",
+      "Non merci"
+    ],
+    "freeTextLabel": "",
+    "freeTextRequired": false,
+    "closed": true
+  }
+]

@@ -278,6 +278,28 @@ main::before {
   transform: translateY(0);
 }
 
+#viewPrecommandes,
+#viewSondages {
+  background: #6fbf8f;
+  box-shadow: 0 2px 8px rgba(111, 191, 143, 0.25);
+}
+
+#viewPrecommandes:hover,
+#viewSondages:hover {
+  background: #5fac7e;
+  box-shadow: 0 4px 12px rgba(111, 191, 143, 0.35);
+}
+
+#viewArchives {
+  background: #d97b73;
+  box-shadow: 0 2px 8px rgba(217, 123, 115, 0.25);
+}
+
+#viewArchives:hover {
+  background: #c8695f;
+  box-shadow: 0 4px 12px rgba(217, 123, 115, 0.35);
+}
+
 .archived-orders-block {
   display: flex;
   align-items: center;

@@ -1,0 +1,6781 @@
+[
+  {
+    "id": "a5f7542b-c9d3-41e6-8068-51f530dc5d91",
+    "campaignId": "operation-physiomer",
+    "campaignTitle": "Opération Physiomer",
+    "createdAt": "10/06/2026 19:23:40",
+    "pharmacyId": "pharmacy-019-dugo",
+    "pharmacyName": "DU GOSIER",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYSIOMER JET DYNAMIQ 2X135ML",
+        "cip": "3401576080644",
+        "tarif": "7,76 €",
+        "colisage": "",
+        "quantity": "24"
+      },
+      {
+        "designation": "PHYSIOMER S.HYPERTONIQ 135ML",
+        "cip": "3401543248053",
+        "tarif": "5,63 €",
+        "colisage": "",
+        "quantity": "24"
+      }
+    ],
+    "notes": "Facturation et livraison souhaitées en octobre"
+  },
+  {
+    "id": "4d5ce2fd-7920-4fd4-b926-9c7c557226bd",
+    "campaignId": "brume-little-marcel",
+    "campaignTitle": "Brume Little Marcel",
+    "createdAt": "10/06/2026 19:24:46",
+    "pharmacyId": "pharmacy-019-dugo",
+    "pharmacyName": "DU GOSIER",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "c31f4ab0-973a-4a05-94eb-e035067c0a56",
+    "campaignId": "operation-physiomer",
+    "campaignTitle": "Opération Physiomer",
+    "createdAt": "10/06/2026 19:40:32",
+    "pharmacyId": "pharmacy-044-vila",
+    "pharmacyName": "VILA",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYSIOMER JET DYNAMIQ 2X135ML",
+        "cip": "3401576080644",
+        "tarif": "7,76 €",
+        "colisage": "",
+        "quantity": "18"
+      },
+      {
+        "designation": "PHYSIOMER S.HYPERTONIQ 135ML",
+        "cip": "3401543248053",
+        "tarif": "5,63 €",
+        "colisage": "",
+        "quantity": "24"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "d4766c0c-af73-41c1-96fa-434d4a8b3332",
+    "campaignId": "brume-little-marcel",
+    "campaignTitle": "Brume Little Marcel",
+    "createdAt": "10/06/2026 19:41:58",
+    "pharmacyId": "pharmacy-044-vila",
+    "pharmacyName": "VILA",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Cherry Lip",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Coconut Cream",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Crush Me",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Milky Vanilla",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Monoi Beach",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Orange Blossom",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Sweet Candy",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Sweet Gelato",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "2bc981ef-e0fe-4157-9892-3e7095301b2c",
+    "campaignId": "operation-physiomer",
+    "campaignTitle": "Opération Physiomer",
+    "createdAt": "10/06/2026 22:52:48",
+    "updatedAt": "11/06/2026 02:54:35",
+    "pharmacyId": "pharmacy-045-phar",
+    "pharmacyName": "PHARMACIE TEST",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "90b1a0d5-72f9-4c5b-a3c8-fb5e257571c3",
+    "campaignId": "cadeaux-de-fins-d-annee-soguasphar-pharmacie",
+    "campaignTitle": "Cadeaux de fins d'année SOGUASPHAR / PHARMACIE",
+    "createdAt": "10/06/2026 19:55:51",
+    "updatedAt": "11/06/2026 02:57:04",
+    "pharmacyId": "pharmacy-044-vila",
+    "pharmacyName": "VILA",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Marque page",
+        "cip": "",
+        "tarif": "0,60 €",
+        "colisage": "500",
+        "quantity": "500"
+      },
+      {
+        "designation": "Stylos bleu marine",
+        "cip": "",
+        "tarif": "1,20 €",
+        "colisage": "500",
+        "quantity": "500"
+      }
+    ],
+    "notes": "Les stylos sont un peu cher, mais je suis dans l'adhésion !\nbravo"
+  },
+  {
+    "id": "56a1aa1f-72b8-429a-9231-771bcc18c9a2",
+    "campaignId": "calendriers-2027",
+    "campaignTitle": "Calendriers 2027",
+    "createdAt": "10/06/2026 19:43:14",
+    "updatedAt": "11/06/2026 02:57:40",
+    "pharmacyId": "pharmacy-044-vila",
+    "pharmacyName": "VILA",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Calendrier 42x30cm Souple",
+        "cip": "",
+        "tarif": "0,49 €",
+        "colisage": "500",
+        "quantity": "1000"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "5b1a1623-e678-4839-b8b3-b57b0d2efffd",
+    "campaignId": "calendriers-2027",
+    "campaignTitle": "Calendriers 2027",
+    "createdAt": "11/06/2026 08:22:50",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-030-gamb",
+    "pharmacyName": "GAMBETTA",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Calendrier 42x30cm Souple",
+        "cip": "",
+        "tarif": "0,49 €",
+        "colisage": "500",
+        "quantity": "500"
+      },
+      {
+        "designation": "Calendrier 43 x 33cm - Rigide",
+        "cip": "",
+        "tarif": "1,40 €",
+        "colisage": "500",
+        "quantity": "2000"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "f73947ff-3e02-4054-9849-c00a9e4fbdd0",
+    "campaignId": "cadeaux-de-fins-d-annee-soguasphar-pharmacie",
+    "campaignTitle": "Cadeaux de fins d'année SOGUASPHAR / PHARMACIE",
+    "createdAt": "11/06/2026 08:25:15",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-030-gamb",
+    "pharmacyName": "GAMBETTA",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Marque page",
+        "cip": "",
+        "tarif": "0,60 €",
+        "colisage": "500",
+        "quantity": "500"
+      },
+      {
+        "designation": "Stylos bleu marine",
+        "cip": "",
+        "tarif": "1,20 €",
+        "colisage": "500",
+        "quantity": "500"
+      },
+      {
+        "designation": "Savon végétal à l'huile d'amande bio",
+        "cip": "",
+        "tarif": "1,50 €",
+        "colisage": "300",
+        "quantity": "300"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "6bd6837c-997b-475d-895b-2a9d1f808e51",
+    "campaignId": "brume-little-marcel",
+    "campaignTitle": "Brume Little Marcel",
+    "createdAt": "11/06/2026 08:27:07",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-030-gamb",
+    "pharmacyName": "GAMBETTA",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Cherry Lip",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "6"
+      },
+      {
+        "designation": "Coconut Cream",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "6"
+      },
+      {
+        "designation": "Crush Me",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "6"
+      },
+      {
+        "designation": "Milky Vanilla",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "6"
+      },
+      {
+        "designation": "Monoi Beach",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "6"
+      },
+      {
+        "designation": "Orange Blossom",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "6"
+      },
+      {
+        "designation": "Sweet Candy",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "6"
+      },
+      {
+        "designation": "Sweet Gelato",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "6"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "02fd1882-0353-412e-9f23-ed22c52c82e8",
+    "campaignId": "brume-little-marcel",
+    "campaignTitle": "Brume Little Marcel",
+    "createdAt": "11/06/2026 08:39:14",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-032-heli",
+    "pharmacyName": "HELIOS",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Cherry Lip",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Coconut Cream",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Crush Me",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Milky Vanilla",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Monoi Beach",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Orange Blossom",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Sweet Candy",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Sweet Gelato",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "f3f17113-1434-444d-a5cd-16dc506933bd",
+    "campaignId": "cadeaux-de-fins-d-annee-soguasphar-pharmacie",
+    "campaignTitle": "Cadeaux de fins d'année SOGUASPHAR / PHARMACIE",
+    "createdAt": "11/06/2026 08:40:08",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-032-heli",
+    "pharmacyName": "HELIOS",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Marque page",
+        "cip": "",
+        "tarif": "0,60 €",
+        "colisage": "500",
+        "quantity": "500"
+      },
+      {
+        "designation": "Savon végétal à l'huile d'amande bio",
+        "cip": "",
+        "tarif": "1,50 €",
+        "colisage": "300",
+        "quantity": "600"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "f4da84af-2408-4d41-b19e-2451611b8184",
+    "campaignId": "calendriers-2027",
+    "campaignTitle": "Calendriers 2027",
+    "createdAt": "11/06/2026 08:40:42",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-032-heli",
+    "pharmacyName": "HELIOS",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Calendrier 43 x 33cm - Rigide",
+        "cip": "",
+        "tarif": "1,40 €",
+        "colisage": "500",
+        "quantity": "1500"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "fa9e95de-e721-447a-abbe-0e537a3e2a74",
+    "campaignId": "cadeaux-de-fins-d-annee-soguasphar-pharmacie",
+    "campaignTitle": "Cadeaux de fins d'année SOGUASPHAR / PHARMACIE",
+    "createdAt": "11/06/2026 09:51:50",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-038-mont",
+    "pharmacyName": "MONTOUT",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Stylos bleu marine",
+        "cip": "",
+        "tarif": "1,20 €",
+        "colisage": "500",
+        "quantity": "1000"
+      },
+      {
+        "designation": "Savon végétal à l'huile d'amande bio",
+        "cip": "",
+        "tarif": "1,50 €",
+        "colisage": "300",
+        "quantity": "900"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "ebd6e889-d0a9-450e-848a-ead2fcc0b835",
+    "campaignId": "calendriers-2027",
+    "campaignTitle": "Calendriers 2027",
+    "createdAt": "11/06/2026 14:31:52",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-039-port",
+    "pharmacyName": "PORT LOUIS",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Calendrier 42x30cm Souple",
+        "cip": "",
+        "tarif": "0,49 €",
+        "colisage": "500",
+        "quantity": "1500"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "356105e2-77dc-4809-bb06-1a98a449a104",
+    "campaignId": "cadeaux-de-fins-d-annee-soguasphar-pharmacie",
+    "campaignTitle": "Cadeaux de fins d'année SOGUASPHAR / PHARMACIE",
+    "createdAt": "11/06/2026 14:52:23",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-039-port",
+    "pharmacyName": "PORT LOUIS",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Marque page",
+        "cip": "",
+        "tarif": "0,60 €",
+        "colisage": "500",
+        "quantity": "500"
+      },
+      {
+        "designation": "Stylos bleu marine",
+        "cip": "",
+        "tarif": "1,20 €",
+        "colisage": "500",
+        "quantity": "1000"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "bbfb3a7b-9e86-424d-82f1-79f706b4a1c9",
+    "campaignId": "calendriers-2027",
+    "campaignTitle": "Calendriers 2027",
+    "createdAt": "11/06/2026 18:10:52",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-013-deri",
+    "pharmacyName": "DE RIGAUD",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Calendrier 43 x 33cm - Rigide",
+        "cip": "",
+        "tarif": "1,40 €",
+        "colisage": "500",
+        "quantity": "500"
+      }
+    ],
+    "notes": "MOIS DE NOVEMBRE 2026"
+  },
+  {
+    "id": "8224f812-46b6-4f3a-9d06-c9b217f36223",
+    "campaignId": "cadeaux-de-fins-d-annee-soguasphar-pharmacie",
+    "campaignTitle": "Cadeaux de fins d'année SOGUASPHAR / PHARMACIE",
+    "createdAt": "11/06/2026 18:11:31",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-013-deri",
+    "pharmacyName": "DE RIGAUD",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Stylos bleu marine",
+        "cip": "",
+        "tarif": "1,20 €",
+        "colisage": "500",
+        "quantity": "500"
+      }
+    ],
+    "notes": "MOIS DE NOVEMBRE 2026"
+  },
+  {
+    "id": "b36afd9d-4a16-4333-b7f9-cf1620eace0a",
+    "campaignId": "calendriers-2027",
+    "campaignTitle": "Calendriers 2027",
+    "createdAt": "12/06/2026 08:50:28",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-017-duce",
+    "pharmacyName": "DU CENTRE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Calendrier 43 x 33cm - Rigide",
+        "cip": "",
+        "tarif": "1,40 €",
+        "colisage": "500",
+        "quantity": "1000"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "9bccb7ef-0208-489e-83aa-371a1d4dce9d",
+    "campaignId": "cadeaux-de-fins-d-annee-soguasphar-pharmacie",
+    "campaignTitle": "Cadeaux de fins d'année SOGUASPHAR / PHARMACIE",
+    "createdAt": "12/06/2026 08:51:40",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-017-duce",
+    "pharmacyName": "DU CENTRE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Marque page",
+        "cip": "",
+        "tarif": "0,60 €",
+        "colisage": "500",
+        "quantity": "500"
+      },
+      {
+        "designation": "Savon végétal à l'huile d'amande bio",
+        "cip": "",
+        "tarif": "1,50 €",
+        "colisage": "300",
+        "quantity": "900"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "08b1ffa3-45dc-4aa7-94f7-2a42dc4586e0",
+    "campaignId": "brume-little-marcel",
+    "campaignTitle": "Brume Little Marcel",
+    "createdAt": "12/06/2026 08:54:14",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-017-duce",
+    "pharmacyName": "DU CENTRE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Cherry Lip",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Coconut Cream",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Crush Me",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Milky Vanilla",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Monoi Beach",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Orange Blossom",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Sweet Candy",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Sweet Gelato",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "642f62ca-d875-44a1-bf56-4c574db3552d",
+    "campaignId": "operation-physiomer",
+    "campaignTitle": "Opération Physiomer",
+    "createdAt": "12/06/2026 08:54:24",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-017-duce",
+    "pharmacyName": "DU CENTRE",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "79505057-b6b3-43a7-a8d2-708ce86fe0da",
+    "campaignId": "brume-little-marcel",
+    "campaignTitle": "Brume Little Marcel",
+    "createdAt": "12/06/2026 09:12:00",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-008-dela",
+    "pharmacyName": "DE LA CITÉ DES MÉTIERS",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Cherry Lip",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Coconut Cream",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Crush Me",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Milky Vanilla",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Monoi Beach",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Orange Blossom",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Sweet Candy",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Sweet Gelato",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      }
+    ],
+    "notes": "avec testeur svp"
+  },
+  {
+    "id": "c49bd336-1162-40f2-86a6-bd3ed320ba77",
+    "campaignId": "cadeaux-de-fins-d-annee-soguasphar-pharmacie",
+    "campaignTitle": "Cadeaux de fins d'année SOGUASPHAR / PHARMACIE",
+    "createdAt": "12/06/2026 10:44:34",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-007-dedo",
+    "pharmacyName": "DE DOUVILLE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Stylos bleu marine",
+        "cip": "",
+        "tarif": "1,20 €",
+        "colisage": "500",
+        "quantity": "500"
+      },
+      {
+        "designation": "Savon végétal à l'huile d'amande bio",
+        "cip": "",
+        "tarif": "1,50 €",
+        "colisage": "300",
+        "quantity": "300"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "c78399e6-d451-4a04-aef3-71a09fe4d4be",
+    "campaignId": "calendriers-2027",
+    "campaignTitle": "Calendriers 2027",
+    "createdAt": "12/06/2026 18:37:31",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-024-duse",
+    "pharmacyName": "DU SEMAPHORE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Calendrier 42x30cm Souple",
+        "cip": "",
+        "tarif": "0,49 €",
+        "colisage": "500",
+        "quantity": "1000"
+      }
+    ],
+    "notes": "LIVRAISON FIN NOVEMBRE"
+  },
+  {
+    "id": "7ec1b8aa-b80f-4bb1-922d-4ce0fc80d926",
+    "campaignId": "brume-little-marcel",
+    "campaignTitle": "Brume Little Marcel",
+    "createdAt": "13/06/2026 11:34:54",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-002-bamb",
+    "pharmacyName": "BAMBOU VERT",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Milky Vanilla",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Monoi Beach",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Orange Blossom",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Sweet Gelato",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "6d4e1af6-9e67-4b52-bdfb-7bb4f12d7781",
+    "campaignId": "operation-physiomer",
+    "campaignTitle": "Opération Physiomer",
+    "createdAt": "15/06/2026 08:46:15",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-042-sain",
+    "pharmacyName": "SAINTE ANNE",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "ac3fe44d-32c7-4bf5-ba46-d7bc59f41d0d",
+    "campaignId": "brume-little-marcel",
+    "campaignTitle": "Brume Little Marcel",
+    "createdAt": "15/06/2026 08:48:11",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-042-sain",
+    "pharmacyName": "SAINTE ANNE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Cherry Lip",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Coconut Cream",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Crush Me",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Milky Vanilla",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Monoi Beach",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Orange Blossom",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Sweet Candy",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Sweet Gelato",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "0447efd6-094f-43a1-89af-0dd24e02c2c2",
+    "campaignId": "cadeaux-de-fins-d-annee-soguasphar-pharmacie",
+    "campaignTitle": "Cadeaux de fins d'année SOGUASPHAR / PHARMACIE",
+    "createdAt": "15/06/2026 08:49:56",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-042-sain",
+    "pharmacyName": "SAINTE ANNE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Marque page",
+        "cip": "",
+        "tarif": "0,60 €",
+        "colisage": "500",
+        "quantity": "500"
+      },
+      {
+        "designation": "Stylos bleu marine",
+        "cip": "",
+        "tarif": "1,20 €",
+        "colisage": "500",
+        "quantity": "500"
+      },
+      {
+        "designation": "Savon végétal à l'huile d'amande bio",
+        "cip": "",
+        "tarif": "1,50 €",
+        "colisage": "300",
+        "quantity": "600"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "b2380a9b-1014-48e2-b476-6bfa8974c52b",
+    "campaignId": "calendriers-2027",
+    "campaignTitle": "Calendriers 2027",
+    "createdAt": "15/06/2026 08:51:05",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-042-sain",
+    "pharmacyName": "SAINTE ANNE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Calendrier 42x30cm Souple",
+        "cip": "",
+        "tarif": "0,49 €",
+        "colisage": "500",
+        "quantity": "500"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "dcb358c4-6547-44cc-a690-a628a70b5637",
+    "campaignId": "brume-little-marcel",
+    "campaignTitle": "Brume Little Marcel",
+    "createdAt": "15/06/2026 09:30:55",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-040-reyn",
+    "pharmacyName": "REYNAUD COPAVER",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Cherry Lip",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Coconut Cream",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Crush Me",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Milky Vanilla",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Monoi Beach",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Sweet Candy",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Sweet Gelato",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "8c274887-858d-4eeb-b800-c4d29a100d31",
+    "campaignId": "operation-physiomer",
+    "campaignTitle": "Opération Physiomer",
+    "createdAt": "15/06/2026 09:32:36",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-040-reyn",
+    "pharmacyName": "REYNAUD COPAVER",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "52ccb27c-672d-468d-8e23-370ca91b004f",
+    "campaignId": "operation-physiomer",
+    "campaignTitle": "Opération Physiomer",
+    "createdAt": "15/06/2026 09:44:24",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-016-dorv",
+    "pharmacyName": "DORVILLE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYSIOMER JET DYNAMIQ 2X135ML",
+        "cip": "3401576080644",
+        "tarif": "7,76 €",
+        "colisage": "",
+        "quantity": "24"
+      },
+      {
+        "designation": "PHYSIOMER S.HYPERTONIQ 135ML",
+        "cip": "3401543248053",
+        "tarif": "5,63 €",
+        "colisage": "",
+        "quantity": "24"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "8b020702-6393-4e8b-8f6a-3edcc40d6007",
+    "campaignId": "calendriers-2027",
+    "campaignTitle": "Calendriers 2027",
+    "createdAt": "15/06/2026 10:05:35",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-003-bert",
+    "pharmacyName": "BERTHELOT F",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Calendrier 43 x 33cm - Rigide",
+        "cip": "",
+        "tarif": "1,40 €",
+        "colisage": "500",
+        "quantity": "500"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "ff03ddf4-bc9f-4074-b1a7-a36170512e1c",
+    "campaignId": "cadeaux-de-fins-d-annee-soguasphar-pharmacie",
+    "campaignTitle": "Cadeaux de fins d'année SOGUASPHAR / PHARMACIE",
+    "createdAt": "15/06/2026 10:07:00",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-003-bert",
+    "pharmacyName": "BERTHELOT F",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Marque page",
+        "cip": "",
+        "tarif": "0,60 €",
+        "colisage": "500",
+        "quantity": "500"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "cfe425dd-3f2a-4904-8336-f493cf3b163c",
+    "campaignId": "brume-little-marcel",
+    "campaignTitle": "Brume Little Marcel",
+    "createdAt": "15/06/2026 10:07:27",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-003-bert",
+    "pharmacyName": "BERTHELOT F",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "c757e014-d2ab-4522-8c71-9e4ed685ea66",
+    "campaignId": "operation-physiomer",
+    "campaignTitle": "Opération Physiomer",
+    "createdAt": "15/06/2026 10:08:20",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-003-bert",
+    "pharmacyName": "BERTHELOT F",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYSIOMER JET DYNAMIQ 2X135ML",
+        "cip": "3401576080644",
+        "tarif": "7,76 €",
+        "colisage": "",
+        "quantity": "36"
+      },
+      {
+        "designation": "PHYSIOMER S.HYPERTONIQ 135ML",
+        "cip": "3401543248053",
+        "tarif": "5,63 €",
+        "colisage": "",
+        "quantity": "24"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "a307af22-8d09-4b43-96a5-5aff0ffec443",
+    "campaignId": "calendriers-2027",
+    "campaignTitle": "Calendriers 2027",
+    "createdAt": "15/06/2026 11:44:06",
+    "updatedAt": "15/06/2026 15:44:46",
+    "pharmacyId": "pharmacy-041-rose",
+    "pharmacyName": "ROSE DES VENTS",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Calendrier 43 x 33cm - Rigide",
+        "cip": "",
+        "tarif": "1,40 €",
+        "colisage": "500",
+        "quantity": "1000"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "14c3371f-3f8f-4e12-92f0-9fd0f1ca7bda",
+    "campaignId": "cadeaux-de-fins-d-annee-soguasphar-pharmacie",
+    "campaignTitle": "Cadeaux de fins d'année SOGUASPHAR / PHARMACIE",
+    "createdAt": "15/06/2026 11:51:53",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-041-rose",
+    "pharmacyName": "ROSE DES VENTS",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Savon végétal à l'huile d'amande bio",
+        "cip": "",
+        "tarif": "1,50 €",
+        "colisage": "300",
+        "quantity": "300"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "55328e95-8fe8-43d7-91f6-11927d860180",
+    "campaignId": "brume-little-marcel",
+    "campaignTitle": "Brume Little Marcel",
+    "createdAt": "15/06/2026 12:26:31",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-010-dela",
+    "pharmacyName": "DE LA PLAGE",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "d5a543c4-22a9-4ab5-bbc5-8fb7ad091bc1",
+    "campaignId": "operation-physiomer",
+    "campaignTitle": "Opération Physiomer",
+    "createdAt": "15/06/2026 12:26:47",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-010-dela",
+    "pharmacyName": "DE LA PLAGE",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "1027fd64-d041-4624-a4d0-b84d4d629485",
+    "campaignId": "calendriers-2027",
+    "campaignTitle": "Calendriers 2027",
+    "createdAt": "15/06/2026 12:27:07",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-010-dela",
+    "pharmacyName": "DE LA PLAGE",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "4b364f2f-2202-46bf-a2c7-8d86ec614ebd",
+    "campaignId": "cadeaux-de-fins-d-annee-soguasphar-pharmacie",
+    "campaignTitle": "Cadeaux de fins d'année SOGUASPHAR / PHARMACIE",
+    "createdAt": "15/06/2026 12:27:15",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-010-dela",
+    "pharmacyName": "DE LA PLAGE",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "19c5e876-b80a-48b1-8a32-201d179b2723",
+    "campaignId": "calendriers-2027",
+    "campaignTitle": "Calendriers 2027",
+    "createdAt": "15/06/2026 12:28:02",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-043-sami",
+    "pharmacyName": "SAMINADIN",
+    "interest": "Interessé",
+    "products": [],
+    "notes": "serait il possible d'avoir du 55x40, rigide ,recto verso,  1000 exemplaires"
+  },
+  {
+    "id": "c68544a7-cb3d-4d58-b58c-5e33a4b35df4",
+    "campaignId": "cadeaux-de-fins-d-annee-soguasphar-pharmacie",
+    "campaignTitle": "Cadeaux de fins d'année SOGUASPHAR / PHARMACIE",
+    "createdAt": "15/06/2026 12:29:43",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-043-sami",
+    "pharmacyName": "SAMINADIN",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Stylos bleu marine",
+        "cip": "",
+        "tarif": "1,20 €",
+        "colisage": "500",
+        "quantity": "500"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "f9f840d7-873a-4f81-9e6f-6ab803ddce4f",
+    "campaignId": "brume-little-marcel",
+    "campaignTitle": "Brume Little Marcel",
+    "createdAt": "15/06/2026 12:33:18",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-020-duma",
+    "pharmacyName": "DU MARCHE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Cherry Lip",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Coconut Cream",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Crush Me",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Milky Vanilla",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Monoi Beach",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Orange Blossom",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Sweet Candy",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Sweet Gelato",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      }
+    ],
+    "notes": "peut on avoir des testeurs?"
+  },
+  {
+    "id": "e810d37f-1b75-49dd-9a76-13725f912fc8",
+    "campaignId": "operation-physiomer",
+    "campaignTitle": "Opération Physiomer",
+    "createdAt": "15/06/2026 12:34:18",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-020-duma",
+    "pharmacyName": "DU MARCHE",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "2d65d667-a4ee-4149-bea7-4e516686a15e",
+    "campaignId": "calendriers-2027",
+    "campaignTitle": "Calendriers 2027",
+    "createdAt": "15/06/2026 12:41:41",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-020-duma",
+    "pharmacyName": "DU MARCHE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Calendrier 42x30cm Souple",
+        "cip": "",
+        "tarif": "0,49 €",
+        "colisage": "500",
+        "quantity": "1500"
+      }
+    ],
+    "notes": "coordonées de la pharmacie à mettre sur le calendrier:\n\nPHARMACIE DU MARCHE\nRue du Débarcadère\n97111 MORNE A L EAU\n0590247063\nequipe97111@gmail.com"
+  },
+  {
+    "id": "f0098bb4-a05b-4314-a572-454797fd569b",
+    "campaignId": "brume-little-marcel",
+    "campaignTitle": "Brume Little Marcel",
+    "createdAt": "15/06/2026 13:07:44",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-012-dela",
+    "pharmacyName": "DE LA SOURCE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Cherry Lip",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Coconut Cream",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Crush Me",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Milky Vanilla",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Monoi Beach",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Orange Blossom",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Sweet Candy",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Sweet Gelato",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "942ff047-ab04-40da-b1e1-cf1ec9732cd8",
+    "campaignId": "calendriers-2027",
+    "campaignTitle": "Calendriers 2027",
+    "createdAt": "15/06/2026 13:08:32",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-012-dela",
+    "pharmacyName": "DE LA SOURCE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Calendrier 42x30cm Souple",
+        "cip": "",
+        "tarif": "0,49 €",
+        "colisage": "500",
+        "quantity": "500"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "cee0093b-57ad-4c41-b0b7-493ef5e6183f",
+    "campaignId": "brume-little-marcel",
+    "campaignTitle": "Brume Little Marcel",
+    "createdAt": "15/06/2026 13:09:08",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-035-laro",
+    "pharmacyName": "LA ROSIERE",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "228c5ded-5253-498a-9079-740adddf9af4",
+    "campaignId": "operation-physiomer",
+    "campaignTitle": "Opération Physiomer",
+    "createdAt": "15/06/2026 13:10:35",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-012-dela",
+    "pharmacyName": "DE LA SOURCE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYSIOMER JET DYNAMIQ 2X135ML",
+        "cip": "3401576080644",
+        "tarif": "7,76 €",
+        "colisage": "",
+        "quantity": "24"
+      },
+      {
+        "designation": "PHYSIOMER S.HYPERTONIQ 135ML",
+        "cip": "3401543248053",
+        "tarif": "5,63 €",
+        "colisage": "",
+        "quantity": "18"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "eaa8444a-ce7b-425c-96f7-5a5a1a7544b2",
+    "campaignId": "operation-physiomer",
+    "campaignTitle": "Opération Physiomer",
+    "createdAt": "15/06/2026 13:35:56",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-037-medi",
+    "pharmacyName": "MEDICIS",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "b5fcbdec-6112-4824-a56d-ec72bb6d6551",
+    "campaignId": "brume-little-marcel",
+    "campaignTitle": "Brume Little Marcel",
+    "createdAt": "15/06/2026 13:40:14",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-037-medi",
+    "pharmacyName": "MEDICIS",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Coconut Cream",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Crush Me",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Milky Vanilla",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Monoi Beach",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Sweet Candy",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      }
+    ],
+    "notes": "Avec si possible les testeurs et un présentoir.\nMerci"
+  },
+  {
+    "id": "e6ea52f7-3343-4256-98b5-aadb6ba12d25",
+    "campaignId": "operation-physiomer",
+    "campaignTitle": "Opération Physiomer",
+    "createdAt": "15/06/2026 14:03:47",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-008-dela",
+    "pharmacyName": "DE LA CITÉ DES MÉTIERS",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYSIOMER JET DYNAMIQ 2X135ML",
+        "cip": "3401576080644",
+        "tarif": "7,76 €",
+        "colisage": "",
+        "quantity": "12"
+      },
+      {
+        "designation": "PHYSIOMER S.HYPERTONIQ 135ML",
+        "cip": "3401543248053",
+        "tarif": "5,63 €",
+        "colisage": "",
+        "quantity": "12"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "86b5b96d-a38a-4580-b063-d909c09962e1",
+    "campaignId": "brume-little-marcel",
+    "campaignTitle": "Brume Little Marcel",
+    "createdAt": "15/06/2026 18:27:31",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-023-dupl",
+    "pharmacyName": "DU PLATEAU",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": "gros bisous"
+  },
+  {
+    "id": "dcd245ee-2e28-4ba0-bdfa-026629c7567c",
+    "campaignId": "operation-physiomer",
+    "campaignTitle": "Opération Physiomer",
+    "createdAt": "15/06/2026 18:28:03",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-023-dupl",
+    "pharmacyName": "DU PLATEAU",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYSIOMER JET DYNAMIQ 2X135ML",
+        "cip": "3401576080644",
+        "tarif": "7,76 €",
+        "colisage": "",
+        "quantity": "12"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "8ad4962b-45ad-4049-bd7c-b4dfe1788f94",
+    "campaignId": "calendriers-2027",
+    "campaignTitle": "Calendriers 2027",
+    "createdAt": "15/06/2026 18:28:53",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-023-dupl",
+    "pharmacyName": "DU PLATEAU",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Calendrier 43 x 33cm - Rigide",
+        "cip": "",
+        "tarif": "1,40 €",
+        "colisage": "500",
+        "quantity": "1000"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "6700fcde-0af0-4feb-8101-dbcdcf3674c6",
+    "campaignId": "cadeaux-de-fins-d-annee-soguasphar-pharmacie",
+    "campaignTitle": "Cadeaux de fins d'année SOGUASPHAR / PHARMACIE",
+    "createdAt": "15/06/2026 18:29:32",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-023-dupl",
+    "pharmacyName": "DU PLATEAU",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Savon végétal à l'huile d'amande bio",
+        "cip": "",
+        "tarif": "1,50 €",
+        "colisage": "300",
+        "quantity": "300"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "f10acb3f-7601-439f-99cb-910fb3a2ed62",
+    "campaignId": "brume-little-marcel",
+    "campaignTitle": "Brume Little Marcel",
+    "createdAt": "16/06/2026 08:28:09",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-016-dorv",
+    "pharmacyName": "DORVILLE",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "d83350fd-63bb-4100-a682-fc8f6497c932",
+    "campaignId": "brume-little-marcel",
+    "campaignTitle": "Brume Little Marcel",
+    "createdAt": "16/06/2026 10:26:17",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-021-dupe",
+    "pharmacyName": "DU PELICAN",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Cherry Lip",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Coconut Cream",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Crush Me",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Milky Vanilla",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Monoi Beach",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Orange Blossom",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Sweet Candy",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Sweet Gelato",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      }
+    ],
+    "notes": "Est ce qu'il y a un testeur pour chaque parfum ?"
+  },
+  {
+    "id": "abe4be9e-1f11-4446-9f45-cd10c6a62e71",
+    "campaignId": "calendriers-2027",
+    "campaignTitle": "Calendriers 2027",
+    "createdAt": "16/06/2026 12:37:13",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-016-dorv",
+    "pharmacyName": "DORVILLE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Calendrier 42x30cm Souple",
+        "cip": "",
+        "tarif": "0,49 €",
+        "colisage": "500",
+        "quantity": "500"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "b64fccb1-c815-41ae-8a3c-1b34fa930ad5",
+    "campaignId": "cadeaux-de-fins-d-annee-soguasphar-pharmacie",
+    "campaignTitle": "Cadeaux de fins d'année SOGUASPHAR / PHARMACIE",
+    "createdAt": "17/06/2026 16:50:36",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-002-bamb",
+    "pharmacyName": "BAMBOU VERT",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "ec52e55c-5042-41a5-bf30-5290d3fb0a08",
+    "campaignId": "operation-physiomer",
+    "campaignTitle": "Opération Physiomer",
+    "createdAt": "17/06/2026 17:07:34",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-002-bamb",
+    "pharmacyName": "BAMBOU VERT",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": "Nous avons Prorhinel et Marimer disponibles sur la plateforme toute l'année, cela me suffit personnellement"
+  },
+  {
+    "id": "f373b9c6-a63b-443c-b59c-3aef09f8ab1d",
+    "campaignId": "calendriers-2027",
+    "campaignTitle": "Calendriers 2027",
+    "createdAt": "13/06/2026 11:40:18",
+    "updatedAt": "17/06/2026 21:09:59",
+    "pharmacyId": "pharmacy-002-bamb",
+    "pharmacyName": "BAMBOU VERT",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Calendrier 42x30cm Souple",
+        "cip": "",
+        "tarif": "0,49 €",
+        "colisage": "500",
+        "quantity": "500"
+      }
+    ],
+    "notes": "Je souhaite la même calligraphie qu'en 2025. Avec un logo de couleur pour Instagram ; un logo de couleur pour facebook ; un logo pour le téléphone et un logo pour l'adresse mail svp"
+  },
+  {
+    "id": "3aa023d3-ba8e-4bcd-abb6-19098c4c2604",
+    "campaignId": "calendriers-2027",
+    "campaignTitle": "Calendriers 2027",
+    "createdAt": "17/06/2026 17:55:20",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-028-fleu",
+    "pharmacyName": "FLEUR DE CANNE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Calendrier 42x30cm Souple",
+        "cip": "",
+        "tarif": "0,49 €",
+        "colisage": "500",
+        "quantity": "2500"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "16761274-14a6-4808-87b8-e91f946a0cce",
+    "campaignId": "cadeaux-de-fins-d-annee-soguasphar-pharmacie",
+    "campaignTitle": "Cadeaux de fins d'année SOGUASPHAR / PHARMACIE",
+    "createdAt": "17/06/2026 17:57:04",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-028-fleu",
+    "pharmacyName": "FLEUR DE CANNE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Marque page",
+        "cip": "",
+        "tarif": "0,60 €",
+        "colisage": "500",
+        "quantity": "2000"
+      },
+      {
+        "designation": "Stylos bleu marine",
+        "cip": "",
+        "tarif": "1,20 €",
+        "colisage": "500",
+        "quantity": "2000"
+      },
+      {
+        "designation": "Savon végétal à l'huile d'amande bio",
+        "cip": "",
+        "tarif": "1,50 €",
+        "colisage": "300",
+        "quantity": "3000"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "649da0bb-bcc4-4855-a9a9-07c259584286",
+    "campaignId": "operation-physiomer",
+    "campaignTitle": "Opération Physiomer",
+    "createdAt": "17/06/2026 18:00:03",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-028-fleu",
+    "pharmacyName": "FLEUR DE CANNE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYSIOMER JET DYNAMIQ 2X135ML",
+        "cip": "3401576080644",
+        "tarif": "7,76 €",
+        "colisage": "",
+        "quantity": "24"
+      },
+      {
+        "designation": "PHYSIOMER S.HYPERTONIQ 135ML",
+        "cip": "3401543248053",
+        "tarif": "5,63 €",
+        "colisage": "",
+        "quantity": "48"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "2853f667-d6df-40c6-857f-4b0766b5b384",
+    "campaignId": "cadeaux-de-fins-d-annee-soguasphar-pharmacie",
+    "campaignTitle": "Cadeaux de fins d'année SOGUASPHAR / PHARMACIE",
+    "createdAt": "17/06/2026 18:09:56",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-021-dupe",
+    "pharmacyName": "DU PELICAN",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Stylos bleu marine",
+        "cip": "",
+        "tarif": "1,20 €",
+        "colisage": "500",
+        "quantity": "500"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "8a131359-ec31-4777-9cac-51c0a56edaf9",
+    "campaignId": "calendriers-2027",
+    "campaignTitle": "Calendriers 2027",
+    "createdAt": "17/06/2026 18:12:27",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-021-dupe",
+    "pharmacyName": "DU PELICAN",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Calendrier 42x30cm Souple",
+        "cip": "",
+        "tarif": "0,49 €",
+        "colisage": "500",
+        "quantity": "1000"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "e1d8ea9d-5a79-488d-8b66-62670afe87be",
+    "campaignId": "brume-little-marcel",
+    "campaignTitle": "Brume Little Marcel",
+    "createdAt": "17/06/2026 18:45:36",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-028-fleu",
+    "pharmacyName": "FLEUR DE CANNE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Cherry Lip",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Coconut Cream",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Crush Me",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Milky Vanilla",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Monoi Beach",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Orange Blossom",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Sweet Candy",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Sweet Gelato",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "79317c32-8527-4114-a9c7-e7ad61b14434",
+    "campaignId": "cadeaux-de-fins-d-annee-soguasphar-pharmacie",
+    "campaignTitle": "Cadeaux de fins d'année SOGUASPHAR / PHARMACIE",
+    "createdAt": "17/06/2026 19:24:08",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-019-dugo",
+    "pharmacyName": "DU GOSIER",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Marque page",
+        "cip": "",
+        "tarif": "0,60 €",
+        "colisage": "500",
+        "quantity": "500"
+      }
+    ],
+    "notes": "Livraison et facturation souhaitées en novembre 2026"
+  },
+  {
+    "id": "e13cd9eb-ca9d-4697-b4c8-88245827d287",
+    "campaignId": "calendriers-2027",
+    "campaignTitle": "Calendriers 2027",
+    "createdAt": "10/06/2026 19:22:03",
+    "updatedAt": "17/06/2026 23:26:32",
+    "pharmacyId": "pharmacy-019-dugo",
+    "pharmacyName": "DU GOSIER",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Calendrier 43 x 33cm - Rigide",
+        "cip": "",
+        "tarif": "1,40 €",
+        "colisage": "500",
+        "quantity": "500"
+      }
+    ],
+    "notes": "Livraison souhaitée en novembre"
+  },
+  {
+    "id": "24221210-67f2-4d3d-993e-332a11594aa0",
+    "campaignId": "calendriers-2027",
+    "campaignTitle": "Calendriers 2027",
+    "createdAt": "18/06/2026 09:40:40",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-008-dela",
+    "pharmacyName": "DE LA CITÉ DES MÉTIERS",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Calendrier 43 x 33cm - Rigide",
+        "cip": "",
+        "tarif": "1,40 €",
+        "colisage": "500",
+        "quantity": "500"
+      }
+    ],
+    "notes": "Bonjour\nJe souhaiterais une quantité de 750 calendriers en tout"
+  },
+  {
+    "id": "e9367d29-61ce-4baf-b879-a3cecacb6ebb",
+    "campaignId": "cadeaux-de-fins-d-annee-soguasphar-pharmacie",
+    "campaignTitle": "Cadeaux de fins d'année SOGUASPHAR / PHARMACIE",
+    "createdAt": "18/06/2026 09:41:37",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-008-dela",
+    "pharmacyName": "DE LA CITÉ DES MÉTIERS",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Stylos bleu marine",
+        "cip": "",
+        "tarif": "1,20 €",
+        "colisage": "500",
+        "quantity": "500"
+      }
+    ],
+    "notes": "Bonjour,\n\nje souhaite 500 stylos à 1.20 l'unité , merci"
+  },
+  {
+    "id": "55afff94-8050-4b20-a8cb-64d27c518d1c",
+    "campaignId": "brume-little-marcel",
+    "campaignTitle": "Brume Little Marcel",
+    "createdAt": "18/06/2026 10:41:50",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-031-gira",
+    "pharmacyName": "GIRARD DUGAMIN",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "31464485-16bc-41c5-a605-e586182cf94b",
+    "campaignId": "operation-physiomer",
+    "campaignTitle": "Opération Physiomer",
+    "createdAt": "11/06/2026 10:50:20",
+    "updatedAt": "18/06/2026 15:04:46",
+    "pharmacyId": "pharmacy-031-gira",
+    "pharmacyName": "GIRARD DUGAMIN",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYSIOMER S.HYPERTONIQ 135ML",
+        "cip": "3401543248053",
+        "tarif": "5,63 €",
+        "colisage": "",
+        "quantity": "12"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "57738b99-3d01-49ba-9dd0-2e03a145d7af",
+    "campaignId": "brume-little-marcel",
+    "campaignTitle": "Brume Little Marcel",
+    "createdAt": "18/06/2026 11:31:49",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-022-duph",
+    "pharmacyName": "DU PHARE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Cherry Lip",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Coconut Cream",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Crush Me",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Milky Vanilla",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Monoi Beach",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Orange Blossom",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Sweet Candy",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Sweet Gelato",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "299ce5d6-479e-4d4c-ae90-7fd2b5b09515",
+    "campaignId": "cadeaux-de-fins-d-annee-soguasphar-pharmacie",
+    "campaignTitle": "Cadeaux de fins d'année SOGUASPHAR / PHARMACIE",
+    "createdAt": "19/06/2026 09:20:40",
+    "updatedAt": "19/06/2026 13:20:41",
+    "pharmacyId": "pharmacy-016-dorv",
+    "pharmacyName": "DORVILLE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Stylos bleu marine",
+        "cip": "",
+        "tarif": "1,20 €",
+        "colisage": "500",
+        "quantity": "1000"
+      },
+      {
+        "designation": "Savon végétal à l'huile d'amande bio",
+        "cip": "",
+        "tarif": "1,50 €",
+        "colisage": "300",
+        "quantity": "1200"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "d6ad2ca4-ff59-4858-ade8-0e1b14fb1d77",
+    "campaignId": "calendriers-2027",
+    "campaignTitle": "Calendriers 2027",
+    "createdAt": "19/06/2026 12:34:18",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-031-gira",
+    "pharmacyName": "GIRARD DUGAMIN",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Calendrier 43 x 33cm - Rigide",
+        "cip": "",
+        "tarif": "1,40 €",
+        "colisage": "500",
+        "quantity": "500"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "28e0bdb2-fcb6-4ae6-9331-4b80a210637b",
+    "campaignId": "cadeaux-de-fins-d-annee-soguasphar-pharmacie",
+    "campaignTitle": "Cadeaux de fins d'année SOGUASPHAR / PHARMACIE",
+    "createdAt": "19/06/2026 12:37:13",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-031-gira",
+    "pharmacyName": "GIRARD DUGAMIN",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Stylos bleu marine",
+        "cip": "",
+        "tarif": "1,20 €",
+        "colisage": "500",
+        "quantity": "500"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "649acf17-c824-4850-9c3c-f6280b1c3b43",
+    "campaignId": "calendriers-2027",
+    "campaignTitle": "Calendriers 2027",
+    "createdAt": "20/06/2026 09:49:43",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-009-dela",
+    "pharmacyName": "DE LA MELISSE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Calendrier 43 x 33cm - Rigide",
+        "cip": "",
+        "tarif": "1,40 €",
+        "colisage": "500",
+        "quantity": "1500"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "8c1b9a78-5645-4348-851d-efad0bdd68e8",
+    "campaignId": "cadeaux-de-fins-d-annee-soguasphar-pharmacie",
+    "campaignTitle": "Cadeaux de fins d'année SOGUASPHAR / PHARMACIE",
+    "createdAt": "20/06/2026 10:13:52",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-009-dela",
+    "pharmacyName": "DE LA MELISSE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Marque page",
+        "cip": "",
+        "tarif": "0,60 €",
+        "colisage": "500",
+        "quantity": "500"
+      },
+      {
+        "designation": "Stylos bleu marine",
+        "cip": "",
+        "tarif": "1,20 €",
+        "colisage": "500",
+        "quantity": "500"
+      },
+      {
+        "designation": "Savon végétal à l'huile d'amande bio",
+        "cip": "",
+        "tarif": "1,50 €",
+        "colisage": "300",
+        "quantity": "300"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "b81f07cc-6272-4859-9356-c884efec67bf",
+    "campaignId": "operation-physiomer",
+    "campaignTitle": "Opération Physiomer",
+    "createdAt": "22/06/2026 07:32:10",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-035-laro",
+    "pharmacyName": "LA ROSIERE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYSIOMER JET DYNAMIQ 2X135ML",
+        "cip": "3401576080644",
+        "tarif": "7,76 €",
+        "colisage": "",
+        "quantity": "12"
+      },
+      {
+        "designation": "PHYSIOMER S.HYPERTONIQ 135ML",
+        "cip": "3401543248053",
+        "tarif": "5,63 €",
+        "colisage": "",
+        "quantity": "12"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "bf2cbb7e-fcea-4a13-b07e-d0fd2c67e485",
+    "campaignId": "calendriers-2027",
+    "campaignTitle": "Calendriers 2027",
+    "createdAt": "22/06/2026 07:32:30",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-035-laro",
+    "pharmacyName": "LA ROSIERE",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "e6ea6e68-6a37-4b65-8947-2af1e92b9888",
+    "campaignId": "cadeaux-de-fins-d-annee-soguasphar-pharmacie",
+    "campaignTitle": "Cadeaux de fins d'année SOGUASPHAR / PHARMACIE",
+    "createdAt": "22/06/2026 07:32:53",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-035-laro",
+    "pharmacyName": "LA ROSIERE",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "a346a3d7-2d89-476c-9dc7-cd4d48923eed",
+    "campaignId": "operation-physiomer",
+    "campaignTitle": "Opération Physiomer",
+    "createdAt": "22/06/2026 16:39:31",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-004-cape",
+    "pharmacyName": "CAPET",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYSIOMER JET DYNAMIQ 2X135ML",
+        "cip": "3401576080644",
+        "tarif": "7,76 €",
+        "colisage": "",
+        "quantity": "12"
+      },
+      {
+        "designation": "PHYSIOMER S.HYPERTONIQ 135ML",
+        "cip": "3401543248053",
+        "tarif": "5,63 €",
+        "colisage": "",
+        "quantity": "12"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "ee2caa45-b92a-4dad-a50a-7027d760ba24",
+    "campaignId": "calendriers-2027",
+    "campaignTitle": "Calendriers 2027",
+    "createdAt": "22/06/2026 16:48:02",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-015-deva",
+    "pharmacyName": "DEVAUX Sylvie",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Calendrier 43 x 33cm - Rigide",
+        "cip": "",
+        "tarif": "1,40 €",
+        "colisage": "500",
+        "quantity": "1500"
+      }
+    ],
+    "notes": "NOVEMBRE 2026"
+  },
+  {
+    "id": "6742eccf-3c67-416a-a6c0-bec503a29107",
+    "campaignId": "cadeaux-de-fins-d-annee-soguasphar-pharmacie",
+    "campaignTitle": "Cadeaux de fins d'année SOGUASPHAR / PHARMACIE",
+    "createdAt": "22/06/2026 16:49:52",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-015-deva",
+    "pharmacyName": "DEVAUX Sylvie",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Marque page",
+        "cip": "",
+        "tarif": "0,60 €",
+        "colisage": "500",
+        "quantity": "500"
+      },
+      {
+        "designation": "Stylos bleu marine",
+        "cip": "",
+        "tarif": "1,20 €",
+        "colisage": "500",
+        "quantity": "1000"
+      },
+      {
+        "designation": "Savon végétal à l'huile d'amande bio",
+        "cip": "",
+        "tarif": "1,50 €",
+        "colisage": "300",
+        "quantity": "1500"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "2de4c1f6-b342-41e6-beb1-2bb5ff4a7530",
+    "campaignId": "brume-little-marcel",
+    "campaignTitle": "Brume Little Marcel",
+    "createdAt": "24/06/2026 13:46:45",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-005-comb",
+    "pharmacyName": "COMBE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Cherry Lip",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "6"
+      },
+      {
+        "designation": "Coconut Cream",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "6"
+      },
+      {
+        "designation": "Crush Me",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "6"
+      },
+      {
+        "designation": "Milky Vanilla",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "6"
+      },
+      {
+        "designation": "Monoi Beach",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "6"
+      },
+      {
+        "designation": "Orange Blossom",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "6"
+      },
+      {
+        "designation": "Sweet Candy",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "6"
+      },
+      {
+        "designation": "Sweet Gelato",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "6"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "cc0f461f-bef4-4431-9a7c-e79e330dc4f2",
+    "campaignId": "brume-little-marcel",
+    "campaignTitle": "Brume Little Marcel",
+    "createdAt": "24/06/2026 14:27:50",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-015-deva",
+    "pharmacyName": "DEVAUX Sylvie",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "f83f609a-2ab7-4f29-8853-8178b5960e7d",
+    "campaignId": "operation-physiomer",
+    "campaignTitle": "Opération Physiomer",
+    "createdAt": "24/06/2026 14:28:03",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-015-deva",
+    "pharmacyName": "DEVAUX Sylvie",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "52fd7ae8-06ac-41d3-a0a8-84fb680820f8",
+    "campaignId": "brume-little-marcel",
+    "campaignTitle": "Brume Little Marcel",
+    "createdAt": "24/06/2026 14:49:27",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-004-cape",
+    "pharmacyName": "CAPET",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "e7ecbe88-1649-454c-8155-0e520396538e",
+    "campaignId": "brume-little-marcel",
+    "campaignTitle": "Brume Little Marcel",
+    "createdAt": "24/06/2026 15:04:53",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-043-sami",
+    "pharmacyName": "SAMINADIN",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Crush Me",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Monoi Beach",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Sweet Candy",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "9534bcf9-114a-4be0-8afc-ca9ccb39a6d6",
+    "campaignId": "brume-little-marcel",
+    "campaignTitle": "Brume Little Marcel",
+    "createdAt": "24/06/2026 16:02:24",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-026-dust",
+    "pharmacyName": "DU STADE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Cherry Lip",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Coconut Cream",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Crush Me",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Milky Vanilla",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Monoi Beach",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Orange Blossom",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Sweet Candy",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Sweet Gelato",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      }
+    ],
+    "notes": "pas de livraison avant le mois d'août"
+  },
+  {
+    "id": "09d0529d-169b-47a3-901f-a45c17e33474",
+    "campaignId": "operation-physiomer",
+    "campaignTitle": "Opération Physiomer",
+    "createdAt": "24/06/2026 16:02:41",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-026-dust",
+    "pharmacyName": "DU STADE",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "d4fec481-cfee-4775-89d0-b8c0a0a07cec",
+    "campaignId": "calendriers-2027",
+    "campaignTitle": "Calendriers 2027",
+    "createdAt": "24/06/2026 18:28:59",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-026-dust",
+    "pharmacyName": "DU STADE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Calendrier 42x30cm Souple",
+        "cip": "",
+        "tarif": "0,49 €",
+        "colisage": "500",
+        "quantity": "1000"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "90d80e2d-b3a6-4572-900f-dd7070420aa9",
+    "campaignId": "operation-physiomer",
+    "campaignTitle": "Opération Physiomer",
+    "createdAt": "22/06/2026 14:00:03",
+    "updatedAt": "22/06/2026 18:00:26",
+    "pharmacyId": "pharmacy-024-duse",
+    "pharmacyName": "DU SEMAPHORE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYSIOMER JET DYNAMIQ 2X135ML",
+        "cip": "3401576080644",
+        "tarif": "7,76 €",
+        "colisage": "",
+        "quantity": "48"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "bc00c865-6f50-4aea-bfcb-7e7defb6cd0b",
+    "campaignId": "cadeaux-de-fins-d-annee-soguasphar-pharmacie",
+    "campaignTitle": "Cadeaux de fins d'année SOGUASPHAR / PHARMACIE",
+    "createdAt": "22/06/2026 14:00:36",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-024-duse",
+    "pharmacyName": "DU SEMAPHORE",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "8b8b57da-2f9a-4feb-a2f9-b3e326cc22ce",
+    "campaignId": "brume-little-marcel",
+    "campaignTitle": "Brume Little Marcel",
+    "createdAt": "22/06/2026 14:00:45",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-024-duse",
+    "pharmacyName": "DU SEMAPHORE",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "99e7b8f5-f977-4084-81f6-7e709dc02bf0",
+    "campaignId": "calendriers-2027",
+    "campaignTitle": "Calendriers 2027",
+    "createdAt": "22/06/2026 16:38:15",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-034-lali",
+    "pharmacyName": "LA LICORNE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Calendrier 43 x 33cm - Rigide",
+        "cip": "",
+        "tarif": "1,40 €",
+        "colisage": "500",
+        "quantity": "1000"
+      }
+    ],
+    "notes": "MERCI DE LIVRER DEBUT DECEMBRE 2026"
+  },
+  {
+    "id": "1e34a34f-3f96-40cb-878f-9d13e78a38c4",
+    "campaignId": "cadeaux-de-fins-d-annee-soguasphar-pharmacie",
+    "campaignTitle": "Cadeaux de fins d'année SOGUASPHAR / PHARMACIE",
+    "createdAt": "22/06/2026 16:40:12",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-034-lali",
+    "pharmacyName": "LA LICORNE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Stylos bleu marine",
+        "cip": "",
+        "tarif": "1,20 €",
+        "colisage": "500",
+        "quantity": "500"
+      },
+      {
+        "designation": "Savon végétal à l'huile d'amande bio",
+        "cip": "",
+        "tarif": "1,50 €",
+        "colisage": "300",
+        "quantity": "300"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "e03beb60-e09e-418d-aca2-43a1187d4b86",
+    "campaignId": "brume-little-marcel",
+    "campaignTitle": "Brume Little Marcel",
+    "createdAt": "23/06/2026 15:27:47",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-036-mang",
+    "pharmacyName": "MANGOU",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "da6efd59-088b-4b74-87ad-0fd715b1eb80",
+    "campaignId": "operation-physiomer",
+    "campaignTitle": "Opération Physiomer",
+    "createdAt": "23/06/2026 15:29:07",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-036-mang",
+    "pharmacyName": "MANGOU",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYSIOMER JET DYNAMIQ 2X135ML",
+        "cip": "3401576080644",
+        "tarif": "7,76 €",
+        "colisage": "",
+        "quantity": "6"
+      },
+      {
+        "designation": "PHYSIOMER S.HYPERTONIQ 135ML",
+        "cip": "3401543248053",
+        "tarif": "5,63 €",
+        "colisage": "",
+        "quantity": "12"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "89599979-c055-4a3a-ba3c-fd39f517be94",
+    "campaignId": "cadeaux-de-fins-d-annee-soguasphar-pharmacie",
+    "campaignTitle": "Cadeaux de fins d'année SOGUASPHAR / PHARMACIE",
+    "createdAt": "23/06/2026 15:34:02",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-036-mang",
+    "pharmacyName": "MANGOU",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "9c6f4e36-8bfe-462c-ae95-29ca050f34e5",
+    "campaignId": "calendriers-2027",
+    "campaignTitle": "Calendriers 2027",
+    "createdAt": "23/06/2026 15:30:30",
+    "updatedAt": "23/06/2026 19:33:30",
+    "pharmacyId": "pharmacy-036-mang",
+    "pharmacyName": "MANGOU",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Calendrier 42x30cm Souple",
+        "cip": "",
+        "tarif": "0,49 €",
+        "colisage": "500",
+        "quantity": "500"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "2af331d9-a771-4af6-b400-adf0edb85b3f",
+    "campaignId": "brume-little-marcel",
+    "campaignTitle": "Brume Little Marcel",
+    "createdAt": "24/06/2026 09:47:49",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-013-deri",
+    "pharmacyName": "DE RIGAUD",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "36b26800-a8f3-412f-bfba-05480b4381e7",
+    "campaignId": "operation-physiomer",
+    "campaignTitle": "Opération Physiomer",
+    "createdAt": "24/06/2026 09:48:53",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-013-deri",
+    "pharmacyName": "DE RIGAUD",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "93e72594-1798-4bc3-a0b8-94816f418f8b",
+    "campaignId": "brume-little-marcel",
+    "campaignTitle": "Brume Little Marcel",
+    "createdAt": "24/06/2026 11:42:03",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-038-mont",
+    "pharmacyName": "MONTOUT",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "b88fe145-b736-4719-ab06-2f762bf927ec",
+    "campaignId": "calendriers-2027",
+    "campaignTitle": "Calendriers 2027",
+    "createdAt": "24/06/2026 11:42:23",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-038-mont",
+    "pharmacyName": "MONTOUT",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "f7ddc8e8-5a2d-421e-a3de-0d8eb3672c45",
+    "campaignId": "operation-physiomer",
+    "campaignTitle": "Opération Physiomer",
+    "createdAt": "24/06/2026 11:45:15",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-038-mont",
+    "pharmacyName": "MONTOUT",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYSIOMER JET DYNAMIQ 2X135ML",
+        "cip": "3401576080644",
+        "tarif": "7,76 €",
+        "colisage": "",
+        "quantity": "10"
+      },
+      {
+        "designation": "PHYSIOMER S.HYPERTONIQ 135ML",
+        "cip": "3401543248053",
+        "tarif": "5,63 €",
+        "colisage": "",
+        "quantity": "10"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "87bd7f98-e42d-4c26-81a2-9d0eda9a505b",
+    "campaignId": "cadeaux-de-fins-d-annee-soguasphar-pharmacie",
+    "campaignTitle": "Cadeaux de fins d'année SOGUASPHAR / PHARMACIE",
+    "createdAt": "24/06/2026 16:12:29",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-001-azar",
+    "pharmacyName": "AZAR",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "a23671f6-a415-4eb9-b3e0-f62a7b5b509e",
+    "campaignId": "calendriers-2027",
+    "campaignTitle": "Calendriers 2027",
+    "createdAt": "24/06/2026 16:12:48",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-001-azar",
+    "pharmacyName": "AZAR",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "eaf13a45-d12b-4929-a1d6-3945ae874a13",
+    "campaignId": "brume-little-marcel",
+    "campaignTitle": "Brume Little Marcel",
+    "createdAt": "24/06/2026 16:13:02",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-001-azar",
+    "pharmacyName": "AZAR",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "f9ed235e-f635-46d3-a41d-4b000c63d529",
+    "campaignId": "cadeaux-de-fins-d-annee-soguasphar-pharmacie",
+    "campaignTitle": "Cadeaux de fins d'année SOGUASPHAR / PHARMACIE",
+    "createdAt": "25/06/2026 00:17:57",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-005-comb",
+    "pharmacyName": "COMBE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Stylos bleu marine",
+        "cip": "",
+        "tarif": "1,20 €",
+        "colisage": "500",
+        "quantity": "500"
+      },
+      {
+        "designation": "Savon végétal à l'huile d'amande bio",
+        "cip": "",
+        "tarif": "1,50 €",
+        "colisage": "300",
+        "quantity": "300"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "22338cac-f5c6-4844-9803-7488e66140fd",
+    "campaignId": "calendriers-2027",
+    "campaignTitle": "Calendriers 2027",
+    "createdAt": "25/06/2026 00:26:22",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-005-comb",
+    "pharmacyName": "COMBE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Calendrier 42x30cm Souple",
+        "cip": "",
+        "tarif": "0,49 €",
+        "colisage": "500",
+        "quantity": "1500"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "9f325852-e5d7-46fa-994a-f0218652ab43",
+    "campaignId": "brume-little-marcel",
+    "campaignTitle": "Brume Little Marcel",
+    "createdAt": "25/06/2026 09:02:22",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-009-dela",
+    "pharmacyName": "DE LA MELISSE",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "e17ad0a3-abb0-43ec-99b4-ce70e6f1bdbd",
+    "campaignId": "operation-physiomer",
+    "campaignTitle": "Opération Physiomer",
+    "createdAt": "25/06/2026 09:03:33",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-009-dela",
+    "pharmacyName": "DE LA MELISSE",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "97a8e9c1-cf7b-41e7-951b-4cca23af1ccf",
+    "campaignId": "brume-little-marcel",
+    "campaignTitle": "Brume Little Marcel",
+    "createdAt": "25/06/2026 09:40:14",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-041-rose",
+    "pharmacyName": "ROSE DES VENTS",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "3f801cd5-37b3-43e7-af6f-6aa7b8b75215",
+    "campaignId": "operation-physiomer",
+    "campaignTitle": "Opération Physiomer",
+    "createdAt": "25/06/2026 09:41:29",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-041-rose",
+    "pharmacyName": "ROSE DES VENTS",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "438f5d55-6589-4564-8375-721e50fcb240",
+    "campaignId": "brume-little-marcel",
+    "campaignTitle": "Brume Little Marcel",
+    "createdAt": "25/06/2026 09:50:29",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-039-port",
+    "pharmacyName": "PORT LOUIS",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "21d04461-8ff9-47de-ac3b-70ad7cdac8e0",
+    "campaignId": "operation-physiomer",
+    "campaignTitle": "Opération Physiomer",
+    "createdAt": "25/06/2026 12:14:31",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-039-port",
+    "pharmacyName": "PORT LOUIS",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": "Bonjour, \n\nLe lot de 2 est-il délotable ?"
+  },
+  {
+    "id": "07c9ffc3-022c-46e9-a7c3-e444b34de159",
+    "campaignId": "calendriers-2027",
+    "campaignTitle": "Calendriers 2027",
+    "createdAt": "26/06/2026 22:03:58",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-007-dedo",
+    "pharmacyName": "DE DOUVILLE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Calendrier 42x30cm Souple",
+        "cip": "",
+        "tarif": "0,49 €",
+        "colisage": "500",
+        "quantity": "500"
+      },
+      {
+        "designation": "Calendrier 43 x 33cm - Rigide",
+        "cip": "",
+        "tarif": "1,40 €",
+        "colisage": "500",
+        "quantity": "500"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "e9ceb008-e3c7-4d42-a545-d7a025a2d011",
+    "campaignId": "operation-physiomer",
+    "campaignTitle": "Opération Physiomer",
+    "createdAt": "26/06/2026 22:04:45",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-007-dedo",
+    "pharmacyName": "DE DOUVILLE",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "3ed22202-5bcd-4507-be3e-4e8404540327",
+    "campaignId": "brume-little-marcel",
+    "campaignTitle": "Brume Little Marcel",
+    "createdAt": "26/06/2026 22:05:09",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-007-dedo",
+    "pharmacyName": "DE DOUVILLE",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "a80fb29c-5fff-4227-98aa-6a5dc229921b",
+    "campaignId": "cadeaux-de-fins-d-annee-soguasphar-pharmacie",
+    "campaignTitle": "Cadeaux de fins d'année SOGUASPHAR / PHARMACIE",
+    "createdAt": "29/06/2026 22:21:22",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-025-duso",
+    "pharmacyName": "DU SOLEIL",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Marque page",
+        "cip": "",
+        "tarif": "0,60 €",
+        "colisage": "500",
+        "quantity": "500"
+      },
+      {
+        "designation": "Savon végétal à l'huile d'amande bio",
+        "cip": "",
+        "tarif": "1,50 €",
+        "colisage": "300",
+        "quantity": "300"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "07892a91-2301-4c0c-98a5-4392f8d323c0",
+    "campaignId": "operation-physiomer",
+    "campaignTitle": "Opération Physiomer",
+    "createdAt": "29/06/2026 22:23:19",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-025-duso",
+    "pharmacyName": "DU SOLEIL",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYSIOMER JET DYNAMIQ 2X135ML",
+        "cip": "3401576080644",
+        "tarif": "7,76 €",
+        "colisage": "",
+        "quantity": "12"
+      },
+      {
+        "designation": "PHYSIOMER S.HYPERTONIQ 135ML",
+        "cip": "3401543248053",
+        "tarif": "5,63 €",
+        "colisage": "",
+        "quantity": "24"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "584d2913-e00e-4d2d-ab55-2049c3205ae3",
+    "campaignId": "operation-physiomer",
+    "campaignTitle": "Opération Physiomer",
+    "createdAt": "30/06/2026 11:46:23",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-033-issa",
+    "pharmacyName": "ISSA",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYSIOMER JET DYNAMIQ 2X135ML",
+        "cip": "3401576080644",
+        "tarif": "7,76 €",
+        "colisage": "",
+        "quantity": "6"
+      },
+      {
+        "designation": "PHYSIOMER S.HYPERTONIQ 135ML",
+        "cip": "3401543248053",
+        "tarif": "5,63 €",
+        "colisage": "",
+        "quantity": "12"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "1909d84a-c0a8-4470-acef-6e87e8035428",
+    "campaignId": "calendriers-2027",
+    "campaignTitle": "Calendriers 2027",
+    "createdAt": "30/06/2026 11:47:55",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-033-issa",
+    "pharmacyName": "ISSA",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Calendrier 42x30cm Souple",
+        "cip": "",
+        "tarif": "0,49 €",
+        "colisage": "500",
+        "quantity": "500"
+      },
+      {
+        "designation": "Calendrier 43 x 33cm - Rigide",
+        "cip": "",
+        "tarif": "1,40 €",
+        "colisage": "500",
+        "quantity": "500"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "1f65c3bb-b45a-4221-a432-8fd0c4267346",
+    "campaignId": "operation-physiomer",
+    "campaignTitle": "Opération Physiomer",
+    "createdAt": "30/06/2026 12:23:29",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-029-fouc",
+    "pharmacyName": "FOUCAN",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYSIOMER JET DYNAMIQ 2X135ML",
+        "cip": "3401576080644",
+        "tarif": "7,76 €",
+        "colisage": "",
+        "quantity": "6"
+      },
+      {
+        "designation": "PHYSIOMER S.HYPERTONIQ 135ML",
+        "cip": "3401543248053",
+        "tarif": "5,63 €",
+        "colisage": "",
+        "quantity": "6"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "f888e379-1ac6-46a4-abe1-05dfce550621",
+    "campaignId": "operation-physiomer",
+    "campaignTitle": "Opération Physiomer",
+    "createdAt": "30/06/2026 13:08:29",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-022-duph",
+    "pharmacyName": "DU PHARE",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "85399c83-af05-4e92-a725-385ab35abaa0",
+    "campaignId": "operation-physiomer",
+    "campaignTitle": "Opération Physiomer",
+    "createdAt": "30/06/2026 13:21:16",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-021-dupe",
+    "pharmacyName": "DU PELICAN",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "d97bbea7-8979-42ff-885a-5298f557d6d5",
+    "campaignId": "cadeaux-de-fins-d-annee-soguasphar-pharmacie",
+    "campaignTitle": "Cadeaux de fins d'année SOGUASPHAR / PHARMACIE",
+    "createdAt": "30/06/2026 14:04:24",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-033-issa",
+    "pharmacyName": "ISSA",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Stylos bleu marine",
+        "cip": "",
+        "tarif": "1,20 €",
+        "colisage": "500",
+        "quantity": "500"
+      },
+      {
+        "designation": "Savon végétal à l'huile d'amande bio",
+        "cip": "",
+        "tarif": "1,50 €",
+        "colisage": "300",
+        "quantity": "300"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "fdb939a7-5074-424e-a8db-fe955630bb15",
+    "campaignId": "operation-physiomer",
+    "campaignTitle": "Opération Physiomer",
+    "createdAt": "30/06/2026 15:34:20",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-011-dela",
+    "pharmacyName": "DE LA POINTE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYSIOMER JET DYNAMIQ 2X135ML",
+        "cip": "3401576080644",
+        "tarif": "7,76 €",
+        "colisage": "",
+        "quantity": "24"
+      },
+      {
+        "designation": "PHYSIOMER S.HYPERTONIQ 135ML",
+        "cip": "3401543248053",
+        "tarif": "5,63 €",
+        "colisage": "",
+        "quantity": "24"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "68dcaadb-b29f-451f-9413-4af5e757e05c",
+    "campaignId": "cadeaux-de-fins-d-annee-soguasphar-pharmacie",
+    "campaignTitle": "Cadeaux de fins d'année SOGUASPHAR / PHARMACIE",
+    "createdAt": "30/06/2026 15:35:12",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-011-dela",
+    "pharmacyName": "DE LA POINTE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Stylos bleu marine",
+        "cip": "",
+        "tarif": "1,20 €",
+        "colisage": "500",
+        "quantity": "500"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "ae069623-a94b-4206-beb8-6bf2fa4eea7a",
+    "campaignId": "calendriers-2027",
+    "campaignTitle": "Calendriers 2027",
+    "createdAt": "30/06/2026 15:36:03",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-011-dela",
+    "pharmacyName": "DE LA POINTE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Calendrier 42x30cm Souple",
+        "cip": "",
+        "tarif": "0,49 €",
+        "colisage": "500",
+        "quantity": "500"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "001e31d0-824f-4781-8e37-256eb6a50e7b",
+    "campaignId": "calendriers-2027",
+    "campaignTitle": "Calendriers 2027",
+    "createdAt": "30/06/2026 16:17:52",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-037-medi",
+    "pharmacyName": "MEDICIS",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Calendrier 43 x 33cm - Rigide",
+        "cip": "",
+        "tarif": "1,40 €",
+        "colisage": "500",
+        "quantity": "1000"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "dc0e2a59-a10f-415b-9271-696237dacd64",
+    "campaignId": "cadeaux-de-fins-d-annee-soguasphar-pharmacie",
+    "campaignTitle": "Cadeaux de fins d'année SOGUASPHAR / PHARMACIE",
+    "createdAt": "30/06/2026 16:18:39",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-037-medi",
+    "pharmacyName": "MEDICIS",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Savon végétal à l'huile d'amande bio",
+        "cip": "",
+        "tarif": "1,50 €",
+        "colisage": "300",
+        "quantity": "300"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "1a2d3482-49fe-4b2e-ad9e-85f46e0773e6",
+    "campaignId": "operation-physiomer",
+    "campaignTitle": "Opération Physiomer",
+    "createdAt": "30/06/2026 16:23:10",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-027-ebou",
+    "pharmacyName": "EBOUE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYSIOMER JET DYNAMIQ 2X135ML",
+        "cip": "3401576080644",
+        "tarif": "7,76 €",
+        "colisage": "",
+        "quantity": "12"
+      },
+      {
+        "designation": "PHYSIOMER S.HYPERTONIQ 135ML",
+        "cip": "3401543248053",
+        "tarif": "5,63 €",
+        "colisage": "",
+        "quantity": "12"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "8f4f1660-e459-44e2-91f6-e6cee2bb8835",
+    "campaignId": "cadeaux-de-fins-d-annee-soguasphar-pharmacie",
+    "campaignTitle": "Cadeaux de fins d'année SOGUASPHAR / PHARMACIE",
+    "createdAt": "30/06/2026 16:28:14",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-027-ebou",
+    "pharmacyName": "EBOUE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Stylos bleu marine",
+        "cip": "",
+        "tarif": "1,20 €",
+        "colisage": "500",
+        "quantity": "500"
+      },
+      {
+        "designation": "Savon végétal à l'huile d'amande bio",
+        "cip": "",
+        "tarif": "1,50 €",
+        "colisage": "300",
+        "quantity": "300"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "ccff0405-5524-4baa-9152-bba4a53a83f2",
+    "campaignId": "calendriers-2027",
+    "campaignTitle": "Calendriers 2027",
+    "createdAt": "30/06/2026 16:29:08",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-027-ebou",
+    "pharmacyName": "EBOUE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Calendrier 43 x 33cm - Rigide",
+        "cip": "",
+        "tarif": "1,40 €",
+        "colisage": "500",
+        "quantity": "500"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "4a0d2f46-af19-453b-a371-25e6c84416b9",
+    "campaignId": "operation-physiomer",
+    "campaignTitle": "Opération Physiomer",
+    "createdAt": "30/06/2026 17:34:48",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-032-heli",
+    "pharmacyName": "HELIOS",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYSIOMER JET DYNAMIQ 2X135ML",
+        "cip": "3401576080644",
+        "tarif": "7,76 €",
+        "colisage": "",
+        "quantity": "12"
+      },
+      {
+        "designation": "PHYSIOMER S.HYPERTONIQ 135ML",
+        "cip": "3401543248053",
+        "tarif": "5,63 €",
+        "colisage": "",
+        "quantity": "12"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "bda86ccc-76e3-4d9e-b8cb-564cfc386d99",
+    "campaignId": "operation-physiomer",
+    "campaignTitle": "Opération Physiomer",
+    "createdAt": "30/06/2026 17:41:47",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-043-sami",
+    "pharmacyName": "SAMINADIN",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYSIOMER JET DYNAMIQ 2X135ML",
+        "cip": "3401576080644",
+        "tarif": "7,76 €",
+        "colisage": "",
+        "quantity": "6"
+      },
+      {
+        "designation": "PHYSIOMER S.HYPERTONIQ 135ML",
+        "cip": "3401543248053",
+        "tarif": "5,63 €",
+        "colisage": "",
+        "quantity": "12"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "c1e7551f-4411-44da-8a76-1d57ec9bc2a7",
+    "campaignId": "operation-physiomer",
+    "campaignTitle": "Opération Physiomer",
+    "createdAt": "30/06/2026 17:50:37",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-001-azar",
+    "pharmacyName": "AZAR",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYSIOMER JET DYNAMIQ 2X135ML",
+        "cip": "3401576080644",
+        "tarif": "7,76 €",
+        "colisage": "",
+        "quantity": "12"
+      },
+      {
+        "designation": "PHYSIOMER S.HYPERTONIQ 135ML",
+        "cip": "3401543248053",
+        "tarif": "5,63 €",
+        "colisage": "",
+        "quantity": "12"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "a9f3730f-86fa-4084-8ce3-a5eb7b5acead",
+    "campaignId": "operation-physiomer",
+    "campaignTitle": "Opération Physiomer",
+    "createdAt": "30/06/2026 17:52:04",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-030-gamb",
+    "pharmacyName": "GAMBETTA",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "4026e138-0ea7-46e2-8a94-6fee51b353b3",
+    "campaignId": "precommande-lisopaine",
+    "campaignTitle": "Précommande Lisopaine",
+    "createdAt": "01/07/2026 12:09:27",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-045-phar",
+    "pharmacyName": "PHARMACIE TEST",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "3d97d810-2039-49b7-bd12-ab68eb4446cd",
+    "campaignId": "operation-physiomer",
+    "campaignTitle": "Opération Physiomer",
+    "createdAt": "01/07/2026 12:29:17",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-018-duch",
+    "pharmacyName": "DU CHAMP D’ARBAUD",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "f37b2c77-b37c-4f73-b5e8-a00f39ba3f56",
+    "campaignId": "cadeaux-de-fins-d-annee-soguasphar-pharmacie",
+    "campaignTitle": "Cadeaux de fins d'année SOGUASPHAR / PHARMACIE",
+    "createdAt": "01/07/2026 12:32:08",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-018-duch",
+    "pharmacyName": "DU CHAMP D’ARBAUD",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Marque page",
+        "cip": "",
+        "tarif": "0,60 €",
+        "colisage": "500",
+        "quantity": "500"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "53c0562a-1255-4415-a855-9a02a45a8612",
+    "campaignId": "operation-physiomer",
+    "campaignTitle": "Opération Physiomer",
+    "createdAt": "01/07/2026 12:47:33",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-005-comb",
+    "pharmacyName": "COMBE",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "e2aff783-5460-4b6a-913d-23f50c27fcea",
+    "campaignId": "precommande-lisopaine",
+    "campaignTitle": "Précommande Lisopaine",
+    "createdAt": "01/07/2026 14:15:59",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-032-heli",
+    "pharmacyName": "HELIOS",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "LYSOPAINE CETYL MENTHE 36CP FR",
+        "cip": "3400939035765",
+        "tarif": "3,89 €",
+        "colisage": "",
+        "quantity": "72"
+      },
+      {
+        "designation": "LYSOPAINE CETYL MIEL CITRON 36CP FR",
+        "cip": "3400928026729",
+        "tarif": "3,23 €",
+        "colisage": "",
+        "quantity": "72"
+      },
+      {
+        "designation": "LYSOPAINE CETYL CITRON GINGEMBRE 36CP FR",
+        "cip": "3400928026439",
+        "tarif": "3,25 €",
+        "colisage": "",
+        "quantity": "48"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "4508d0b5-842a-4325-99fd-7e8125ccb6ea",
+    "campaignId": "precommande-lisopaine",
+    "campaignTitle": "Précommande Lisopaine",
+    "createdAt": "01/07/2026 16:10:46",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-013-deri",
+    "pharmacyName": "DE RIGAUD",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "LYSOPAINE CETYL MENTHE 36CP FR",
+        "cip": "3400939035765",
+        "tarif": "3,89 €",
+        "colisage": "",
+        "quantity": "48"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "49366c0a-6ddb-4037-94fd-62d284f0cd5f",
+    "campaignId": "precommande-operation-phytoxil",
+    "campaignTitle": "Précommande Opération Phytoxil",
+    "createdAt": "01/07/2026 16:11:55",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-013-deri",
+    "pharmacyName": "DE RIGAUD",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYTOXIL® TOUX SANS SUCRE Sirop, flacon 100 ml",
+        "cip": "3664798079326",
+        "tarif": "3,60 €",
+        "colisage": "",
+        "quantity": "48"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "253f5cc7-a48d-4e52-84d2-eafb1d5aa047",
+    "campaignId": "precommande-lisopaine",
+    "campaignTitle": "Précommande Lisopaine",
+    "createdAt": "01/07/2026 16:30:04",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-044-vila",
+    "pharmacyName": "VILA",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "LYSOPAINE CETYL MENTHE 36CP FR",
+        "cip": "3400939035765",
+        "tarif": "3,89 €",
+        "colisage": "",
+        "quantity": "72"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "20d20e27-0826-46b7-81eb-6efb43ad5a6f",
+    "campaignId": "precommande-operation-phytoxil",
+    "campaignTitle": "Précommande Opération Phytoxil",
+    "createdAt": "01/07/2026 16:35:29",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-044-vila",
+    "pharmacyName": "VILA",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYTOXIL® TOUX SANS SUCRE Sirop, flacon 100 ml",
+        "cip": "3664798079326",
+        "tarif": "3,60 €",
+        "colisage": "",
+        "quantity": "132"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "6e9d98de-257b-443b-8984-7300dabb277e",
+    "campaignId": "precommande-lisopaine",
+    "campaignTitle": "Précommande Lisopaine",
+    "createdAt": "02/07/2026 09:47:49",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-018-duch",
+    "pharmacyName": "DU CHAMP D’ARBAUD",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "LYSOPAINE CETYL MENTHE 36CP FR",
+        "cip": "3400939035765",
+        "tarif": "3,89 €",
+        "colisage": "",
+        "quantity": "36"
+      },
+      {
+        "designation": "LYSOPAINE CETYL MIEL CITRON 36CP FR",
+        "cip": "3400928026729",
+        "tarif": "3,23 €",
+        "colisage": "",
+        "quantity": "18"
+      },
+      {
+        "designation": "LYSOPAINE CETYL CITRON GINGEMBRE 36CP FR",
+        "cip": "3400928026439",
+        "tarif": "3,25 €",
+        "colisage": "",
+        "quantity": "18"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "2830dd16-af36-4ea2-9c89-beda38a0efa1",
+    "campaignId": "precommande-lisopaine",
+    "campaignTitle": "Précommande Lisopaine",
+    "createdAt": "02/07/2026 12:23:46",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-003-bert",
+    "pharmacyName": "BERTHELOT F",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "LYSOPAINE CETYL MENTHE 36CP FR",
+        "cip": "3400939035765",
+        "tarif": "3,89 €",
+        "colisage": "",
+        "quantity": "12"
+      },
+      {
+        "designation": "LYSOPAINE CETYL MIEL CITRON 36CP FR",
+        "cip": "3400928026729",
+        "tarif": "3,23 €",
+        "colisage": "",
+        "quantity": "12"
+      },
+      {
+        "designation": "LYSOPAINE CETYL CITRON GINGEMBRE 36CP FR",
+        "cip": "3400928026439",
+        "tarif": "3,25 €",
+        "colisage": "",
+        "quantity": "12"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "02595350-fdca-4e2a-9e33-04c604919ed9",
+    "campaignId": "precommande-operation-phytoxil",
+    "campaignTitle": "Précommande Opération Phytoxil",
+    "createdAt": "02/07/2026 12:25:08",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-003-bert",
+    "pharmacyName": "BERTHELOT F",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYTOXIL® TOUX SANS SUCRE Sirop, flacon 100 ml",
+        "cip": "3664798079326",
+        "tarif": "3,60 €",
+        "colisage": "",
+        "quantity": "12"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "d023bbac-2e04-4559-8c90-4f0b66417713",
+    "campaignId": "precommande-lisopaine",
+    "campaignTitle": "Précommande Lisopaine",
+    "createdAt": "02/07/2026 13:00:11",
+    "updatedAt": "02/07/2026 17:00:13",
+    "pharmacyId": "pharmacy-019-dugo",
+    "pharmacyName": "DU GOSIER",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "LYSOPAINE CETYL MENTHE 36CP FR",
+        "cip": "3400939035765",
+        "tarif": "3,89 €",
+        "colisage": "",
+        "quantity": "24"
+      },
+      {
+        "designation": "LYSOPAINE CETYL MIEL CITRON 36CP FR",
+        "cip": "3400928026729",
+        "tarif": "3,23 €",
+        "colisage": "",
+        "quantity": "12"
+      }
+    ],
+    "notes": "Livraison et facturation souhaitées en octobre 2026"
+  },
+  {
+    "id": "2980ee1a-2d69-4c4a-a9ce-0dac8509734d",
+    "campaignId": "precommande-operation-phytoxil",
+    "campaignTitle": "Précommande Opération Phytoxil",
+    "createdAt": "02/07/2026 13:01:26",
+    "updatedAt": "02/07/2026 17:01:28",
+    "pharmacyId": "pharmacy-019-dugo",
+    "pharmacyName": "DU GOSIER",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYTOXIL® TOUX SANS SUCRE Sirop, flacon 100 ml",
+        "cip": "3664798079326",
+        "tarif": "3,60 €",
+        "colisage": "",
+        "quantity": "24"
+      }
+    ],
+    "notes": "Livraison et facturation souhaitée en octobre 2026"
+  },
+  {
+    "id": "4ed1a990-f2f3-4ac1-82a6-c9d2f6b345fe",
+    "campaignId": "precommande-lisopaine",
+    "campaignTitle": "Précommande Lisopaine",
+    "createdAt": "03/07/2026 15:57:22",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-002-bamb",
+    "pharmacyName": "BAMBOU VERT",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "LYSOPAINE CETYL MENTHE 36CP FR",
+        "cip": "3400939035765",
+        "tarif": "3,89 €",
+        "colisage": "",
+        "quantity": "30"
+      },
+      {
+        "designation": "LYSOPAINE CETYL MIEL CITRON 36CP FR",
+        "cip": "3400928026729",
+        "tarif": "3,23 €",
+        "colisage": "",
+        "quantity": "24"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "2c4f39fa-7fbb-4de1-a69e-0d9157738ba5",
+    "campaignId": "precommande-operation-phytoxil",
+    "campaignTitle": "Précommande Opération Phytoxil",
+    "createdAt": "03/07/2026 15:58:43",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-002-bamb",
+    "pharmacyName": "BAMBOU VERT",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYTOXIL® TOUX SANS SUCRE Sirop, flacon 100 ml",
+        "cip": "3664798079326",
+        "tarif": "3,60 €",
+        "colisage": "",
+        "quantity": "24"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "425f49de-eb05-4dcd-9bb8-9da05744ed5b",
+    "campaignId": "precommande-lisopaine",
+    "campaignTitle": "Précommande Lisopaine",
+    "createdAt": "06/07/2026 12:38:55",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-021-dupe",
+    "pharmacyName": "DU PELICAN",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "66c72f65-4a14-47cb-989c-d3e1d4aff2a1",
+    "campaignId": "precommande-operation-phytoxil",
+    "campaignTitle": "Précommande Opération Phytoxil",
+    "createdAt": "06/07/2026 12:39:05",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-021-dupe",
+    "pharmacyName": "DU PELICAN",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "8755cfa4-6fd3-4471-a431-7efa2d2ae445",
+    "campaignId": "precommande-lisopaine",
+    "campaignTitle": "Précommande Lisopaine",
+    "createdAt": "07/07/2026 16:46:40",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-007-dedo",
+    "pharmacyName": "DE DOUVILLE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "LYSOPAINE CETYL MENTHE 36CP FR",
+        "cip": "3400939035765",
+        "tarif": "3,89 €",
+        "colisage": "",
+        "quantity": "36"
+      },
+      {
+        "designation": "LYSOPAINE CETYL MIEL CITRON 36CP FR",
+        "cip": "3400928026729",
+        "tarif": "3,23 €",
+        "colisage": "",
+        "quantity": "12"
+      },
+      {
+        "designation": "LYSOPAINE CETYL CITRON GINGEMBRE 36CP FR",
+        "cip": "3400928026439",
+        "tarif": "3,25 €",
+        "colisage": "",
+        "quantity": "12"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "5d5a8015-e4b4-42f1-97cd-54bf5f8247a0",
+    "campaignId": "precommande-operation-phytoxil",
+    "campaignTitle": "Précommande Opération Phytoxil",
+    "createdAt": "07/07/2026 16:47:45",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-007-dedo",
+    "pharmacyName": "DE DOUVILLE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYTOXIL® TOUX SANS SUCRE Sirop, flacon 100 ml",
+        "cip": "3664798079326",
+        "tarif": "3,60 €",
+        "colisage": "",
+        "quantity": "36"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "818d4bf0-5f77-47c0-9f40-76a53da673c1",
+    "campaignId": "precommande-lisopaine",
+    "campaignTitle": "Précommande Lisopaine",
+    "createdAt": "08/07/2026 10:12:41",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-043-sami",
+    "pharmacyName": "SAMINADIN",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "LYSOPAINE CETYL MIEL CITRON 36CP FR",
+        "cip": "3400928026729",
+        "tarif": "3,23 €",
+        "colisage": "",
+        "quantity": "20"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "1e4732be-5468-49b2-9d41-4451c2e1c35b",
+    "campaignId": "precommande-operation-phytoxil",
+    "campaignTitle": "Précommande Opération Phytoxil",
+    "createdAt": "08/07/2026 10:16:25",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-043-sami",
+    "pharmacyName": "SAMINADIN",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYTOXIL® TOUX SANS SUCRE Sirop, flacon 100 ml",
+        "cip": "3664798079326",
+        "tarif": "3,60 €",
+        "colisage": "",
+        "quantity": "72"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "6288a6f3-84d9-49e0-9eb5-89d8342b727a",
+    "campaignId": "precommande-t-shirts-octobre-rose-2026",
+    "campaignTitle": "Précommande – T-shirts Octobre Rose 2026",
+    "createdAt": "08/07/2026 18:19:10",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-045-phar",
+    "pharmacyName": "PHARMACIE TEST",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "8eca3d98-b84b-4b17-ab5f-48172d3d05a5",
+    "campaignId": "precommande-operation-phytoxil",
+    "campaignTitle": "Précommande Opération Phytoxil",
+    "createdAt": "09/07/2026 12:18:45",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-039-port",
+    "pharmacyName": "PORT LOUIS",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYTOXIL® TOUX SANS SUCRE Sirop, flacon 100 ml",
+        "cip": "3664798079326",
+        "tarif": "3,60 €",
+        "colisage": "",
+        "quantity": "96"
+      }
+    ],
+    "notes": "livraison novembre 2027"
+  },
+  {
+    "id": "a606a60d-6e1e-4939-9500-b3463eb4a412",
+    "campaignId": "precommande-lisopaine",
+    "campaignTitle": "Précommande Lisopaine",
+    "createdAt": "09/07/2026 12:02:54",
+    "updatedAt": "09/07/2026 16:18:43",
+    "pharmacyId": "pharmacy-039-port",
+    "pharmacyName": "PORT LOUIS",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "LYSOPAINE CETYL MENTHE 36CP FR",
+        "cip": "3400939035765",
+        "tarif": "3,89 €",
+        "colisage": "",
+        "quantity": "12"
+      },
+      {
+        "designation": "LYSOPAINE CETYL MIEL CITRON 36CP FR",
+        "cip": "3400928026729",
+        "tarif": "3,23 €",
+        "colisage": "",
+        "quantity": "12"
+      },
+      {
+        "designation": "LYSOPAINE CETYL CITRON GINGEMBRE 36CP FR",
+        "cip": "3400928026439",
+        "tarif": "3,25 €",
+        "colisage": "",
+        "quantity": "12"
+      }
+    ],
+    "notes": "livraison novembre 2027 s'il vous plait"
+  },
+  {
+    "id": "e9993a7e-bb3c-44e2-84fc-038ebcd11aee",
+    "campaignId": "precommande-lisopaine",
+    "campaignTitle": "Précommande Lisopaine",
+    "createdAt": "10/07/2026 12:34:51",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-008-dela",
+    "pharmacyName": "DE LA CITÉ DES MÉTIERS",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "LYSOPAINE CETYL MENTHE 36CP FR",
+        "cip": "3400939035765",
+        "tarif": "3,89 €",
+        "colisage": "",
+        "quantity": "30"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "a272bdbe-ba7a-4c88-92a2-bee3de4b586e",
+    "campaignId": "precommande-operation-phytoxil",
+    "campaignTitle": "Précommande Opération Phytoxil",
+    "createdAt": "10/07/2026 12:35:05",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-008-dela",
+    "pharmacyName": "DE LA CITÉ DES MÉTIERS",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYTOXIL® TOUX SANS SUCRE Sirop, flacon 100 ml",
+        "cip": "3664798079326",
+        "tarif": "3,60 €",
+        "colisage": "",
+        "quantity": "30"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "6ad5f967-570b-49cd-9a3e-3c94cb54de66",
+    "campaignId": "precommande-t-shirts-octobre-rose-2026",
+    "campaignTitle": "Précommande – T-shirts Octobre Rose 2026",
+    "createdAt": "10/07/2026 12:35:29",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-008-dela",
+    "pharmacyName": "DE LA CITÉ DES MÉTIERS",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "f6b5dc7c-45ae-48ae-b390-5cf97b2818a3",
+    "campaignId": "precommande-lisopaine",
+    "campaignTitle": "Précommande Lisopaine",
+    "createdAt": "10/07/2026 14:05:50",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-038-mont",
+    "pharmacyName": "MONTOUT",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "LYSOPAINE CETYL MENTHE 36CP FR",
+        "cip": "3400939035765",
+        "tarif": "3,89 €",
+        "colisage": "",
+        "quantity": "24"
+      },
+      {
+        "designation": "LYSOPAINE CETYL MIEL CITRON 36CP FR",
+        "cip": "3400928026729",
+        "tarif": "3,23 €",
+        "colisage": "",
+        "quantity": "12"
+      },
+      {
+        "designation": "LYSOPAINE CETYL CITRON GINGEMBRE 36CP FR",
+        "cip": "3400928026439",
+        "tarif": "3,25 €",
+        "colisage": "",
+        "quantity": "12"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "8f8bb3a8-90ba-4a74-89b6-b697707c758b",
+    "campaignId": "precommande-operation-phytoxil",
+    "campaignTitle": "Précommande Opération Phytoxil",
+    "createdAt": "10/07/2026 14:08:28",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-038-mont",
+    "pharmacyName": "MONTOUT",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYTOXIL® TOUX SANS SUCRE Sirop, flacon 100 ml",
+        "cip": "3664798079326",
+        "tarif": "3,60 €",
+        "colisage": "",
+        "quantity": "30"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "d1accf96-988c-4001-9c78-a7956b956c99",
+    "campaignId": "precommande-t-shirts-octobre-rose-2026",
+    "campaignTitle": "Précommande – T-shirts Octobre Rose 2026",
+    "createdAt": "10/07/2026 14:10:13",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-038-mont",
+    "pharmacyName": "MONTOUT",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Modèle 1 Rose clair",
+        "cip": "Taille S",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "1"
+      },
+      {
+        "designation": "Modèle 1 Rose clair",
+        "cip": "Taille M",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "1"
+      },
+      {
+        "designation": "Modèle 1 Rose clair",
+        "cip": "Taille L",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "2"
+      },
+      {
+        "designation": "Modèle 1 Rose clair",
+        "cip": "Taille XL",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "1"
+      },
+      {
+        "designation": "Modèle 1 Rose clair",
+        "cip": "Taille XXL",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "2"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "baffdceb-7dff-46fa-b154-2cbce52ad32c",
+    "campaignId": "precommande-lisopaine",
+    "campaignTitle": "Précommande Lisopaine",
+    "createdAt": "11/07/2026 12:59:41",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-009-dela",
+    "pharmacyName": "DE LA MELISSE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "LYSOPAINE CETYL MENTHE 36CP FR",
+        "cip": "3400939035765",
+        "tarif": "3,89 €",
+        "colisage": "",
+        "quantity": "30"
+      },
+      {
+        "designation": "LYSOPAINE CETYL MIEL CITRON 36CP FR",
+        "cip": "3400928026729",
+        "tarif": "3,23 €",
+        "colisage": "",
+        "quantity": "12"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "9c99c3ef-2f91-49cf-8347-4925a22a50b6",
+    "campaignId": "precommande-operation-phytoxil",
+    "campaignTitle": "Précommande Opération Phytoxil",
+    "createdAt": "11/07/2026 13:04:45",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-009-dela",
+    "pharmacyName": "DE LA MELISSE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYTOXIL® TOUX SANS SUCRE Sirop, flacon 100 ml",
+        "cip": "3664798079326",
+        "tarif": "3,60 €",
+        "colisage": "",
+        "quantity": "72"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "8c629cb1-78d2-4279-a456-eacc2e2afd6e",
+    "campaignId": "precommande-t-shirts-octobre-rose-2026",
+    "campaignTitle": "Précommande – T-shirts Octobre Rose 2026",
+    "createdAt": "13/07/2026 09:41:37",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-003-bert",
+    "pharmacyName": "BERTHELOT F",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "26299a90-0f24-4dbe-9c41-bf636dacc8dc",
+    "campaignId": "precommande-t-shirts-octobre-rose-2026",
+    "campaignTitle": "Précommande – T-shirts Octobre Rose 2026",
+    "createdAt": "13/07/2026 12:30:34",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-039-port",
+    "pharmacyName": "PORT LOUIS",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Modèle 1 Rose clair",
+        "cip": "Taille S",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "5"
+      },
+      {
+        "designation": "Modèle 1 Rose clair",
+        "cip": "Taille L",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "4"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "cea047a7-9a52-489a-a3f5-071b5b1e184a",
+    "campaignId": "precommande-lisopaine",
+    "campaignTitle": "Précommande Lisopaine",
+    "createdAt": "13/07/2026 15:59:29",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-020-duma",
+    "pharmacyName": "DU MARCHE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "LYSOPAINE CETYL MENTHE 36CP FR",
+        "cip": "3400939035765",
+        "tarif": "3,89 €",
+        "colisage": "",
+        "quantity": "96"
+      },
+      {
+        "designation": "LYSOPAINE CETYL MIEL CITRON 36CP FR",
+        "cip": "3400928026729",
+        "tarif": "3,23 €",
+        "colisage": "",
+        "quantity": "48"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "099ec2a5-f6e8-4e15-acba-9ada9326174f",
+    "campaignId": "precommande-operation-phytoxil",
+    "campaignTitle": "Précommande Opération Phytoxil",
+    "createdAt": "13/07/2026 16:01:49",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-020-duma",
+    "pharmacyName": "DU MARCHE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYTOXIL® TOUX SANS SUCRE Sirop, flacon 100 ml",
+        "cip": "3664798079326",
+        "tarif": "3,60 €",
+        "colisage": "",
+        "quantity": "72"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "ea09183a-7953-47ad-9ec4-32636409d680",
+    "campaignId": "precommande-t-shirts-octobre-rose-2026",
+    "campaignTitle": "Précommande – T-shirts Octobre Rose 2026",
+    "createdAt": "15/07/2026 10:42:45",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-025-duso",
+    "pharmacyName": "DU SOLEIL",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Modèle 3 Rose fushia",
+        "cip": "Taille XS",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "1"
+      },
+      {
+        "designation": "Modèle 3 Rose fushia",
+        "cip": "Taille S",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "1"
+      },
+      {
+        "designation": "Modèle 3 Rose fushia",
+        "cip": "Taille M",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "3"
+      },
+      {
+        "designation": "Modèle 3 Rose fushia",
+        "cip": "Taille L",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "3"
+      },
+      {
+        "designation": "Modèle 3 Rose fushia",
+        "cip": "Taille XL",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "1"
+      },
+      {
+        "designation": "Modèle 3 Rose fushia",
+        "cip": "Taille XXL",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "1"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "5bb1f431-68b8-4208-9b35-46aca6f5e2d4",
+    "campaignId": "precommande-lisopaine",
+    "campaignTitle": "Précommande Lisopaine",
+    "createdAt": "15/07/2026 10:56:40",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-025-duso",
+    "pharmacyName": "DU SOLEIL",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "LYSOPAINE CETYL MENTHE 36CP FR",
+        "cip": "3400939035765",
+        "tarif": "3,89 €",
+        "colisage": "",
+        "quantity": "36"
+      },
+      {
+        "designation": "LYSOPAINE CETYL MIEL CITRON 36CP FR",
+        "cip": "3400928026729",
+        "tarif": "3,23 €",
+        "colisage": "",
+        "quantity": "36"
+      },
+      {
+        "designation": "LYSOPAINE CETYL CITRON GINGEMBRE 36CP FR",
+        "cip": "3400928026439",
+        "tarif": "3,25 €",
+        "colisage": "",
+        "quantity": "24"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "6c470fc1-190c-4198-bbc8-2832ac7d2db5",
+    "campaignId": "precommande-operation-phytoxil",
+    "campaignTitle": "Précommande Opération Phytoxil",
+    "createdAt": "15/07/2026 10:58:45",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-025-duso",
+    "pharmacyName": "DU SOLEIL",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYTOXIL® TOUX SANS SUCRE Sirop, flacon 100 ml",
+        "cip": "3664798079326",
+        "tarif": "3,60 €",
+        "colisage": "",
+        "quantity": "36"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "64c73b72-5438-4598-aa9d-08fba15765bb",
+    "campaignId": "precommande-t-shirts-octobre-rose-2026",
+    "campaignTitle": "Précommande – T-shirts Octobre Rose 2026",
+    "createdAt": "15/07/2026 16:15:35",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-021-dupe",
+    "pharmacyName": "DU PELICAN",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Modèle 1 Rose clair",
+        "cip": "Taille M",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "5"
+      },
+      {
+        "designation": "Modèle 1 Rose clair",
+        "cip": "Taille L",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "1"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "0083c86f-0ba0-4e5f-ae8f-3ba5ba2e66f5",
+    "campaignId": "precommande-lisopaine",
+    "campaignTitle": "Précommande Lisopaine",
+    "createdAt": "16/07/2026 14:07:59",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-042-sain",
+    "pharmacyName": "SAINTE ANNE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "LYSOPAINE CETYL MIEL CITRON 36CP FR",
+        "cip": "3400928026729",
+        "tarif": "3,23 €",
+        "colisage": "",
+        "quantity": "36"
+      },
+      {
+        "designation": "LYSOPAINE CETYL CITRON GINGEMBRE 36CP FR",
+        "cip": "3400928026439",
+        "tarif": "3,25 €",
+        "colisage": "",
+        "quantity": "24"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "0c543ce4-33b5-4b92-b243-a6915ccf5881",
+    "campaignId": "precommande-t-shirts-octobre-rose-2026",
+    "campaignTitle": "Précommande – T-shirts Octobre Rose 2026",
+    "createdAt": "16/07/2026 14:11:56",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-042-sain",
+    "pharmacyName": "SAINTE ANNE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Modèle 1 Rose clair",
+        "cip": "Taille S",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "1"
+      },
+      {
+        "designation": "Modèle 1 Rose clair",
+        "cip": "Taille M",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "3"
+      },
+      {
+        "designation": "Modèle 1 Rose clair",
+        "cip": "Taille L",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "3"
+      },
+      {
+        "designation": "Modèle 1 Rose clair",
+        "cip": "Taille XL",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "3"
+      },
+      {
+        "designation": "Modèle 2 Blanc",
+        "cip": "Taille S",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "1"
+      },
+      {
+        "designation": "Modèle 2 Blanc",
+        "cip": "Taille M",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "3"
+      },
+      {
+        "designation": "Modèle 2 Blanc",
+        "cip": "Taille L",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "3"
+      },
+      {
+        "designation": "Modèle 2 Blanc",
+        "cip": "Taille XL",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "3"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "174bb3f8-abc5-4e48-beb6-6cb35f8aa304",
+    "campaignId": "precommande-operation-phytoxil",
+    "campaignTitle": "Précommande Opération Phytoxil",
+    "createdAt": "16/07/2026 14:49:15",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-042-sain",
+    "pharmacyName": "SAINTE ANNE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYTOXIL® TOUX SANS SUCRE Sirop, flacon 100 ml",
+        "cip": "3664798079326",
+        "tarif": "3,60 €",
+        "colisage": "",
+        "quantity": "24"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "59289472-a864-4847-afb5-df70291a36c1",
+    "campaignId": "precommande-lisopaine",
+    "campaignTitle": "Précommande Lisopaine",
+    "createdAt": "16/07/2026 15:21:50",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-012-dela",
+    "pharmacyName": "DE LA SOURCE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "LYSOPAINE CETYL MENTHE 36CP FR",
+        "cip": "3400939035765",
+        "tarif": "3,89 €",
+        "colisage": "",
+        "quantity": "36"
+      },
+      {
+        "designation": "LYSOPAINE CETYL MIEL CITRON 36CP FR",
+        "cip": "3400928026729",
+        "tarif": "3,23 €",
+        "colisage": "",
+        "quantity": "24"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "b5c0f2e7-2be9-48af-9830-ba7ff8ddd1fa",
+    "campaignId": "precommande-operation-phytoxil",
+    "campaignTitle": "Précommande Opération Phytoxil",
+    "createdAt": "16/07/2026 15:23:43",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-012-dela",
+    "pharmacyName": "DE LA SOURCE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYTOXIL® TOUX SANS SUCRE Sirop, flacon 100 ml",
+        "cip": "3664798079326",
+        "tarif": "3,60 €",
+        "colisage": "",
+        "quantity": "48"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "185193d4-3c65-4d8f-9f6a-ac3a8cfae4fd",
+    "campaignId": "precommande-lisopaine",
+    "campaignTitle": "Précommande Lisopaine",
+    "createdAt": "16/07/2026 16:47:45",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-033-issa",
+    "pharmacyName": "ISSA",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "LYSOPAINE CETYL MENTHE 36CP FR",
+        "cip": "3400939035765",
+        "tarif": "3,89 €",
+        "colisage": "",
+        "quantity": "50"
+      },
+      {
+        "designation": "LYSOPAINE CETYL MIEL CITRON 36CP FR",
+        "cip": "3400928026729",
+        "tarif": "3,23 €",
+        "colisage": "",
+        "quantity": "20"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "47f65ea5-939c-4db2-a4e8-88cf2a43c973",
+    "campaignId": "precommande-operation-phytoxil",
+    "campaignTitle": "Précommande Opération Phytoxil",
+    "createdAt": "16/07/2026 16:49:36",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-033-issa",
+    "pharmacyName": "ISSA",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYTOXIL® TOUX SANS SUCRE Sirop, flacon 100 ml",
+        "cip": "3664798079326",
+        "tarif": "3,60 €",
+        "colisage": "",
+        "quantity": "60"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "9bcddb86-33ff-4988-938f-496d3d48eceb",
+    "campaignId": "precommande-lisopaine",
+    "campaignTitle": "Précommande Lisopaine",
+    "createdAt": "16/07/2026 20:21:40",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-028-fleu",
+    "pharmacyName": "FLEUR DE CANNE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "LYSOPAINE CETYL MIEL CITRON 36CP FR",
+        "cip": "3400928026729",
+        "tarif": "3,23 €",
+        "colisage": "",
+        "quantity": "60"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "f2cc1008-e11a-453c-ba42-0d05a89ab9e2",
+    "campaignId": "precommande-operation-phytoxil",
+    "campaignTitle": "Précommande Opération Phytoxil",
+    "createdAt": "16/07/2026 20:24:10",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-028-fleu",
+    "pharmacyName": "FLEUR DE CANNE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYTOXIL® TOUX SANS SUCRE Sirop, flacon 100 ml",
+        "cip": "3664798079326",
+        "tarif": "3,60 €",
+        "colisage": "",
+        "quantity": "60"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "a0d63526-c512-49aa-b6b4-3e36315376b2",
+    "campaignId": "precommande-lisopaine",
+    "campaignTitle": "Précommande Lisopaine",
+    "createdAt": "17/07/2026 07:28:04",
+    "updatedAt": "17/07/2026 05:29:15",
+    "pharmacyId": "pharmacy-016-dorv",
+    "pharmacyName": "DORVILLE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "LYSOPAINE CETYL MENTHE 36CP FR",
+        "cip": "3400939035765",
+        "tarif": "3,89 €",
+        "colisage": "",
+        "quantity": "60"
+      },
+      {
+        "designation": "LYSOPAINE CETYL MIEL CITRON 36CP FR",
+        "cip": "3400928026729",
+        "tarif": "3,23 €",
+        "colisage": "",
+        "quantity": "48"
+      },
+      {
+        "designation": "LYSOPAINE CETYL CITRON GINGEMBRE 36CP FR",
+        "cip": "3400928026439",
+        "tarif": "3,25 €",
+        "colisage": "",
+        "quantity": "24"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "19104730-6e80-44e7-a196-330877ab561c",
+    "campaignId": "precommande-operation-phytoxil",
+    "campaignTitle": "Précommande Opération Phytoxil",
+    "createdAt": "17/07/2026 07:34:55",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-016-dorv",
+    "pharmacyName": "DORVILLE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYTOXIL® TOUX SANS SUCRE Sirop, flacon 100 ml",
+        "cip": "3664798079326",
+        "tarif": "3,60 €",
+        "colisage": "",
+        "quantity": "96"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "2e782c20-5343-4327-afaa-e35b0887253e",
+    "campaignId": "precommande-t-shirts-octobre-rose-2026",
+    "campaignTitle": "Précommande – T-shirts Octobre Rose 2026",
+    "createdAt": "17/07/2026 06:34:44",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-030-gamb",
+    "pharmacyName": "GAMBETTA",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Modèle 1 Rose clair",
+        "cip": "Taille XS",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "2"
+      },
+      {
+        "designation": "Modèle 1 Rose clair",
+        "cip": "Taille M",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "4"
+      },
+      {
+        "designation": "Modèle 3 Rose fushia",
+        "cip": "Taille XS",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "2"
+      },
+      {
+        "designation": "Modèle 3 Rose fushia",
+        "cip": "Taille S",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "2"
+      },
+      {
+        "designation": "Modèle 3 Rose fushia",
+        "cip": "Taille M",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "3"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "e83edd7a-0941-4f38-b80f-0c930d507c63",
+    "campaignId": "precommande-lisopaine",
+    "campaignTitle": "Précommande Lisopaine",
+    "createdAt": "17/07/2026 06:35:15",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-030-gamb",
+    "pharmacyName": "GAMBETTA",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "LYSOPAINE CETYL MENTHE 36CP FR",
+        "cip": "3400939035765",
+        "tarif": "3,89 €",
+        "colisage": "",
+        "quantity": "12"
+      },
+      {
+        "designation": "LYSOPAINE CETYL MIEL CITRON 36CP FR",
+        "cip": "3400928026729",
+        "tarif": "3,23 €",
+        "colisage": "",
+        "quantity": "12"
+      },
+      {
+        "designation": "LYSOPAINE CETYL CITRON GINGEMBRE 36CP FR",
+        "cip": "3400928026439",
+        "tarif": "3,25 €",
+        "colisage": "",
+        "quantity": "12"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "dc30a149-ff11-4c3c-b86f-a5aa4b14eb73",
+    "campaignId": "precommande-operation-phytoxil",
+    "campaignTitle": "Précommande Opération Phytoxil",
+    "createdAt": "17/07/2026 06:35:29",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-030-gamb",
+    "pharmacyName": "GAMBETTA",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYTOXIL® TOUX SANS SUCRE Sirop, flacon 100 ml",
+        "cip": "3664798079326",
+        "tarif": "3,60 €",
+        "colisage": "",
+        "quantity": "24"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "6f5785b7-f68b-4b26-9e10-3ef9fc85284d",
+    "campaignId": "precommande-t-shirts-octobre-rose-2026",
+    "campaignTitle": "Précommande – T-shirts Octobre Rose 2026",
+    "createdAt": "17/07/2026 10:00:00",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-005-comb",
+    "pharmacyName": "COMBE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Modèle 3 Rose fushia",
+        "cip": "Taille XL",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "1"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "761de7f4-7f23-41fc-b1ad-a47db8b2a1a9",
+    "campaignId": "precommande-operation-phytoxil",
+    "campaignTitle": "Précommande Opération Phytoxil",
+    "createdAt": "17/07/2026 09:56:40",
+    "updatedAt": "17/07/2026 14:01:26",
+    "pharmacyId": "pharmacy-005-comb",
+    "pharmacyName": "COMBE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYTOXIL® TOUX SANS SUCRE Sirop, flacon 100 ml",
+        "cip": "3664798079326",
+        "tarif": "3,60 €",
+        "colisage": "",
+        "quantity": "48"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "bda5fa14-23fd-487c-9c2f-f38a087d4ab3",
+    "campaignId": "precommande-operation-phytoxil",
+    "campaignTitle": "Précommande Opération Phytoxil",
+    "createdAt": "17/07/2026 10:52:06",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-018-duch",
+    "pharmacyName": "DU CHAMP D’ARBAUD",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYTOXIL® TOUX SANS SUCRE Sirop, flacon 100 ml",
+        "cip": "3664798079326",
+        "tarif": "3,60 €",
+        "colisage": "",
+        "quantity": "48"
+      }
+    ],
+    "notes": "merci de livrer 24 a reception en octobre et 24 deux mois plus tard en decembre et facturation 1ere semaine du mois."
+  },
+  {
+    "id": "57bfbbca-e2bf-4092-b387-0d21d370d36c",
+    "campaignId": "precommande-lisopaine",
+    "campaignTitle": "Précommande Lisopaine",
+    "createdAt": "17/07/2026 11:23:43",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-011-dela",
+    "pharmacyName": "DE LA POINTE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "LYSOPAINE CETYL MIEL CITRON 36CP FR",
+        "cip": "3400928026729",
+        "tarif": "3,23 €",
+        "colisage": "",
+        "quantity": "12"
+      },
+      {
+        "designation": "LYSOPAINE CETYL CITRON GINGEMBRE 36CP FR",
+        "cip": "3400928026439",
+        "tarif": "3,25 €",
+        "colisage": "",
+        "quantity": "12"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "bf938e37-a727-44c3-b3d1-e90e0b3b3c51",
+    "campaignId": "precommande-lisopaine",
+    "campaignTitle": "Précommande Lisopaine",
+    "createdAt": "17/07/2026 11:37:13",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-017-duce",
+    "pharmacyName": "DU CENTRE",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "469a55eb-c1df-4a54-b7a5-c811dcdb243f",
+    "campaignId": "precommande-operation-phytoxil",
+    "campaignTitle": "Précommande Opération Phytoxil",
+    "createdAt": "17/07/2026 11:39:14",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-017-duce",
+    "pharmacyName": "DU CENTRE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYTOXIL® TOUX SANS SUCRE Sirop, flacon 100 ml",
+        "cip": "3664798079326",
+        "tarif": "3,60 €",
+        "colisage": "",
+        "quantity": "40"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "3e50e875-23d1-4472-8247-d1770bffced6",
+    "campaignId": "precommande-lisopaine",
+    "campaignTitle": "Précommande Lisopaine",
+    "createdAt": "17/07/2026 11:40:39",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-015-deva",
+    "pharmacyName": "DEVAUX Sylvie",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "LYSOPAINE CETYL MIEL CITRON 36CP FR",
+        "cip": "3400928026729",
+        "tarif": "3,23 €",
+        "colisage": "",
+        "quantity": "10"
+      },
+      {
+        "designation": "LYSOPAINE CETYL CITRON GINGEMBRE 36CP FR",
+        "cip": "3400928026439",
+        "tarif": "3,25 €",
+        "colisage": "",
+        "quantity": "10"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "86a23646-f200-4fa2-9ce3-83119cc03847",
+    "campaignId": "precommande-operation-phytoxil",
+    "campaignTitle": "Précommande Opération Phytoxil",
+    "createdAt": "17/07/2026 11:42:24",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-015-deva",
+    "pharmacyName": "DEVAUX Sylvie",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "00c36882-fe37-487b-b366-909a4fd84832",
+    "campaignId": "precommande-t-shirts-octobre-rose-2026",
+    "campaignTitle": "Précommande – T-shirts Octobre Rose 2026",
+    "createdAt": "17/07/2026 11:43:58",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-015-deva",
+    "pharmacyName": "DEVAUX Sylvie",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Modèle 1 Rose clair",
+        "cip": "Taille M",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "2"
+      },
+      {
+        "designation": "Modèle 1 Rose clair",
+        "cip": "Taille L",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "2"
+      },
+      {
+        "designation": "Modèle 1 Rose clair",
+        "cip": "Taille XL",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "1"
+      },
+      {
+        "designation": "Modèle 2 Blanc",
+        "cip": "Taille L",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "2"
+      },
+      {
+        "designation": "Modèle 3 Rose fushia",
+        "cip": "Taille M",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "1"
+      },
+      {
+        "designation": "Modèle 3 Rose fushia",
+        "cip": "Taille L",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "2"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "42b84fac-ee2a-4e8d-8825-4c8a213c3c5a",
+    "campaignId": "precommande-operation-phytoxil",
+    "campaignTitle": "Précommande Opération Phytoxil",
+    "createdAt": "17/07/2026 11:50:14",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-011-dela",
+    "pharmacyName": "DE LA POINTE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYTOXIL® TOUX SANS SUCRE Sirop, flacon 100 ml",
+        "cip": "3664798079326",
+        "tarif": "3,60 €",
+        "colisage": "",
+        "quantity": "30"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "b41faafa-008b-4490-ac23-6381937613f8",
+    "campaignId": "precommande-operation-phytoxil",
+    "campaignTitle": "Précommande Opération Phytoxil",
+    "createdAt": "17/07/2026 11:51:40",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-032-heli",
+    "pharmacyName": "HELIOS",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYTOXIL® TOUX SANS SUCRE Sirop, flacon 100 ml",
+        "cip": "3664798079326",
+        "tarif": "3,60 €",
+        "colisage": "",
+        "quantity": "96"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "138134e9-2a57-46df-aeba-f95378688b1e",
+    "campaignId": "precommande-t-shirts-octobre-rose-2026",
+    "campaignTitle": "Précommande – T-shirts Octobre Rose 2026",
+    "createdAt": "17/07/2026 11:55:35",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-043-sami",
+    "pharmacyName": "SAMINADIN",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Modèle 3 Rose fushia",
+        "cip": "Taille M",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "3"
+      },
+      {
+        "designation": "Modèle 3 Rose fushia",
+        "cip": "Taille XL",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "1"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "5588fc0a-3a61-452d-9596-663a90c274d5",
+    "campaignId": "precommande-t-shirts-octobre-rose-2026",
+    "campaignTitle": "Précommande – T-shirts Octobre Rose 2026",
+    "createdAt": "17/07/2026 11:57:10",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-032-heli",
+    "pharmacyName": "HELIOS",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Modèle 3 Rose fushia",
+        "cip": "Taille M",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "4"
+      },
+      {
+        "designation": "Modèle 3 Rose fushia",
+        "cip": "Taille L",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "1"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "8cd37e42-6763-4074-b0ab-d4836a30264c",
+    "campaignId": "precommande-lisopaine",
+    "campaignTitle": "Précommande Lisopaine",
+    "createdAt": "17/07/2026 12:14:06",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-010-dela",
+    "pharmacyName": "DE LA PLAGE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "LYSOPAINE CETYL MENTHE 36CP FR",
+        "cip": "3400939035765",
+        "tarif": "3,89 €",
+        "colisage": "",
+        "quantity": "12"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "e6e51c1a-3ca6-4b4d-819a-670c9fffc4c4",
+    "campaignId": "precommande-operation-phytoxil",
+    "campaignTitle": "Précommande Opération Phytoxil",
+    "createdAt": "17/07/2026 12:18:49",
+    "updatedAt": "17/07/2026 16:20:04",
+    "pharmacyId": "pharmacy-010-dela",
+    "pharmacyName": "DE LA PLAGE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYTOXIL® TOUX SANS SUCRE Sirop, flacon 100 ml",
+        "cip": "3664798079326",
+        "tarif": "3,60 €",
+        "colisage": "",
+        "quantity": "36"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "76492464-e12f-4370-916a-d5c2355a09aa",
+    "campaignId": "precommande-lisopaine",
+    "campaignTitle": "Précommande Lisopaine",
+    "createdAt": "17/07/2026 12:27:10",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-037-medi",
+    "pharmacyName": "MEDICIS",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "LYSOPAINE CETYL MENTHE 36CP FR",
+        "cip": "3400939035765",
+        "tarif": "3,89 €",
+        "colisage": "",
+        "quantity": "72"
+      },
+      {
+        "designation": "LYSOPAINE CETYL CITRON GINGEMBRE 36CP FR",
+        "cip": "3400928026439",
+        "tarif": "3,25 €",
+        "colisage": "",
+        "quantity": "12"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "2b59bffd-79d9-4a8b-a88e-33fdb636b729",
+    "campaignId": "precommande-operation-phytoxil",
+    "campaignTitle": "Précommande Opération Phytoxil",
+    "createdAt": "17/07/2026 12:28:04",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-037-medi",
+    "pharmacyName": "MEDICIS",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYTOXIL® TOUX SANS SUCRE Sirop, flacon 100 ml",
+        "cip": "3664798079326",
+        "tarif": "3,60 €",
+        "colisage": "",
+        "quantity": "96"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "7b53647b-635c-4a9a-a7f3-907a53f477ea",
+    "campaignId": "precommande-t-shirts-octobre-rose-2026",
+    "campaignTitle": "Précommande – T-shirts Octobre Rose 2026",
+    "createdAt": "17/07/2026 12:29:56",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-037-medi",
+    "pharmacyName": "MEDICIS",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Modèle 1 Rose clair",
+        "cip": "Taille S",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "1"
+      },
+      {
+        "designation": "Modèle 1 Rose clair",
+        "cip": "Taille M",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "2"
+      },
+      {
+        "designation": "Modèle 1 Rose clair",
+        "cip": "Taille L",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "3"
+      },
+      {
+        "designation": "Modèle 1 Rose clair",
+        "cip": "Taille XL",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "2"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "1adecb72-d715-4440-9bf0-cdfbd656f723",
+    "campaignId": "precommande-lisopaine",
+    "campaignTitle": "Précommande Lisopaine",
+    "createdAt": "17/07/2026 12:32:39",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-036-mang",
+    "pharmacyName": "MANGOU",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "LYSOPAINE CETYL MENTHE 36CP FR",
+        "cip": "3400939035765",
+        "tarif": "3,89 €",
+        "colisage": "",
+        "quantity": "10"
+      },
+      {
+        "designation": "LYSOPAINE CETYL MIEL CITRON 36CP FR",
+        "cip": "3400928026729",
+        "tarif": "3,23 €",
+        "colisage": "",
+        "quantity": "40"
+      },
+      {
+        "designation": "LYSOPAINE CETYL CITRON GINGEMBRE 36CP FR",
+        "cip": "3400928026439",
+        "tarif": "3,25 €",
+        "colisage": "",
+        "quantity": "10"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "2c0bad52-c2f9-461b-8ee8-918e499f9d6b",
+    "campaignId": "precommande-operation-phytoxil",
+    "campaignTitle": "Précommande Opération Phytoxil",
+    "createdAt": "17/07/2026 12:35:46",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-036-mang",
+    "pharmacyName": "MANGOU",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYTOXIL® TOUX SANS SUCRE Sirop, flacon 100 ml",
+        "cip": "3664798079326",
+        "tarif": "3,60 €",
+        "colisage": "",
+        "quantity": "30"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "7309d62a-81d7-41ef-9f6c-29abce49d928",
+    "campaignId": "precommande-operation-phytoxil",
+    "campaignTitle": "Précommande Opération Phytoxil",
+    "createdAt": "17/07/2026 14:03:37",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-035-laro",
+    "pharmacyName": "LA ROSIERE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYTOXIL® TOUX SANS SUCRE Sirop, flacon 100 ml",
+        "cip": "3664798079326",
+        "tarif": "3,60 €",
+        "colisage": "",
+        "quantity": "96"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "78b6ce21-bfad-4a0f-a55a-01b17367a0a0",
+    "campaignId": "precommande-lisopaine",
+    "campaignTitle": "Précommande Lisopaine",
+    "createdAt": "17/07/2026 14:03:10",
+    "updatedAt": "17/07/2026 18:03:51",
+    "pharmacyId": "pharmacy-035-laro",
+    "pharmacyName": "LA ROSIERE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "LYSOPAINE CETYL MENTHE 36CP FR",
+        "cip": "3400939035765",
+        "tarif": "3,89 €",
+        "colisage": "",
+        "quantity": "120"
+      },
+      {
+        "designation": "LYSOPAINE CETYL MIEL CITRON 36CP FR",
+        "cip": "3400928026729",
+        "tarif": "3,23 €",
+        "colisage": "",
+        "quantity": "24"
+      },
+      {
+        "designation": "LYSOPAINE CETYL CITRON GINGEMBRE 36CP FR",
+        "cip": "3400928026439",
+        "tarif": "3,25 €",
+        "colisage": "",
+        "quantity": "24"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "3aa19f1d-0f2f-4816-909f-d6c72e12cfaf",
+    "campaignId": "precommande-t-shirts-octobre-rose-2026",
+    "campaignTitle": "Précommande – T-shirts Octobre Rose 2026",
+    "createdAt": "17/07/2026 14:04:32",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-035-laro",
+    "pharmacyName": "LA ROSIERE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Modèle 3 Rose fushia",
+        "cip": "Taille S",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "1"
+      },
+      {
+        "designation": "Modèle 3 Rose fushia",
+        "cip": "Taille M",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "2"
+      },
+      {
+        "designation": "Modèle 3 Rose fushia",
+        "cip": "Taille L",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "1"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "a9d70a18-b997-4a4d-8867-a2299e80585b",
+    "campaignId": "precommande-lisopaine",
+    "campaignTitle": "Précommande Lisopaine",
+    "createdAt": "17/07/2026 15:15:48",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-026-dust",
+    "pharmacyName": "DU STADE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "LYSOPAINE CETYL MENTHE 36CP FR",
+        "cip": "3400939035765",
+        "tarif": "3,89 €",
+        "colisage": "",
+        "quantity": "96"
+      },
+      {
+        "designation": "LYSOPAINE CETYL MIEL CITRON 36CP FR",
+        "cip": "3400928026729",
+        "tarif": "3,23 €",
+        "colisage": "",
+        "quantity": "48"
+      },
+      {
+        "designation": "LYSOPAINE CETYL CITRON GINGEMBRE 36CP FR",
+        "cip": "3400928026439",
+        "tarif": "3,25 €",
+        "colisage": "",
+        "quantity": "24"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "f8befc28-513f-43e5-842c-1b2c4e5283a2",
+    "campaignId": "precommande-operation-phytoxil",
+    "campaignTitle": "Précommande Opération Phytoxil",
+    "createdAt": "17/07/2026 15:16:36",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-026-dust",
+    "pharmacyName": "DU STADE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYTOXIL® TOUX SANS SUCRE Sirop, flacon 100 ml",
+        "cip": "3664798079326",
+        "tarif": "3,60 €",
+        "colisage": "",
+        "quantity": "48"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "6bca97f9-ca59-423a-a179-13f4f1e6e4d6",
+    "campaignId": "precommande-lisopaine",
+    "campaignTitle": "Précommande Lisopaine",
+    "createdAt": "17/07/2026 23:10:25",
+    "updatedAt": "17/07/2026 21:10:28",
+    "pharmacyId": "pharmacy-024-duse",
+    "pharmacyName": "DU SEMAPHORE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "LYSOPAINE CETYL MENTHE 36CP FR",
+        "cip": "3400939035765",
+        "tarif": "3,89 €",
+        "colisage": "",
+        "quantity": "300"
+      },
+      {
+        "designation": "LYSOPAINE CETYL MIEL CITRON 36CP FR",
+        "cip": "3400928026729",
+        "tarif": "3,23 €",
+        "colisage": "",
+        "quantity": "240"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "4f5676b0-2918-4a22-a405-d4bfd8e9dde2",
+    "campaignId": "precommande-operation-phytoxil",
+    "campaignTitle": "Précommande Opération Phytoxil",
+    "createdAt": "17/07/2026 23:11:41",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-024-duse",
+    "pharmacyName": "DU SEMAPHORE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYTOXIL® TOUX SANS SUCRE Sirop, flacon 100 ml",
+        "cip": "3664798079326",
+        "tarif": "3,60 €",
+        "colisage": "",
+        "quantity": "72"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "a9bef686-0a0d-4cee-94df-d115e6af6b3a",
+    "campaignId": "precommande-lisopaine",
+    "campaignTitle": "Précommande Lisopaine",
+    "createdAt": "17/07/2026 17:40:18",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-031-gira",
+    "pharmacyName": "GIRARD DUGAMIN",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "LYSOPAINE CETYL MENTHE 36CP FR",
+        "cip": "3400939035765",
+        "tarif": "3,89 €",
+        "colisage": "",
+        "quantity": "50"
+      },
+      {
+        "designation": "LYSOPAINE CETYL MIEL CITRON 36CP FR",
+        "cip": "3400928026729",
+        "tarif": "3,23 €",
+        "colisage": "",
+        "quantity": "15"
+      },
+      {
+        "designation": "LYSOPAINE CETYL CITRON GINGEMBRE 36CP FR",
+        "cip": "3400928026439",
+        "tarif": "3,25 €",
+        "colisage": "",
+        "quantity": "15"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "bef0b1e7-de4c-4068-84bf-ea749ab79add",
+    "campaignId": "precommande-operation-phytoxil",
+    "campaignTitle": "Précommande Opération Phytoxil",
+    "createdAt": "17/07/2026 17:46:39",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-031-gira",
+    "pharmacyName": "GIRARD DUGAMIN",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYTOXIL® TOUX SANS SUCRE Sirop, flacon 100 ml",
+        "cip": "3664798079326",
+        "tarif": "3,60 €",
+        "colisage": "",
+        "quantity": "80"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "693d2bb5-21e7-4dfd-b507-a26cdb83d8f8",
+    "campaignId": "precommande-t-shirts-octobre-rose-2026",
+    "campaignTitle": "Précommande – T-shirts Octobre Rose 2026",
+    "createdAt": "17/07/2026 17:57:16",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-031-gira",
+    "pharmacyName": "GIRARD DUGAMIN",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Modèle 1 Rose clair",
+        "cip": "Taille S",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "2"
+      },
+      {
+        "designation": "Modèle 1 Rose clair",
+        "cip": "Taille M",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "3"
+      },
+      {
+        "designation": "Modèle 1 Rose clair",
+        "cip": "Taille L",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "3"
+      },
+      {
+        "designation": "Modèle 1 Rose clair",
+        "cip": "Taille XL",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "1"
+      },
+      {
+        "designation": "Modèle 2 Blanc",
+        "cip": "Taille XL",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "1"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "5b3b990a-3ca1-43b8-834d-bf97dfe80694",
+    "campaignId": "precommande-t-shirts-octobre-rose-2026",
+    "campaignTitle": "Précommande – T-shirts Octobre Rose 2026",
+    "createdAt": "18/07/2026 08:31:20",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-002-bamb",
+    "pharmacyName": "BAMBOU VERT",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Modèle 3 Rose fushia",
+        "cip": "Taille XS",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "1"
+      },
+      {
+        "designation": "Modèle 3 Rose fushia",
+        "cip": "Taille M",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "1"
+      },
+      {
+        "designation": "Modèle 3 Rose fushia",
+        "cip": "Taille L",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "1"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "f93340ba-3266-462e-916b-26e46fab8057",
+    "campaignId": "precommande-lisopaine",
+    "campaignTitle": "Précommande Lisopaine",
+    "createdAt": "20/07/2026 06:08:37",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-027-ebou",
+    "pharmacyName": "EBOUE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "LYSOPAINE CETYL MENTHE 36CP FR",
+        "cip": "3400939035765",
+        "tarif": "3,89 €",
+        "colisage": "",
+        "quantity": "18"
+      },
+      {
+        "designation": "LYSOPAINE CETYL MIEL CITRON 36CP FR",
+        "cip": "3400928026729",
+        "tarif": "3,23 €",
+        "colisage": "",
+        "quantity": "12"
+      },
+      {
+        "designation": "LYSOPAINE CETYL CITRON GINGEMBRE 36CP FR",
+        "cip": "3400928026439",
+        "tarif": "3,25 €",
+        "colisage": "",
+        "quantity": "12"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "7e39d8c2-be05-48c6-b180-3f9179b1c058",
+    "campaignId": "precommande-operation-phytoxil",
+    "campaignTitle": "Précommande Opération Phytoxil",
+    "createdAt": "20/07/2026 06:09:58",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-027-ebou",
+    "pharmacyName": "EBOUE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYTOXIL® TOUX SANS SUCRE Sirop, flacon 100 ml",
+        "cip": "3664798079326",
+        "tarif": "3,60 €",
+        "colisage": "",
+        "quantity": "24"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "2281d57e-d481-42a8-aef0-61046accd635",
+    "campaignId": "precommande-lisopaine",
+    "campaignTitle": "Précommande Lisopaine",
+    "createdAt": "20/07/2026 10:04:42",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-023-dupl",
+    "pharmacyName": "DU PLATEAU",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "LYSOPAINE CETYL MENTHE 36CP FR",
+        "cip": "3400939035765",
+        "tarif": "3,89 €",
+        "colisage": "",
+        "quantity": "36"
+      },
+      {
+        "designation": "LYSOPAINE CETYL MIEL CITRON 36CP FR",
+        "cip": "3400928026729",
+        "tarif": "3,23 €",
+        "colisage": "",
+        "quantity": "18"
+      },
+      {
+        "designation": "LYSOPAINE CETYL CITRON GINGEMBRE 36CP FR",
+        "cip": "3400928026439",
+        "tarif": "3,25 €",
+        "colisage": "",
+        "quantity": "18"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "ce7eed3d-663b-4986-8389-19a2d95b9a7b",
+    "campaignId": "precommande-operation-phytoxil",
+    "campaignTitle": "Précommande Opération Phytoxil",
+    "createdAt": "20/07/2026 10:05:40",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-023-dupl",
+    "pharmacyName": "DU PLATEAU",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYTOXIL® TOUX SANS SUCRE Sirop, flacon 100 ml",
+        "cip": "3664798079326",
+        "tarif": "3,60 €",
+        "colisage": "",
+        "quantity": "18"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "115f8228-3420-49c1-af21-2d41717f8091",
+    "campaignId": "precommande-t-shirts-octobre-rose-2026",
+    "campaignTitle": "Précommande – T-shirts Octobre Rose 2026",
+    "createdAt": "20/07/2026 10:08:33",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-023-dupl",
+    "pharmacyName": "DU PLATEAU",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Modèle 1 Rose clair",
+        "cip": "Taille S",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "1"
+      },
+      {
+        "designation": "Modèle 1 Rose clair",
+        "cip": "Taille M",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "1"
+      },
+      {
+        "designation": "Modèle 1 Rose clair",
+        "cip": "Taille L",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "5"
+      },
+      {
+        "designation": "Modèle 1 Rose clair",
+        "cip": "Taille XL",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "2"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "8b2a21d5-6665-4b28-ae84-053abfafdd68",
+    "campaignId": "precommande-lisopaine",
+    "campaignTitle": "Précommande Lisopaine",
+    "createdAt": "20/07/2026 10:50:45",
+    "updatedAt": "20/07/2026 14:50:45",
+    "pharmacyId": "pharmacy-041-rose",
+    "pharmacyName": "ROSE DES VENTS",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "LYSOPAINE CETYL MENTHE 36CP FR",
+        "cip": "3400939035765",
+        "tarif": "3,89 €",
+        "colisage": "",
+        "quantity": "80"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "59186d48-91b6-4b5a-9a06-31c6bcb0180c",
+    "campaignId": "precommande-operation-phytoxil",
+    "campaignTitle": "Précommande Opération Phytoxil",
+    "createdAt": "20/07/2026 10:52:20",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-041-rose",
+    "pharmacyName": "ROSE DES VENTS",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYTOXIL® TOUX SANS SUCRE Sirop, flacon 100 ml",
+        "cip": "3664798079326",
+        "tarif": "3,60 €",
+        "colisage": "",
+        "quantity": "48"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "5b8c3d42-abfd-4834-b205-6ad438329752",
+    "campaignId": "precommande-lisopaine",
+    "campaignTitle": "Précommande Lisopaine",
+    "createdAt": "01/07/2026 13:00:25",
+    "updatedAt": "20/07/2026 20:49:35",
+    "pharmacyId": "pharmacy-005-comb",
+    "pharmacyName": "COMBE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "LYSOPAINE CETYL MENTHE 36CP FR",
+        "cip": "3400939035765",
+        "tarif": "3,89 €",
+        "colisage": "",
+        "quantity": "48"
+      },
+      {
+        "designation": "LYSOPAINE CETYL MIEL CITRON 36CP FR",
+        "cip": "3400928026729",
+        "tarif": "3,23 €",
+        "colisage": "",
+        "quantity": "12"
+      },
+      {
+        "designation": "LYSOPAINE CETYL CITRON GINGEMBRE 36CP FR",
+        "cip": "3400928026439",
+        "tarif": "3,25 €",
+        "colisage": "",
+        "quantity": "24"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "1dd4630a-8c3c-452d-b727-58870dfc2c93",
+    "campaignId": "precommande-t-shirts-octobre-rose-2026",
+    "campaignTitle": "Précommande – T-shirts Octobre Rose 2026",
+    "createdAt": "22/07/2026 10:31:25",
+    "updatedAt": "22/07/2026 14:31:25",
+    "pharmacyId": "pharmacy-019-dugo",
+    "pharmacyName": "DU GOSIER",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Modèle 2 Blanc",
+        "cip": "Taille XL",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "1"
+      },
+      {
+        "designation": "Modèle 3 Rose fushia",
+        "cip": "Taille XS",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "1"
+      },
+      {
+        "designation": "Modèle 3 Rose fushia",
+        "cip": "Taille M",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "3"
+      },
+      {
+        "designation": "Modèle 3 Rose fushia",
+        "cip": "Taille L",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "1"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "d3031a23-0940-4618-b93a-672819282c5c",
+    "campaignId": "precommande-t-shirts-octobre-rose-2026",
+    "campaignTitle": "Précommande – T-shirts Octobre Rose 2026",
+    "createdAt": "12/08/2026 14:50:01",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-011-dela",
+    "pharmacyName": "DE LA POINTE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Modèle 1 Rose clair",
+        "cip": "Taille XS",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "1"
+      },
+      {
+        "designation": "Modèle 1 Rose clair",
+        "cip": "Taille S",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "2"
+      },
+      {
+        "designation": "Modèle 1 Rose clair",
+        "cip": "Taille M",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "3"
+      },
+      {
+        "designation": "Modèle 1 Rose clair",
+        "cip": "Taille L",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "1"
+      },
+      {
+        "designation": "Modèle 1 Rose clair",
+        "cip": "Taille XXL",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "1"
+      },
+      {
+        "designation": "Modèle 2 Blanc",
+        "cip": "Taille XS",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "1"
+      },
+      {
+        "designation": "Modèle 2 Blanc",
+        "cip": "Taille S",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "2"
+      },
+      {
+        "designation": "Modèle 2 Blanc",
+        "cip": "Taille M",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "1"
+      },
+      {
+        "designation": "Modèle 2 Blanc",
+        "cip": "Taille XXL",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "1"
+      },
+      {
+        "designation": "Modèle 3 Rose fushia",
+        "cip": "Taille L",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "1"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "549fe1cb-9c08-42d8-9540-fc1808323725",
+    "campaignId": "precommande-t-shirts-octobre-rose-2026",
+    "campaignTitle": "Précommande – T-shirts Octobre Rose 2026",
+    "createdAt": "13/08/2026 22:00:28",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-041-rose",
+    "pharmacyName": "ROSE DES VENTS",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Modèle 2 Blanc",
+        "cip": "Taille S",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "2"
+      },
+      {
+        "designation": "Modèle 2 Blanc",
+        "cip": "Taille L",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "6"
+      },
+      {
+        "designation": "Modèle 2 Blanc",
+        "cip": "Taille XL",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "1"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "d51f4064-b666-49e6-8ffb-f032cf36efcb",
+    "campaignId": "precommande-t-shirts-octobre-rose-2026",
+    "campaignTitle": "Précommande – T-shirts Octobre Rose 2026",
+    "createdAt": "26/08/2026 08:41:48",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-016-dorv",
+    "pharmacyName": "DORVILLE",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "b90b8a83-7d3d-449f-9b4d-d3278bb4664e",
+    "campaignId": "precommande-t-shirts-octobre-rose-2026",
+    "campaignTitle": "Précommande – T-shirts Octobre Rose 2026",
+    "createdAt": "26/08/2026 09:00:34",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-018-duch",
+    "pharmacyName": "DU CHAMP D’ARBAUD",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "97bc7ad4-b17c-4ca5-8de1-da1227dc9eed",
+    "campaignId": "precommande-t-shirts-octobre-rose-2026",
+    "campaignTitle": "Précommande – T-shirts Octobre Rose 2026",
+    "createdAt": "26/08/2026 09:51:41",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-028-fleu",
+    "pharmacyName": "FLEUR DE CANNE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Modèle 3 Rose fushia",
+        "cip": "Taille M",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "3"
+      },
+      {
+        "designation": "Modèle 3 Rose fushia",
+        "cip": "Taille L",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "7"
+      },
+      {
+        "designation": "Modèle 3 Rose fushia",
+        "cip": "Taille XL",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "3"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "35f1623b-1462-4596-b6c0-ba81bdb62981",
+    "campaignId": "precommande-t-shirts-octobre-rose-2026",
+    "campaignTitle": "Précommande – T-shirts Octobre Rose 2026",
+    "createdAt": "26/08/2026 10:17:05",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-026-dust",
+    "pharmacyName": "DU STADE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Modèle 1 Rose clair",
+        "cip": "Taille S",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "1"
+      },
+      {
+        "designation": "Modèle 1 Rose clair",
+        "cip": "Taille M",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "1"
+      },
+      {
+        "designation": "Modèle 1 Rose clair",
+        "cip": "Taille L",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "4"
+      },
+      {
+        "designation": "Modèle 1 Rose clair",
+        "cip": "Taille XL",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "1"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "f745dc85-c6be-44d0-a722-579b1bdd6068",
+    "campaignId": "precommande-t-shirts-octobre-rose-2026",
+    "campaignTitle": "Précommande – T-shirts Octobre Rose 2026",
+    "createdAt": "26/08/2026 11:50:03",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-017-duce",
+    "pharmacyName": "DU CENTRE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Modèle 1 Rose clair",
+        "cip": "Taille XS",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "1"
+      },
+      {
+        "designation": "Modèle 1 Rose clair",
+        "cip": "Taille M",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "1"
+      },
+      {
+        "designation": "Modèle 1 Rose clair",
+        "cip": "Taille L",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "2"
+      },
+      {
+        "designation": "Modèle 2 Blanc",
+        "cip": "Taille M",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "1"
+      },
+      {
+        "designation": "Modèle 2 Blanc",
+        "cip": "Taille L",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "2"
+      },
+      {
+        "designation": "Modèle 3 Rose fushia",
+        "cip": "Taille S",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "1"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "a7e2271a-d788-4f70-8dcd-9df9bc5ef0ce",
+    "campaignId": "precommande-t-shirts-octobre-rose-2026",
+    "campaignTitle": "Précommande – T-shirts Octobre Rose 2026",
+    "createdAt": "26/08/2026 16:35:05",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-020-duma",
+    "pharmacyName": "DU MARCHE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Modèle 3 Rose fushia",
+        "cip": "Taille XS",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "1"
+      },
+      {
+        "designation": "Modèle 3 Rose fushia",
+        "cip": "Taille M",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "3"
+      },
+      {
+        "designation": "Modèle 3 Rose fushia",
+        "cip": "Taille L",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "1"
+      },
+      {
+        "designation": "Modèle 3 Rose fushia",
+        "cip": "Taille XL",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "1"
+      },
+      {
+        "designation": "Modèle 3 Rose fushia",
+        "cip": "Taille XXL",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "1"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "508989c8-6495-40ba-aa18-14149c219b35",
+    "campaignId": "precommande-t-shirts-octobre-rose-2026",
+    "campaignTitle": "Précommande – T-shirts Octobre Rose 2026",
+    "createdAt": "27/08/2026 08:35:05",
+    "updatedAt": "27/08/2026 13:22:17",
+    "pharmacyId": "pharmacy-012-dela",
+    "pharmacyName": "DE LA SOURCE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Modèle 3 Rose fushia",
+        "cip": "Taille M",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "2"
+      },
+      {
+        "designation": "Modèle 3 Rose fushia",
+        "cip": "Taille L",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "2"
+      },
+      {
+        "designation": "Modèle 3 Rose fushia",
+        "cip": "Taille XL",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "2"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "cbb669a3-5561-411b-bbcd-027c3ec51e4e",
+    "campaignId": "brumes-parfumees-monoi",
+    "campaignTitle": "Brumes Parfumées Monoi",
+    "createdAt": "27/08/2026 09:41:43",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-044-vila",
+    "pharmacyName": "VILA",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Brume parfumée Monoï Tiaré - corps & cheveux - 250 ml",
+        "cip": "3666417029323",
+        "tarif": "4,99 €",
+        "colisage": "6",
+        "quantity": "6"
+      },
+      {
+        "designation": "Brume parfumée Monoï Sucré - corps & cheveux - 250 ml",
+        "cip": "3666417029354",
+        "tarif": "4,99 €",
+        "colisage": "6",
+        "quantity": "6"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "2eb03147-e13a-4900-aef3-12bdab8fb053",
+    "campaignId": "precommande-t-shirts-octobre-rose-2026",
+    "campaignTitle": "Précommande – T-shirts Octobre Rose 2026",
+    "createdAt": "27/08/2026 09:48:50",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-044-vila",
+    "pharmacyName": "VILA",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Modèle 1 Rose clair",
+        "cip": "Taille S",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "3"
+      },
+      {
+        "designation": "Modèle 1 Rose clair",
+        "cip": "Taille M",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "1"
+      },
+      {
+        "designation": "Modèle 1 Rose clair",
+        "cip": "Taille L",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "3"
+      },
+      {
+        "designation": "Modèle 1 Rose clair",
+        "cip": "Taille XL",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "1"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "a5a7eca7-4124-40c4-8f0d-03505056dc42",
+    "campaignId": "precommande-t-shirts-octobre-rose-2026",
+    "campaignTitle": "Précommande – T-shirts Octobre Rose 2026",
+    "createdAt": "27/08/2026 10:28:29",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-001-azar",
+    "pharmacyName": "AZAR",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Modèle 1 Rose clair",
+        "cip": "Taille XS",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "1"
+      },
+      {
+        "designation": "Modèle 1 Rose clair",
+        "cip": "Taille S",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "2"
+      },
+      {
+        "designation": "Modèle 1 Rose clair",
+        "cip": "Taille M",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "3"
+      },
+      {
+        "designation": "Modèle 1 Rose clair",
+        "cip": "Taille XL",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "1"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "4c2a55fc-869f-45ac-97e8-3b63a8590234",
+    "campaignId": "brumes-parfumees-monoi",
+    "campaignTitle": "Brumes Parfumées Monoi",
+    "createdAt": "27/08/2026 10:31:33",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-001-azar",
+    "pharmacyName": "AZAR",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Brume parfumée Monoï Vanille - corps & cheveux - 250 ml",
+        "cip": "3666417029330",
+        "tarif": "4,99 €",
+        "colisage": "6",
+        "quantity": "6"
+      },
+      {
+        "designation": "Brume parfumée Monoï Tiaré - corps & cheveux - 250 ml",
+        "cip": "3666417029323",
+        "tarif": "4,99 €",
+        "colisage": "6",
+        "quantity": "6"
+      },
+      {
+        "designation": "Brume parfumée Monoï Sucré - corps & cheveux - 250 ml",
+        "cip": "3666417029354",
+        "tarif": "4,99 €",
+        "colisage": "6",
+        "quantity": "6"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "053014a2-c396-4815-a0f3-36eed934a520",
+    "campaignId": "precommande-t-shirts-octobre-rose-2026",
+    "campaignTitle": "Précommande – T-shirts Octobre Rose 2026",
+    "createdAt": "27/08/2026 11:35:34",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-013-deri",
+    "pharmacyName": "DE RIGAUD",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Modèle 1 Rose clair",
+        "cip": "Taille M",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "1"
+      },
+      {
+        "designation": "Modèle 1 Rose clair",
+        "cip": "Taille L",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "1"
+      },
+      {
+        "designation": "Modèle 1 Rose clair",
+        "cip": "Taille XL",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "1"
+      },
+      {
+        "designation": "Modèle 1 Rose clair",
+        "cip": "Taille XXL",
+        "tarif": "9,50 €",
+        "colisage": "",
+        "quantity": "1"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "42f1336a-fbe0-4cd7-9431-a8b6454aeb0a",
+    "campaignId": "brumes-parfumees-monoi",
+    "campaignTitle": "Brumes Parfumées Monoi",
+    "createdAt": "27/08/2026 12:06:07",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-013-deri",
+    "pharmacyName": "DE RIGAUD",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "0b908d8b-bc75-4ef0-bf6c-9d55dd100cf7",
+    "campaignId": "brumes-parfumees-monoi",
+    "campaignTitle": "Brumes Parfumées Monoi",
+    "createdAt": "27/08/2026 15:00:04",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-017-duce",
+    "pharmacyName": "DU CENTRE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Brume parfumée Monoï Vanille - corps & cheveux - 250 ml",
+        "cip": "3666417029330",
+        "tarif": "4,99 €",
+        "colisage": "6",
+        "quantity": "6"
+      },
+      {
+        "designation": "Brume parfumée Monoï Tiaré - corps & cheveux - 250 ml",
+        "cip": "3666417029323",
+        "tarif": "4,99 €",
+        "colisage": "6",
+        "quantity": "6"
+      },
+      {
+        "designation": "Brume parfumée Monoï Coconut - corps & cheveux - 250 ml",
+        "cip": "3666417029347",
+        "tarif": "4,99 €",
+        "colisage": "6",
+        "quantity": "6"
+      },
+      {
+        "designation": "Brume parfumée Monoï Sucré - corps & cheveux - 250 ml",
+        "cip": "3666417029354",
+        "tarif": "4,99 €",
+        "colisage": "6",
+        "quantity": "6"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "2603919d-7fe3-4f21-bfb6-609092b2e97e",
+    "campaignId": "brumes-parfumees-monoi",
+    "campaignTitle": "Brumes Parfumées Monoi",
+    "createdAt": "28/08/2026 13:28:28",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-042-sain",
+    "pharmacyName": "SAINTE ANNE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Brume parfumée Monoï Vanille - corps & cheveux - 250 ml",
+        "cip": "3666417029330",
+        "tarif": "4,99 €",
+        "colisage": "6",
+        "quantity": "6"
+      },
+      {
+        "designation": "Brume parfumée Monoï Tiaré - corps & cheveux - 250 ml",
+        "cip": "3666417029323",
+        "tarif": "4,99 €",
+        "colisage": "6",
+        "quantity": "6"
+      },
+      {
+        "designation": "Brume parfumée Monoï Coconut - corps & cheveux - 250 ml",
+        "cip": "3666417029347",
+        "tarif": "4,99 €",
+        "colisage": "6",
+        "quantity": "6"
+      },
+      {
+        "designation": "Brume parfumée Monoï Sucré - corps & cheveux - 250 ml",
+        "cip": "3666417029354",
+        "tarif": "4,99 €",
+        "colisage": "6",
+        "quantity": "6"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "31914ff7-03a6-4841-958e-6ad85f513449",
+    "campaignId": "brumes-parfumees-monoi",
+    "campaignTitle": "Brumes Parfumées Monoi",
+    "createdAt": "28/08/2026 15:24:47",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-032-heli",
+    "pharmacyName": "HELIOS",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Brume parfumée Monoï Vanille - corps & cheveux - 250 ml",
+        "cip": "3666417029330",
+        "tarif": "4,99 €",
+        "colisage": "6",
+        "quantity": "12"
+      },
+      {
+        "designation": "Brume parfumée Monoï Tiaré - corps & cheveux - 250 ml",
+        "cip": "3666417029323",
+        "tarif": "4,99 €",
+        "colisage": "6",
+        "quantity": "12"
+      },
+      {
+        "designation": "Brume parfumée Monoï Coconut - corps & cheveux - 250 ml",
+        "cip": "3666417029347",
+        "tarif": "4,99 €",
+        "colisage": "6",
+        "quantity": "12"
+      },
+      {
+        "designation": "Brume parfumée Monoï Sucré - corps & cheveux - 250 ml",
+        "cip": "3666417029354",
+        "tarif": "4,99 €",
+        "colisage": "6",
+        "quantity": "12"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "ebe5e506-5528-4a26-b50e-cf2a7986f0d2",
+    "campaignId": "brumes-parfumees-monoi",
+    "campaignTitle": "Brumes Parfumées Monoi",
+    "createdAt": "28/08/2026 15:26:55",
+    "updatedAt": "28/08/2026 19:26:56",
+    "pharmacyId": "pharmacy-019-dugo",
+    "pharmacyName": "DU GOSIER",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Brume parfumée Monoï Vanille - corps & cheveux - 250 ml",
+        "cip": "3666417029330",
+        "tarif": "4,99 €",
+        "colisage": "6",
+        "quantity": "6"
+      },
+      {
+        "designation": "Brume parfumée Monoï Tiaré - corps & cheveux - 250 ml",
+        "cip": "3666417029323",
+        "tarif": "4,99 €",
+        "colisage": "6",
+        "quantity": "6"
+      },
+      {
+        "designation": "Brume parfumée Monoï Coconut - corps & cheveux - 250 ml",
+        "cip": "3666417029347",
+        "tarif": "4,99 €",
+        "colisage": "6",
+        "quantity": "6"
+      },
+      {
+        "designation": "Brume parfumée Monoï Sucré - corps & cheveux - 250 ml",
+        "cip": "3666417029354",
+        "tarif": "4,99 €",
+        "colisage": "6",
+        "quantity": "6"
+      }
+    ],
+    "notes": "Facturation et livraison souhaitées à partir du 01/10/2026"
+  },
+  {
+    "id": "89a9e16a-f13d-4236-8cea-80567f6f9bf1",
+    "campaignId": "brumes-parfumees-monoi",
+    "campaignTitle": "Brumes Parfumées Monoi",
+    "createdAt": "28/08/2026 15:53:30",
+    "updatedAt": "28/08/2026 20:15:05",
+    "pharmacyId": "pharmacy-039-port",
+    "pharmacyName": "PORT LOUIS",
+    "interest": "Interessé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "380859f1-87b4-4e83-9eca-79ade863840d",
+    "campaignId": "brumes-parfumees-monoi",
+    "campaignTitle": "Brumes Parfumées Monoi",
+    "createdAt": "31/08/2026 18:28:23",
+    "updatedAt": "31/08/2026 22:29:21",
+    "pharmacyId": "pharmacy-020-duma",
+    "pharmacyName": "DU MARCHE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Brume parfumée Monoï Vanille - corps & cheveux - 250 ml",
+        "cip": "3666417029330",
+        "tarif": "4,99 €",
+        "colisage": "6",
+        "quantity": "6"
+      },
+      {
+        "designation": "Brume parfumée Monoï Tiaré - corps & cheveux - 250 ml",
+        "cip": "3666417029323",
+        "tarif": "4,99 €",
+        "colisage": "6",
+        "quantity": "6"
+      },
+      {
+        "designation": "Brume parfumée Monoï Coconut - corps & cheveux - 250 ml",
+        "cip": "3666417029347",
+        "tarif": "4,99 €",
+        "colisage": "6",
+        "quantity": "6"
+      },
+      {
+        "designation": "Brume parfumée Monoï Sucré - corps & cheveux - 250 ml",
+        "cip": "3666417029354",
+        "tarif": "4,99 €",
+        "colisage": "6",
+        "quantity": "6"
+      }
+    ],
+    "notes": "EST IL POSSIBLE D AVOIR DES TESTEURS?"
+  }
+]

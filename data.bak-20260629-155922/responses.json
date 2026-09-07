@@ -1,0 +1,2688 @@
+[
+  {
+    "id": "ccdaa6e5-de78-4e53-a6f3-155d61bf6405",
+    "campaignId": "herboristerie",
+    "campaignTitle": "Herboristerie",
+    "createdAt": "02/06/2026 16:12:47",
+    "pharmacyId": "",
+    "pharmacyName": "vila",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Gélules - 1 boîte 60 gélules Herbe à pique",
+        "cip": "3700210601345",
+        "tarif": "16,09 €",
+        "colisage": "",
+        "quantity": "96"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "a5f7542b-c9d3-41e6-8068-51f530dc5d91",
+    "campaignId": "operation-physiomer",
+    "campaignTitle": "Opération Physiomer",
+    "createdAt": "10/06/2026 19:23:40",
+    "pharmacyId": "pharmacy-019-dugo",
+    "pharmacyName": "DU GOSIER",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYSIOMER JET DYNAMIQ 2X135ML",
+        "cip": "3401576080644",
+        "tarif": "7,76 €",
+        "colisage": "",
+        "quantity": "24"
+      },
+      {
+        "designation": "PHYSIOMER S.HYPERTONIQ 135ML",
+        "cip": "3401543248053",
+        "tarif": "5,63 €",
+        "colisage": "",
+        "quantity": "24"
+      }
+    ],
+    "notes": "Facturation et livraison souhaitées en octobre"
+  },
+  {
+    "id": "4d5ce2fd-7920-4fd4-b926-9c7c557226bd",
+    "campaignId": "brume-little-marcel",
+    "campaignTitle": "Brume Little Marcel",
+    "createdAt": "10/06/2026 19:24:46",
+    "pharmacyId": "pharmacy-019-dugo",
+    "pharmacyName": "DU GOSIER",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "c31f4ab0-973a-4a05-94eb-e035067c0a56",
+    "campaignId": "operation-physiomer",
+    "campaignTitle": "Opération Physiomer",
+    "createdAt": "10/06/2026 19:40:32",
+    "pharmacyId": "pharmacy-044-vila",
+    "pharmacyName": "VILA",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYSIOMER JET DYNAMIQ 2X135ML",
+        "cip": "3401576080644",
+        "tarif": "7,76 €",
+        "colisage": "",
+        "quantity": "18"
+      },
+      {
+        "designation": "PHYSIOMER S.HYPERTONIQ 135ML",
+        "cip": "3401543248053",
+        "tarif": "5,63 €",
+        "colisage": "",
+        "quantity": "24"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "d4766c0c-af73-41c1-96fa-434d4a8b3332",
+    "campaignId": "brume-little-marcel",
+    "campaignTitle": "Brume Little Marcel",
+    "createdAt": "10/06/2026 19:41:58",
+    "pharmacyId": "pharmacy-044-vila",
+    "pharmacyName": "VILA",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Cherry Lip",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Coconut Cream",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Crush Me",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Milky Vanilla",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Monoi Beach",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Orange Blossom",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Sweet Candy",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Sweet Gelato",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "2bc981ef-e0fe-4157-9892-3e7095301b2c",
+    "campaignId": "operation-physiomer",
+    "campaignTitle": "Opération Physiomer",
+    "createdAt": "10/06/2026 22:52:48",
+    "updatedAt": "11/06/2026 02:54:35",
+    "pharmacyId": "pharmacy-045-phar",
+    "pharmacyName": "PHARMACIE TEST",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "90b1a0d5-72f9-4c5b-a3c8-fb5e257571c3",
+    "campaignId": "cadeaux-de-fins-d-annee-soguasphar-pharmacie",
+    "campaignTitle": "Cadeaux de fins d'année SOGUASPHAR / PHARMACIE",
+    "createdAt": "10/06/2026 19:55:51",
+    "updatedAt": "11/06/2026 02:57:04",
+    "pharmacyId": "pharmacy-044-vila",
+    "pharmacyName": "VILA",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Marque page",
+        "cip": "",
+        "tarif": "0,60 €",
+        "colisage": "500",
+        "quantity": "500"
+      },
+      {
+        "designation": "Stylos bleu marine",
+        "cip": "",
+        "tarif": "1,20 €",
+        "colisage": "500",
+        "quantity": "500"
+      }
+    ],
+    "notes": "Les stylos sont un peu cher, mais je suis dans l'adhésion !\nbravo"
+  },
+  {
+    "id": "56a1aa1f-72b8-429a-9231-771bcc18c9a2",
+    "campaignId": "calendriers-2027",
+    "campaignTitle": "Calendriers 2027",
+    "createdAt": "10/06/2026 19:43:14",
+    "updatedAt": "11/06/2026 02:57:40",
+    "pharmacyId": "pharmacy-044-vila",
+    "pharmacyName": "VILA",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Calendrier 42x30cm Souple",
+        "cip": "",
+        "tarif": "0,49 €",
+        "colisage": "500",
+        "quantity": "1000"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "5b1a1623-e678-4839-b8b3-b57b0d2efffd",
+    "campaignId": "calendriers-2027",
+    "campaignTitle": "Calendriers 2027",
+    "createdAt": "11/06/2026 08:22:50",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-030-gamb",
+    "pharmacyName": "GAMBETTA",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Calendrier 42x30cm Souple",
+        "cip": "",
+        "tarif": "0,49 €",
+        "colisage": "500",
+        "quantity": "500"
+      },
+      {
+        "designation": "Calendrier 43 x 33cm - Rigide",
+        "cip": "",
+        "tarif": "1,40 €",
+        "colisage": "500",
+        "quantity": "2000"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "f73947ff-3e02-4054-9849-c00a9e4fbdd0",
+    "campaignId": "cadeaux-de-fins-d-annee-soguasphar-pharmacie",
+    "campaignTitle": "Cadeaux de fins d'année SOGUASPHAR / PHARMACIE",
+    "createdAt": "11/06/2026 08:25:15",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-030-gamb",
+    "pharmacyName": "GAMBETTA",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Marque page",
+        "cip": "",
+        "tarif": "0,60 €",
+        "colisage": "500",
+        "quantity": "500"
+      },
+      {
+        "designation": "Stylos bleu marine",
+        "cip": "",
+        "tarif": "1,20 €",
+        "colisage": "500",
+        "quantity": "500"
+      },
+      {
+        "designation": "Savon végétal à l'huile d'amande bio",
+        "cip": "",
+        "tarif": "1,50 €",
+        "colisage": "300",
+        "quantity": "300"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "6bd6837c-997b-475d-895b-2a9d1f808e51",
+    "campaignId": "brume-little-marcel",
+    "campaignTitle": "Brume Little Marcel",
+    "createdAt": "11/06/2026 08:27:07",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-030-gamb",
+    "pharmacyName": "GAMBETTA",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Cherry Lip",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "6"
+      },
+      {
+        "designation": "Coconut Cream",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "6"
+      },
+      {
+        "designation": "Crush Me",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "6"
+      },
+      {
+        "designation": "Milky Vanilla",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "6"
+      },
+      {
+        "designation": "Monoi Beach",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "6"
+      },
+      {
+        "designation": "Orange Blossom",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "6"
+      },
+      {
+        "designation": "Sweet Candy",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "6"
+      },
+      {
+        "designation": "Sweet Gelato",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "6"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "02fd1882-0353-412e-9f23-ed22c52c82e8",
+    "campaignId": "brume-little-marcel",
+    "campaignTitle": "Brume Little Marcel",
+    "createdAt": "11/06/2026 08:39:14",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-032-heli",
+    "pharmacyName": "HELIOS",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Cherry Lip",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Coconut Cream",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Crush Me",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Milky Vanilla",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Monoi Beach",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Orange Blossom",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Sweet Candy",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Sweet Gelato",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "f3f17113-1434-444d-a5cd-16dc506933bd",
+    "campaignId": "cadeaux-de-fins-d-annee-soguasphar-pharmacie",
+    "campaignTitle": "Cadeaux de fins d'année SOGUASPHAR / PHARMACIE",
+    "createdAt": "11/06/2026 08:40:08",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-032-heli",
+    "pharmacyName": "HELIOS",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Marque page",
+        "cip": "",
+        "tarif": "0,60 €",
+        "colisage": "500",
+        "quantity": "500"
+      },
+      {
+        "designation": "Savon végétal à l'huile d'amande bio",
+        "cip": "",
+        "tarif": "1,50 €",
+        "colisage": "300",
+        "quantity": "600"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "f4da84af-2408-4d41-b19e-2451611b8184",
+    "campaignId": "calendriers-2027",
+    "campaignTitle": "Calendriers 2027",
+    "createdAt": "11/06/2026 08:40:42",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-032-heli",
+    "pharmacyName": "HELIOS",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Calendrier 43 x 33cm - Rigide",
+        "cip": "",
+        "tarif": "1,40 €",
+        "colisage": "500",
+        "quantity": "1500"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "fa9e95de-e721-447a-abbe-0e537a3e2a74",
+    "campaignId": "cadeaux-de-fins-d-annee-soguasphar-pharmacie",
+    "campaignTitle": "Cadeaux de fins d'année SOGUASPHAR / PHARMACIE",
+    "createdAt": "11/06/2026 09:51:50",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-038-mont",
+    "pharmacyName": "MONTOUT",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Stylos bleu marine",
+        "cip": "",
+        "tarif": "1,20 €",
+        "colisage": "500",
+        "quantity": "1000"
+      },
+      {
+        "designation": "Savon végétal à l'huile d'amande bio",
+        "cip": "",
+        "tarif": "1,50 €",
+        "colisage": "300",
+        "quantity": "900"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "ebd6e889-d0a9-450e-848a-ead2fcc0b835",
+    "campaignId": "calendriers-2027",
+    "campaignTitle": "Calendriers 2027",
+    "createdAt": "11/06/2026 14:31:52",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-039-port",
+    "pharmacyName": "PORT LOUIS",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Calendrier 42x30cm Souple",
+        "cip": "",
+        "tarif": "0,49 €",
+        "colisage": "500",
+        "quantity": "1500"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "356105e2-77dc-4809-bb06-1a98a449a104",
+    "campaignId": "cadeaux-de-fins-d-annee-soguasphar-pharmacie",
+    "campaignTitle": "Cadeaux de fins d'année SOGUASPHAR / PHARMACIE",
+    "createdAt": "11/06/2026 14:52:23",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-039-port",
+    "pharmacyName": "PORT LOUIS",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Marque page",
+        "cip": "",
+        "tarif": "0,60 €",
+        "colisage": "500",
+        "quantity": "500"
+      },
+      {
+        "designation": "Stylos bleu marine",
+        "cip": "",
+        "tarif": "1,20 €",
+        "colisage": "500",
+        "quantity": "1000"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "bbfb3a7b-9e86-424d-82f1-79f706b4a1c9",
+    "campaignId": "calendriers-2027",
+    "campaignTitle": "Calendriers 2027",
+    "createdAt": "11/06/2026 18:10:52",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-013-deri",
+    "pharmacyName": "DE RIGAUD",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Calendrier 43 x 33cm - Rigide",
+        "cip": "",
+        "tarif": "1,40 €",
+        "colisage": "500",
+        "quantity": "500"
+      }
+    ],
+    "notes": "MOIS DE NOVEMBRE 2026"
+  },
+  {
+    "id": "8224f812-46b6-4f3a-9d06-c9b217f36223",
+    "campaignId": "cadeaux-de-fins-d-annee-soguasphar-pharmacie",
+    "campaignTitle": "Cadeaux de fins d'année SOGUASPHAR / PHARMACIE",
+    "createdAt": "11/06/2026 18:11:31",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-013-deri",
+    "pharmacyName": "DE RIGAUD",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Stylos bleu marine",
+        "cip": "",
+        "tarif": "1,20 €",
+        "colisage": "500",
+        "quantity": "500"
+      }
+    ],
+    "notes": "MOIS DE NOVEMBRE 2026"
+  },
+  {
+    "id": "b36afd9d-4a16-4333-b7f9-cf1620eace0a",
+    "campaignId": "calendriers-2027",
+    "campaignTitle": "Calendriers 2027",
+    "createdAt": "12/06/2026 08:50:28",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-017-duce",
+    "pharmacyName": "DU CENTRE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Calendrier 43 x 33cm - Rigide",
+        "cip": "",
+        "tarif": "1,40 €",
+        "colisage": "500",
+        "quantity": "1000"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "9bccb7ef-0208-489e-83aa-371a1d4dce9d",
+    "campaignId": "cadeaux-de-fins-d-annee-soguasphar-pharmacie",
+    "campaignTitle": "Cadeaux de fins d'année SOGUASPHAR / PHARMACIE",
+    "createdAt": "12/06/2026 08:51:40",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-017-duce",
+    "pharmacyName": "DU CENTRE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Marque page",
+        "cip": "",
+        "tarif": "0,60 €",
+        "colisage": "500",
+        "quantity": "500"
+      },
+      {
+        "designation": "Savon végétal à l'huile d'amande bio",
+        "cip": "",
+        "tarif": "1,50 €",
+        "colisage": "300",
+        "quantity": "900"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "08b1ffa3-45dc-4aa7-94f7-2a42dc4586e0",
+    "campaignId": "brume-little-marcel",
+    "campaignTitle": "Brume Little Marcel",
+    "createdAt": "12/06/2026 08:54:14",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-017-duce",
+    "pharmacyName": "DU CENTRE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Cherry Lip",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Coconut Cream",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Crush Me",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Milky Vanilla",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Monoi Beach",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Orange Blossom",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Sweet Candy",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Sweet Gelato",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "642f62ca-d875-44a1-bf56-4c574db3552d",
+    "campaignId": "operation-physiomer",
+    "campaignTitle": "Opération Physiomer",
+    "createdAt": "12/06/2026 08:54:24",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-017-duce",
+    "pharmacyName": "DU CENTRE",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "79505057-b6b3-43a7-a8d2-708ce86fe0da",
+    "campaignId": "brume-little-marcel",
+    "campaignTitle": "Brume Little Marcel",
+    "createdAt": "12/06/2026 09:12:00",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-008-dela",
+    "pharmacyName": "DE LA CITÉ DES MÉTIERS",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Cherry Lip",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Coconut Cream",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Crush Me",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Milky Vanilla",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Monoi Beach",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Orange Blossom",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Sweet Candy",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Sweet Gelato",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      }
+    ],
+    "notes": "avec testeur svp"
+  },
+  {
+    "id": "c49bd336-1162-40f2-86a6-bd3ed320ba77",
+    "campaignId": "cadeaux-de-fins-d-annee-soguasphar-pharmacie",
+    "campaignTitle": "Cadeaux de fins d'année SOGUASPHAR / PHARMACIE",
+    "createdAt": "12/06/2026 10:44:34",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-007-dedo",
+    "pharmacyName": "DE DOUVILLE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Stylos bleu marine",
+        "cip": "",
+        "tarif": "1,20 €",
+        "colisage": "500",
+        "quantity": "500"
+      },
+      {
+        "designation": "Savon végétal à l'huile d'amande bio",
+        "cip": "",
+        "tarif": "1,50 €",
+        "colisage": "300",
+        "quantity": "300"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "c78399e6-d451-4a04-aef3-71a09fe4d4be",
+    "campaignId": "calendriers-2027",
+    "campaignTitle": "Calendriers 2027",
+    "createdAt": "12/06/2026 18:37:31",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-024-duse",
+    "pharmacyName": "DU SEMAPHORE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Calendrier 42x30cm Souple",
+        "cip": "",
+        "tarif": "0,49 €",
+        "colisage": "500",
+        "quantity": "1000"
+      }
+    ],
+    "notes": "LIVRAISON FIN NOVEMBRE"
+  },
+  {
+    "id": "7ec1b8aa-b80f-4bb1-922d-4ce0fc80d926",
+    "campaignId": "brume-little-marcel",
+    "campaignTitle": "Brume Little Marcel",
+    "createdAt": "13/06/2026 11:34:54",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-002-bamb",
+    "pharmacyName": "BAMBOU VERT",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Milky Vanilla",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Monoi Beach",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Orange Blossom",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Sweet Gelato",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "6d4e1af6-9e67-4b52-bdfb-7bb4f12d7781",
+    "campaignId": "operation-physiomer",
+    "campaignTitle": "Opération Physiomer",
+    "createdAt": "15/06/2026 08:46:15",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-042-sain",
+    "pharmacyName": "SAINTE ANNE",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "ac3fe44d-32c7-4bf5-ba46-d7bc59f41d0d",
+    "campaignId": "brume-little-marcel",
+    "campaignTitle": "Brume Little Marcel",
+    "createdAt": "15/06/2026 08:48:11",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-042-sain",
+    "pharmacyName": "SAINTE ANNE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Cherry Lip",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Coconut Cream",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Crush Me",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Milky Vanilla",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Monoi Beach",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Orange Blossom",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Sweet Candy",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Sweet Gelato",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "0447efd6-094f-43a1-89af-0dd24e02c2c2",
+    "campaignId": "cadeaux-de-fins-d-annee-soguasphar-pharmacie",
+    "campaignTitle": "Cadeaux de fins d'année SOGUASPHAR / PHARMACIE",
+    "createdAt": "15/06/2026 08:49:56",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-042-sain",
+    "pharmacyName": "SAINTE ANNE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Marque page",
+        "cip": "",
+        "tarif": "0,60 €",
+        "colisage": "500",
+        "quantity": "500"
+      },
+      {
+        "designation": "Stylos bleu marine",
+        "cip": "",
+        "tarif": "1,20 €",
+        "colisage": "500",
+        "quantity": "500"
+      },
+      {
+        "designation": "Savon végétal à l'huile d'amande bio",
+        "cip": "",
+        "tarif": "1,50 €",
+        "colisage": "300",
+        "quantity": "600"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "b2380a9b-1014-48e2-b476-6bfa8974c52b",
+    "campaignId": "calendriers-2027",
+    "campaignTitle": "Calendriers 2027",
+    "createdAt": "15/06/2026 08:51:05",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-042-sain",
+    "pharmacyName": "SAINTE ANNE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Calendrier 42x30cm Souple",
+        "cip": "",
+        "tarif": "0,49 €",
+        "colisage": "500",
+        "quantity": "500"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "dcb358c4-6547-44cc-a690-a628a70b5637",
+    "campaignId": "brume-little-marcel",
+    "campaignTitle": "Brume Little Marcel",
+    "createdAt": "15/06/2026 09:30:55",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-040-reyn",
+    "pharmacyName": "REYNAUD COPAVER",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Cherry Lip",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Coconut Cream",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Crush Me",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Milky Vanilla",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Monoi Beach",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Sweet Candy",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Sweet Gelato",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "8c274887-858d-4eeb-b800-c4d29a100d31",
+    "campaignId": "operation-physiomer",
+    "campaignTitle": "Opération Physiomer",
+    "createdAt": "15/06/2026 09:32:36",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-040-reyn",
+    "pharmacyName": "REYNAUD COPAVER",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "52ccb27c-672d-468d-8e23-370ca91b004f",
+    "campaignId": "operation-physiomer",
+    "campaignTitle": "Opération Physiomer",
+    "createdAt": "15/06/2026 09:44:24",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-016-dorv",
+    "pharmacyName": "DORVILLE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYSIOMER JET DYNAMIQ 2X135ML",
+        "cip": "3401576080644",
+        "tarif": "7,76 €",
+        "colisage": "",
+        "quantity": "24"
+      },
+      {
+        "designation": "PHYSIOMER S.HYPERTONIQ 135ML",
+        "cip": "3401543248053",
+        "tarif": "5,63 €",
+        "colisage": "",
+        "quantity": "24"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "8b020702-6393-4e8b-8f6a-3edcc40d6007",
+    "campaignId": "calendriers-2027",
+    "campaignTitle": "Calendriers 2027",
+    "createdAt": "15/06/2026 10:05:35",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-003-bert",
+    "pharmacyName": "BERTHELOT F",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Calendrier 43 x 33cm - Rigide",
+        "cip": "",
+        "tarif": "1,40 €",
+        "colisage": "500",
+        "quantity": "500"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "ff03ddf4-bc9f-4074-b1a7-a36170512e1c",
+    "campaignId": "cadeaux-de-fins-d-annee-soguasphar-pharmacie",
+    "campaignTitle": "Cadeaux de fins d'année SOGUASPHAR / PHARMACIE",
+    "createdAt": "15/06/2026 10:07:00",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-003-bert",
+    "pharmacyName": "BERTHELOT F",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Marque page",
+        "cip": "",
+        "tarif": "0,60 €",
+        "colisage": "500",
+        "quantity": "500"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "cfe425dd-3f2a-4904-8336-f493cf3b163c",
+    "campaignId": "brume-little-marcel",
+    "campaignTitle": "Brume Little Marcel",
+    "createdAt": "15/06/2026 10:07:27",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-003-bert",
+    "pharmacyName": "BERTHELOT F",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "c757e014-d2ab-4522-8c71-9e4ed685ea66",
+    "campaignId": "operation-physiomer",
+    "campaignTitle": "Opération Physiomer",
+    "createdAt": "15/06/2026 10:08:20",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-003-bert",
+    "pharmacyName": "BERTHELOT F",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYSIOMER JET DYNAMIQ 2X135ML",
+        "cip": "3401576080644",
+        "tarif": "7,76 €",
+        "colisage": "",
+        "quantity": "36"
+      },
+      {
+        "designation": "PHYSIOMER S.HYPERTONIQ 135ML",
+        "cip": "3401543248053",
+        "tarif": "5,63 €",
+        "colisage": "",
+        "quantity": "24"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "a307af22-8d09-4b43-96a5-5aff0ffec443",
+    "campaignId": "calendriers-2027",
+    "campaignTitle": "Calendriers 2027",
+    "createdAt": "15/06/2026 11:44:06",
+    "updatedAt": "15/06/2026 15:44:46",
+    "pharmacyId": "pharmacy-041-rose",
+    "pharmacyName": "ROSE DES VENTS",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Calendrier 43 x 33cm - Rigide",
+        "cip": "",
+        "tarif": "1,40 €",
+        "colisage": "500",
+        "quantity": "1000"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "14c3371f-3f8f-4e12-92f0-9fd0f1ca7bda",
+    "campaignId": "cadeaux-de-fins-d-annee-soguasphar-pharmacie",
+    "campaignTitle": "Cadeaux de fins d'année SOGUASPHAR / PHARMACIE",
+    "createdAt": "15/06/2026 11:51:53",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-041-rose",
+    "pharmacyName": "ROSE DES VENTS",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Savon végétal à l'huile d'amande bio",
+        "cip": "",
+        "tarif": "1,50 €",
+        "colisage": "300",
+        "quantity": "300"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "55328e95-8fe8-43d7-91f6-11927d860180",
+    "campaignId": "brume-little-marcel",
+    "campaignTitle": "Brume Little Marcel",
+    "createdAt": "15/06/2026 12:26:31",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-010-dela",
+    "pharmacyName": "DE LA PLAGE",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "d5a543c4-22a9-4ab5-bbc5-8fb7ad091bc1",
+    "campaignId": "operation-physiomer",
+    "campaignTitle": "Opération Physiomer",
+    "createdAt": "15/06/2026 12:26:47",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-010-dela",
+    "pharmacyName": "DE LA PLAGE",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "1027fd64-d041-4624-a4d0-b84d4d629485",
+    "campaignId": "calendriers-2027",
+    "campaignTitle": "Calendriers 2027",
+    "createdAt": "15/06/2026 12:27:07",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-010-dela",
+    "pharmacyName": "DE LA PLAGE",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "4b364f2f-2202-46bf-a2c7-8d86ec614ebd",
+    "campaignId": "cadeaux-de-fins-d-annee-soguasphar-pharmacie",
+    "campaignTitle": "Cadeaux de fins d'année SOGUASPHAR / PHARMACIE",
+    "createdAt": "15/06/2026 12:27:15",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-010-dela",
+    "pharmacyName": "DE LA PLAGE",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "19c5e876-b80a-48b1-8a32-201d179b2723",
+    "campaignId": "calendriers-2027",
+    "campaignTitle": "Calendriers 2027",
+    "createdAt": "15/06/2026 12:28:02",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-043-sami",
+    "pharmacyName": "SAMINADIN",
+    "interest": "Interessé",
+    "products": [],
+    "notes": "serait il possible d'avoir du 55x40, rigide ,recto verso,  1000 exemplaires"
+  },
+  {
+    "id": "c68544a7-cb3d-4d58-b58c-5e33a4b35df4",
+    "campaignId": "cadeaux-de-fins-d-annee-soguasphar-pharmacie",
+    "campaignTitle": "Cadeaux de fins d'année SOGUASPHAR / PHARMACIE",
+    "createdAt": "15/06/2026 12:29:43",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-043-sami",
+    "pharmacyName": "SAMINADIN",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Stylos bleu marine",
+        "cip": "",
+        "tarif": "1,20 €",
+        "colisage": "500",
+        "quantity": "500"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "f9f840d7-873a-4f81-9e6f-6ab803ddce4f",
+    "campaignId": "brume-little-marcel",
+    "campaignTitle": "Brume Little Marcel",
+    "createdAt": "15/06/2026 12:33:18",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-020-duma",
+    "pharmacyName": "DU MARCHE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Cherry Lip",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Coconut Cream",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Crush Me",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Milky Vanilla",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Monoi Beach",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Orange Blossom",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Sweet Candy",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Sweet Gelato",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      }
+    ],
+    "notes": "peut on avoir des testeurs?"
+  },
+  {
+    "id": "e810d37f-1b75-49dd-9a76-13725f912fc8",
+    "campaignId": "operation-physiomer",
+    "campaignTitle": "Opération Physiomer",
+    "createdAt": "15/06/2026 12:34:18",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-020-duma",
+    "pharmacyName": "DU MARCHE",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "2d65d667-a4ee-4149-bea7-4e516686a15e",
+    "campaignId": "calendriers-2027",
+    "campaignTitle": "Calendriers 2027",
+    "createdAt": "15/06/2026 12:41:41",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-020-duma",
+    "pharmacyName": "DU MARCHE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Calendrier 42x30cm Souple",
+        "cip": "",
+        "tarif": "0,49 €",
+        "colisage": "500",
+        "quantity": "1500"
+      }
+    ],
+    "notes": "coordonées de la pharmacie à mettre sur le calendrier:\n\nPHARMACIE DU MARCHE\nRue du Débarcadère\n97111 MORNE A L EAU\n0590247063\nequipe97111@gmail.com"
+  },
+  {
+    "id": "f0098bb4-a05b-4314-a572-454797fd569b",
+    "campaignId": "brume-little-marcel",
+    "campaignTitle": "Brume Little Marcel",
+    "createdAt": "15/06/2026 13:07:44",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-012-dela",
+    "pharmacyName": "DE LA SOURCE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Cherry Lip",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Coconut Cream",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Crush Me",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Milky Vanilla",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Monoi Beach",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Orange Blossom",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Sweet Candy",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Sweet Gelato",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "942ff047-ab04-40da-b1e1-cf1ec9732cd8",
+    "campaignId": "calendriers-2027",
+    "campaignTitle": "Calendriers 2027",
+    "createdAt": "15/06/2026 13:08:32",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-012-dela",
+    "pharmacyName": "DE LA SOURCE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Calendrier 42x30cm Souple",
+        "cip": "",
+        "tarif": "0,49 €",
+        "colisage": "500",
+        "quantity": "500"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "cee0093b-57ad-4c41-b0b7-493ef5e6183f",
+    "campaignId": "brume-little-marcel",
+    "campaignTitle": "Brume Little Marcel",
+    "createdAt": "15/06/2026 13:09:08",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-035-laro",
+    "pharmacyName": "LA ROSIERE",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "228c5ded-5253-498a-9079-740adddf9af4",
+    "campaignId": "operation-physiomer",
+    "campaignTitle": "Opération Physiomer",
+    "createdAt": "15/06/2026 13:10:35",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-012-dela",
+    "pharmacyName": "DE LA SOURCE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYSIOMER JET DYNAMIQ 2X135ML",
+        "cip": "3401576080644",
+        "tarif": "7,76 €",
+        "colisage": "",
+        "quantity": "24"
+      },
+      {
+        "designation": "PHYSIOMER S.HYPERTONIQ 135ML",
+        "cip": "3401543248053",
+        "tarif": "5,63 €",
+        "colisage": "",
+        "quantity": "18"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "eaa8444a-ce7b-425c-96f7-5a5a1a7544b2",
+    "campaignId": "operation-physiomer",
+    "campaignTitle": "Opération Physiomer",
+    "createdAt": "15/06/2026 13:35:56",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-037-medi",
+    "pharmacyName": "MEDICIS",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "b5fcbdec-6112-4824-a56d-ec72bb6d6551",
+    "campaignId": "brume-little-marcel",
+    "campaignTitle": "Brume Little Marcel",
+    "createdAt": "15/06/2026 13:40:14",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-037-medi",
+    "pharmacyName": "MEDICIS",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Coconut Cream",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Crush Me",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Milky Vanilla",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Monoi Beach",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Sweet Candy",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      }
+    ],
+    "notes": "Avec si possible les testeurs et un présentoir.\nMerci"
+  },
+  {
+    "id": "e6ea52f7-3343-4256-98b5-aadb6ba12d25",
+    "campaignId": "operation-physiomer",
+    "campaignTitle": "Opération Physiomer",
+    "createdAt": "15/06/2026 14:03:47",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-008-dela",
+    "pharmacyName": "DE LA CITÉ DES MÉTIERS",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYSIOMER JET DYNAMIQ 2X135ML",
+        "cip": "3401576080644",
+        "tarif": "7,76 €",
+        "colisage": "",
+        "quantity": "12"
+      },
+      {
+        "designation": "PHYSIOMER S.HYPERTONIQ 135ML",
+        "cip": "3401543248053",
+        "tarif": "5,63 €",
+        "colisage": "",
+        "quantity": "12"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "86b5b96d-a38a-4580-b063-d909c09962e1",
+    "campaignId": "brume-little-marcel",
+    "campaignTitle": "Brume Little Marcel",
+    "createdAt": "15/06/2026 18:27:31",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-023-dupl",
+    "pharmacyName": "DU PLATEAU",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": "gros bisous"
+  },
+  {
+    "id": "dcd245ee-2e28-4ba0-bdfa-026629c7567c",
+    "campaignId": "operation-physiomer",
+    "campaignTitle": "Opération Physiomer",
+    "createdAt": "15/06/2026 18:28:03",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-023-dupl",
+    "pharmacyName": "DU PLATEAU",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYSIOMER JET DYNAMIQ 2X135ML",
+        "cip": "3401576080644",
+        "tarif": "7,76 €",
+        "colisage": "",
+        "quantity": "12"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "8ad4962b-45ad-4049-bd7c-b4dfe1788f94",
+    "campaignId": "calendriers-2027",
+    "campaignTitle": "Calendriers 2027",
+    "createdAt": "15/06/2026 18:28:53",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-023-dupl",
+    "pharmacyName": "DU PLATEAU",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Calendrier 43 x 33cm - Rigide",
+        "cip": "",
+        "tarif": "1,40 €",
+        "colisage": "500",
+        "quantity": "1000"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "6700fcde-0af0-4feb-8101-dbcdcf3674c6",
+    "campaignId": "cadeaux-de-fins-d-annee-soguasphar-pharmacie",
+    "campaignTitle": "Cadeaux de fins d'année SOGUASPHAR / PHARMACIE",
+    "createdAt": "15/06/2026 18:29:32",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-023-dupl",
+    "pharmacyName": "DU PLATEAU",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Savon végétal à l'huile d'amande bio",
+        "cip": "",
+        "tarif": "1,50 €",
+        "colisage": "300",
+        "quantity": "300"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "f10acb3f-7601-439f-99cb-910fb3a2ed62",
+    "campaignId": "brume-little-marcel",
+    "campaignTitle": "Brume Little Marcel",
+    "createdAt": "16/06/2026 08:28:09",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-016-dorv",
+    "pharmacyName": "DORVILLE",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "d83350fd-63bb-4100-a682-fc8f6497c932",
+    "campaignId": "brume-little-marcel",
+    "campaignTitle": "Brume Little Marcel",
+    "createdAt": "16/06/2026 10:26:17",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-021-dupe",
+    "pharmacyName": "DU PELICAN",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Cherry Lip",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Coconut Cream",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Crush Me",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Milky Vanilla",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Monoi Beach",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Orange Blossom",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Sweet Candy",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Sweet Gelato",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      }
+    ],
+    "notes": "Est ce qu'il y a un testeur pour chaque parfum ?"
+  },
+  {
+    "id": "abe4be9e-1f11-4446-9f45-cd10c6a62e71",
+    "campaignId": "calendriers-2027",
+    "campaignTitle": "Calendriers 2027",
+    "createdAt": "16/06/2026 12:37:13",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-016-dorv",
+    "pharmacyName": "DORVILLE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Calendrier 42x30cm Souple",
+        "cip": "",
+        "tarif": "0,49 €",
+        "colisage": "500",
+        "quantity": "500"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "b64fccb1-c815-41ae-8a3c-1b34fa930ad5",
+    "campaignId": "cadeaux-de-fins-d-annee-soguasphar-pharmacie",
+    "campaignTitle": "Cadeaux de fins d'année SOGUASPHAR / PHARMACIE",
+    "createdAt": "17/06/2026 16:50:36",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-002-bamb",
+    "pharmacyName": "BAMBOU VERT",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "ec52e55c-5042-41a5-bf30-5290d3fb0a08",
+    "campaignId": "operation-physiomer",
+    "campaignTitle": "Opération Physiomer",
+    "createdAt": "17/06/2026 17:07:34",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-002-bamb",
+    "pharmacyName": "BAMBOU VERT",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": "Nous avons Prorhinel et Marimer disponibles sur la plateforme toute l'année, cela me suffit personnellement"
+  },
+  {
+    "id": "f373b9c6-a63b-443c-b59c-3aef09f8ab1d",
+    "campaignId": "calendriers-2027",
+    "campaignTitle": "Calendriers 2027",
+    "createdAt": "13/06/2026 11:40:18",
+    "updatedAt": "17/06/2026 21:09:59",
+    "pharmacyId": "pharmacy-002-bamb",
+    "pharmacyName": "BAMBOU VERT",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Calendrier 42x30cm Souple",
+        "cip": "",
+        "tarif": "0,49 €",
+        "colisage": "500",
+        "quantity": "500"
+      }
+    ],
+    "notes": "Je souhaite la même calligraphie qu'en 2025. Avec un logo de couleur pour Instagram ; un logo de couleur pour facebook ; un logo pour le téléphone et un logo pour l'adresse mail svp"
+  },
+  {
+    "id": "3aa023d3-ba8e-4bcd-abb6-19098c4c2604",
+    "campaignId": "calendriers-2027",
+    "campaignTitle": "Calendriers 2027",
+    "createdAt": "17/06/2026 17:55:20",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-028-fleu",
+    "pharmacyName": "FLEUR DE CANNE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Calendrier 42x30cm Souple",
+        "cip": "",
+        "tarif": "0,49 €",
+        "colisage": "500",
+        "quantity": "2500"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "16761274-14a6-4808-87b8-e91f946a0cce",
+    "campaignId": "cadeaux-de-fins-d-annee-soguasphar-pharmacie",
+    "campaignTitle": "Cadeaux de fins d'année SOGUASPHAR / PHARMACIE",
+    "createdAt": "17/06/2026 17:57:04",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-028-fleu",
+    "pharmacyName": "FLEUR DE CANNE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Marque page",
+        "cip": "",
+        "tarif": "0,60 €",
+        "colisage": "500",
+        "quantity": "2000"
+      },
+      {
+        "designation": "Stylos bleu marine",
+        "cip": "",
+        "tarif": "1,20 €",
+        "colisage": "500",
+        "quantity": "2000"
+      },
+      {
+        "designation": "Savon végétal à l'huile d'amande bio",
+        "cip": "",
+        "tarif": "1,50 €",
+        "colisage": "300",
+        "quantity": "3000"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "649da0bb-bcc4-4855-a9a9-07c259584286",
+    "campaignId": "operation-physiomer",
+    "campaignTitle": "Opération Physiomer",
+    "createdAt": "17/06/2026 18:00:03",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-028-fleu",
+    "pharmacyName": "FLEUR DE CANNE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYSIOMER JET DYNAMIQ 2X135ML",
+        "cip": "3401576080644",
+        "tarif": "7,76 €",
+        "colisage": "",
+        "quantity": "24"
+      },
+      {
+        "designation": "PHYSIOMER S.HYPERTONIQ 135ML",
+        "cip": "3401543248053",
+        "tarif": "5,63 €",
+        "colisage": "",
+        "quantity": "48"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "2853f667-d6df-40c6-857f-4b0766b5b384",
+    "campaignId": "cadeaux-de-fins-d-annee-soguasphar-pharmacie",
+    "campaignTitle": "Cadeaux de fins d'année SOGUASPHAR / PHARMACIE",
+    "createdAt": "17/06/2026 18:09:56",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-021-dupe",
+    "pharmacyName": "DU PELICAN",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Stylos bleu marine",
+        "cip": "",
+        "tarif": "1,20 €",
+        "colisage": "500",
+        "quantity": "500"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "8a131359-ec31-4777-9cac-51c0a56edaf9",
+    "campaignId": "calendriers-2027",
+    "campaignTitle": "Calendriers 2027",
+    "createdAt": "17/06/2026 18:12:27",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-021-dupe",
+    "pharmacyName": "DU PELICAN",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Calendrier 42x30cm Souple",
+        "cip": "",
+        "tarif": "0,49 €",
+        "colisage": "500",
+        "quantity": "1000"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "e1d8ea9d-5a79-488d-8b66-62670afe87be",
+    "campaignId": "brume-little-marcel",
+    "campaignTitle": "Brume Little Marcel",
+    "createdAt": "17/06/2026 18:45:36",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-028-fleu",
+    "pharmacyName": "FLEUR DE CANNE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Cherry Lip",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Coconut Cream",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Crush Me",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Milky Vanilla",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Monoi Beach",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Orange Blossom",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Sweet Candy",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Sweet Gelato",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "79317c32-8527-4114-a9c7-e7ad61b14434",
+    "campaignId": "cadeaux-de-fins-d-annee-soguasphar-pharmacie",
+    "campaignTitle": "Cadeaux de fins d'année SOGUASPHAR / PHARMACIE",
+    "createdAt": "17/06/2026 19:24:08",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-019-dugo",
+    "pharmacyName": "DU GOSIER",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Marque page",
+        "cip": "",
+        "tarif": "0,60 €",
+        "colisage": "500",
+        "quantity": "500"
+      }
+    ],
+    "notes": "Livraison et facturation souhaitées en novembre 2026"
+  },
+  {
+    "id": "e13cd9eb-ca9d-4697-b4c8-88245827d287",
+    "campaignId": "calendriers-2027",
+    "campaignTitle": "Calendriers 2027",
+    "createdAt": "10/06/2026 19:22:03",
+    "updatedAt": "17/06/2026 23:26:32",
+    "pharmacyId": "pharmacy-019-dugo",
+    "pharmacyName": "DU GOSIER",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Calendrier 43 x 33cm - Rigide",
+        "cip": "",
+        "tarif": "1,40 €",
+        "colisage": "500",
+        "quantity": "500"
+      }
+    ],
+    "notes": "Livraison souhaitée en novembre"
+  },
+  {
+    "id": "24221210-67f2-4d3d-993e-332a11594aa0",
+    "campaignId": "calendriers-2027",
+    "campaignTitle": "Calendriers 2027",
+    "createdAt": "18/06/2026 09:40:40",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-008-dela",
+    "pharmacyName": "DE LA CITÉ DES MÉTIERS",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Calendrier 43 x 33cm - Rigide",
+        "cip": "",
+        "tarif": "1,40 €",
+        "colisage": "500",
+        "quantity": "500"
+      }
+    ],
+    "notes": "Bonjour\nJe souhaiterais une quantité de 750 calendriers en tout"
+  },
+  {
+    "id": "e9367d29-61ce-4baf-b879-a3cecacb6ebb",
+    "campaignId": "cadeaux-de-fins-d-annee-soguasphar-pharmacie",
+    "campaignTitle": "Cadeaux de fins d'année SOGUASPHAR / PHARMACIE",
+    "createdAt": "18/06/2026 09:41:37",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-008-dela",
+    "pharmacyName": "DE LA CITÉ DES MÉTIERS",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Stylos bleu marine",
+        "cip": "",
+        "tarif": "1,20 €",
+        "colisage": "500",
+        "quantity": "500"
+      }
+    ],
+    "notes": "Bonjour,\n\nje souhaite 500 stylos à 1.20 l'unité , merci"
+  },
+  {
+    "id": "55afff94-8050-4b20-a8cb-64d27c518d1c",
+    "campaignId": "brume-little-marcel",
+    "campaignTitle": "Brume Little Marcel",
+    "createdAt": "18/06/2026 10:41:50",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-031-gira",
+    "pharmacyName": "GIRARD DUGAMIN",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "31464485-16bc-41c5-a605-e586182cf94b",
+    "campaignId": "operation-physiomer",
+    "campaignTitle": "Opération Physiomer",
+    "createdAt": "11/06/2026 10:50:20",
+    "updatedAt": "18/06/2026 15:04:46",
+    "pharmacyId": "pharmacy-031-gira",
+    "pharmacyName": "GIRARD DUGAMIN",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYSIOMER S.HYPERTONIQ 135ML",
+        "cip": "3401543248053",
+        "tarif": "5,63 €",
+        "colisage": "",
+        "quantity": "12"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "57738b99-3d01-49ba-9dd0-2e03a145d7af",
+    "campaignId": "brume-little-marcel",
+    "campaignTitle": "Brume Little Marcel",
+    "createdAt": "18/06/2026 11:31:49",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-022-duph",
+    "pharmacyName": "DU PHARE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Cherry Lip",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Coconut Cream",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Crush Me",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Milky Vanilla",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Monoi Beach",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Orange Blossom",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Sweet Candy",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Sweet Gelato",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "299ce5d6-479e-4d4c-ae90-7fd2b5b09515",
+    "campaignId": "cadeaux-de-fins-d-annee-soguasphar-pharmacie",
+    "campaignTitle": "Cadeaux de fins d'année SOGUASPHAR / PHARMACIE",
+    "createdAt": "19/06/2026 09:20:40",
+    "updatedAt": "19/06/2026 13:20:41",
+    "pharmacyId": "pharmacy-016-dorv",
+    "pharmacyName": "DORVILLE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Stylos bleu marine",
+        "cip": "",
+        "tarif": "1,20 €",
+        "colisage": "500",
+        "quantity": "1000"
+      },
+      {
+        "designation": "Savon végétal à l'huile d'amande bio",
+        "cip": "",
+        "tarif": "1,50 €",
+        "colisage": "300",
+        "quantity": "1200"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "d6ad2ca4-ff59-4858-ade8-0e1b14fb1d77",
+    "campaignId": "calendriers-2027",
+    "campaignTitle": "Calendriers 2027",
+    "createdAt": "19/06/2026 12:34:18",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-031-gira",
+    "pharmacyName": "GIRARD DUGAMIN",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Calendrier 43 x 33cm - Rigide",
+        "cip": "",
+        "tarif": "1,40 €",
+        "colisage": "500",
+        "quantity": "500"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "28e0bdb2-fcb6-4ae6-9331-4b80a210637b",
+    "campaignId": "cadeaux-de-fins-d-annee-soguasphar-pharmacie",
+    "campaignTitle": "Cadeaux de fins d'année SOGUASPHAR / PHARMACIE",
+    "createdAt": "19/06/2026 12:37:13",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-031-gira",
+    "pharmacyName": "GIRARD DUGAMIN",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Stylos bleu marine",
+        "cip": "",
+        "tarif": "1,20 €",
+        "colisage": "500",
+        "quantity": "500"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "649acf17-c824-4850-9c3c-f6280b1c3b43",
+    "campaignId": "calendriers-2027",
+    "campaignTitle": "Calendriers 2027",
+    "createdAt": "20/06/2026 09:49:43",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-009-dela",
+    "pharmacyName": "DE LA MELISSE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Calendrier 43 x 33cm - Rigide",
+        "cip": "",
+        "tarif": "1,40 €",
+        "colisage": "500",
+        "quantity": "1500"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "8c1b9a78-5645-4348-851d-efad0bdd68e8",
+    "campaignId": "cadeaux-de-fins-d-annee-soguasphar-pharmacie",
+    "campaignTitle": "Cadeaux de fins d'année SOGUASPHAR / PHARMACIE",
+    "createdAt": "20/06/2026 10:13:52",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-009-dela",
+    "pharmacyName": "DE LA MELISSE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Marque page",
+        "cip": "",
+        "tarif": "0,60 €",
+        "colisage": "500",
+        "quantity": "500"
+      },
+      {
+        "designation": "Stylos bleu marine",
+        "cip": "",
+        "tarif": "1,20 €",
+        "colisage": "500",
+        "quantity": "500"
+      },
+      {
+        "designation": "Savon végétal à l'huile d'amande bio",
+        "cip": "",
+        "tarif": "1,50 €",
+        "colisage": "300",
+        "quantity": "300"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "b81f07cc-6272-4859-9356-c884efec67bf",
+    "campaignId": "operation-physiomer",
+    "campaignTitle": "Opération Physiomer",
+    "createdAt": "22/06/2026 07:32:10",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-035-laro",
+    "pharmacyName": "LA ROSIERE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYSIOMER JET DYNAMIQ 2X135ML",
+        "cip": "3401576080644",
+        "tarif": "7,76 €",
+        "colisage": "",
+        "quantity": "12"
+      },
+      {
+        "designation": "PHYSIOMER S.HYPERTONIQ 135ML",
+        "cip": "3401543248053",
+        "tarif": "5,63 €",
+        "colisage": "",
+        "quantity": "12"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "bf2cbb7e-fcea-4a13-b07e-d0fd2c67e485",
+    "campaignId": "calendriers-2027",
+    "campaignTitle": "Calendriers 2027",
+    "createdAt": "22/06/2026 07:32:30",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-035-laro",
+    "pharmacyName": "LA ROSIERE",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "e6ea6e68-6a37-4b65-8947-2af1e92b9888",
+    "campaignId": "cadeaux-de-fins-d-annee-soguasphar-pharmacie",
+    "campaignTitle": "Cadeaux de fins d'année SOGUASPHAR / PHARMACIE",
+    "createdAt": "22/06/2026 07:32:53",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-035-laro",
+    "pharmacyName": "LA ROSIERE",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "a346a3d7-2d89-476c-9dc7-cd4d48923eed",
+    "campaignId": "operation-physiomer",
+    "campaignTitle": "Opération Physiomer",
+    "createdAt": "22/06/2026 16:39:31",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-004-cape",
+    "pharmacyName": "CAPET",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "PHYSIOMER JET DYNAMIQ 2X135ML",
+        "cip": "3401576080644",
+        "tarif": "7,76 €",
+        "colisage": "",
+        "quantity": "12"
+      },
+      {
+        "designation": "PHYSIOMER S.HYPERTONIQ 135ML",
+        "cip": "3401543248053",
+        "tarif": "5,63 €",
+        "colisage": "",
+        "quantity": "12"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "ee2caa45-b92a-4dad-a50a-7027d760ba24",
+    "campaignId": "calendriers-2027",
+    "campaignTitle": "Calendriers 2027",
+    "createdAt": "22/06/2026 16:48:02",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-015-deva",
+    "pharmacyName": "DEVAUX Sylvie",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Calendrier 43 x 33cm - Rigide",
+        "cip": "",
+        "tarif": "1,40 €",
+        "colisage": "500",
+        "quantity": "1500"
+      }
+    ],
+    "notes": "NOVEMBRE 2026"
+  },
+  {
+    "id": "6742eccf-3c67-416a-a6c0-bec503a29107",
+    "campaignId": "cadeaux-de-fins-d-annee-soguasphar-pharmacie",
+    "campaignTitle": "Cadeaux de fins d'année SOGUASPHAR / PHARMACIE",
+    "createdAt": "22/06/2026 16:49:52",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-015-deva",
+    "pharmacyName": "DEVAUX Sylvie",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Marque page",
+        "cip": "",
+        "tarif": "0,60 €",
+        "colisage": "500",
+        "quantity": "500"
+      },
+      {
+        "designation": "Stylos bleu marine",
+        "cip": "",
+        "tarif": "1,20 €",
+        "colisage": "500",
+        "quantity": "1000"
+      },
+      {
+        "designation": "Savon végétal à l'huile d'amande bio",
+        "cip": "",
+        "tarif": "1,50 €",
+        "colisage": "300",
+        "quantity": "1500"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "2de4c1f6-b342-41e6-beb1-2bb5ff4a7530",
+    "campaignId": "brume-little-marcel",
+    "campaignTitle": "Brume Little Marcel",
+    "createdAt": "24/06/2026 13:46:45",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-005-comb",
+    "pharmacyName": "COMBE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Cherry Lip",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "6"
+      },
+      {
+        "designation": "Coconut Cream",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "6"
+      },
+      {
+        "designation": "Crush Me",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "6"
+      },
+      {
+        "designation": "Milky Vanilla",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "6"
+      },
+      {
+        "designation": "Monoi Beach",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "6"
+      },
+      {
+        "designation": "Orange Blossom",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "6"
+      },
+      {
+        "designation": "Sweet Candy",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "6"
+      },
+      {
+        "designation": "Sweet Gelato",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "6"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "cc0f461f-bef4-4431-9a7c-e79e330dc4f2",
+    "campaignId": "brume-little-marcel",
+    "campaignTitle": "Brume Little Marcel",
+    "createdAt": "24/06/2026 14:27:50",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-015-deva",
+    "pharmacyName": "DEVAUX Sylvie",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "f83f609a-2ab7-4f29-8853-8178b5960e7d",
+    "campaignId": "operation-physiomer",
+    "campaignTitle": "Opération Physiomer",
+    "createdAt": "24/06/2026 14:28:03",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-015-deva",
+    "pharmacyName": "DEVAUX Sylvie",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "52fd7ae8-06ac-41d3-a0a8-84fb680820f8",
+    "campaignId": "brume-little-marcel",
+    "campaignTitle": "Brume Little Marcel",
+    "createdAt": "24/06/2026 14:49:27",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-004-cape",
+    "pharmacyName": "CAPET",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "e7ecbe88-1649-454c-8155-0e520396538e",
+    "campaignId": "brume-little-marcel",
+    "campaignTitle": "Brume Little Marcel",
+    "createdAt": "24/06/2026 15:04:53",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-043-sami",
+    "pharmacyName": "SAMINADIN",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Crush Me",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Monoi Beach",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Sweet Candy",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      }
+    ],
+    "notes": ""
+  },
+  {
+    "id": "9534bcf9-114a-4be0-8afc-ca9ccb39a6d6",
+    "campaignId": "brume-little-marcel",
+    "campaignTitle": "Brume Little Marcel",
+    "createdAt": "24/06/2026 16:02:24",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-026-dust",
+    "pharmacyName": "DU STADE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Cherry Lip",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Coconut Cream",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Crush Me",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Milky Vanilla",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Monoi Beach",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Orange Blossom",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Sweet Candy",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      },
+      {
+        "designation": "Sweet Gelato",
+        "cip": "",
+        "tarif": "5,49 €",
+        "colisage": "3",
+        "quantity": "3"
+      }
+    ],
+    "notes": "pas de livraison avant le mois d'août"
+  },
+  {
+    "id": "09d0529d-169b-47a3-901f-a45c17e33474",
+    "campaignId": "operation-physiomer",
+    "campaignTitle": "Opération Physiomer",
+    "createdAt": "24/06/2026 16:02:41",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-026-dust",
+    "pharmacyName": "DU STADE",
+    "interest": "Pas intéressé",
+    "products": [],
+    "notes": ""
+  },
+  {
+    "id": "d4fec481-cfee-4775-89d0-b8c0a0a07cec",
+    "campaignId": "calendriers-2027",
+    "campaignTitle": "Calendriers 2027",
+    "createdAt": "24/06/2026 18:28:59",
+    "updatedAt": "",
+    "pharmacyId": "pharmacy-026-dust",
+    "pharmacyName": "DU STADE",
+    "interest": "Interessé",
+    "products": [
+      {
+        "designation": "Calendrier 42x30cm Souple",
+        "cip": "",
+        "tarif": "0,49 €",
+        "colisage": "500",
+        "quantity": "1000"
+      }
+    ],
+    "notes": ""
+  }
+]
