@@ -2327,6 +2327,12 @@ textarea:focus {
   min-width: 780px;
 }
 
+.order-table th {
+  white-space: normal;
+  word-break: break-word;
+  max-width: 150px;
+}
+
 .order-table td:last-child,
 .order-table th:last-child {
   width: 130px;
