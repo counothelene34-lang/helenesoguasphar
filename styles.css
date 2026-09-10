@@ -2469,6 +2469,13 @@ tbody tr:hover {
   background: #fff;
 }
 
+.order-import-confirm th,
+.order-import-confirm td {
+  white-space: normal;
+  word-break: break-word;
+  max-width: 150px;
+}
+
 .form-actions,
 .toolbar-actions {
   display: flex;
