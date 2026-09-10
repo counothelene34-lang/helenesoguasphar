@@ -120,6 +120,7 @@ const profileNotes = document.querySelector("#profileNotes");
 const profileMessage = document.querySelector("#profileMessage");
 const formMessage = document.querySelector("#formMessage");
 const productRows = document.querySelector("#productRows");
+const orderTableHeadRow = document.querySelector("#orderTableHeadRow");
 const quantitySection = document.querySelector("#quantitySection");
 const orderMessage = document.querySelector("#orderMessage");
 const lineCount = document.querySelector("#lineCount");
@@ -238,10 +239,21 @@ const exportExcelBtn = document.querySelector("#exportExcelBtn");
 const quantitySummaryBtn = document.querySelector("#quantitySummaryBtn");
 const quantitySummary = document.querySelector("#quantitySummary");
 const quantitySummaryTable = document.querySelector("#quantitySummaryTable");
+const quantitySummaryHeadRow = document.querySelector("#quantitySummaryHeadRow");
 const orderFile = document.querySelector("#orderFile");
 const orderTemplateTable = document.querySelector("#orderTemplateTable");
+const orderTemplateHeadRow = document.querySelector("#orderTemplateHeadRow");
 const orderAdminMessage = document.querySelector("#orderAdminMessage");
 const downloadTemplateBtn = document.querySelector("#downloadTemplateBtn");
+const orderImportConfirm = document.querySelector("#orderImportConfirm");
+const orderImportColumnsSummary = document.querySelector("#orderImportColumnsSummary");
+const orderImportColisageSelect = document.querySelector("#orderImportColisageSelect");
+const orderImportPreviewHead = document.querySelector("#orderImportPreviewHead");
+const orderImportPreviewBody = document.querySelector("#orderImportPreviewBody");
+const orderImportRowCount = document.querySelector("#orderImportRowCount");
+const orderImportConfirmBtn = document.querySelector("#orderImportConfirmBtn");
+const orderImportCancelBtn = document.querySelector("#orderImportCancelBtn");
+let pendingOrderImport = null;
 const imagePreviewModal = document.querySelector("#imagePreviewModal");
 const imagePreviewImg = document.querySelector("#imagePreviewImg");
 const imagePreviewClose = document.querySelector("#imagePreviewClose");
@@ -273,7 +285,23 @@ let selectedAdminCampaign = null;
 let selectedAdminPeriodId = "";
 let selectedAdminPoll = null;
 let selectedAdminInfoForm = null;
-let currentOrderTemplate = [];
+// Bon de commande à colonnes libres : { columns: [...], colisageColumn: "..."|null,
+// rows: [{ id, values: {<colonne>: <valeur>} }] }. Le serveur renvoie toujours cette
+// forme (il migre les anciennes campagnes en mémoire), donc le reste de ce fichier ne
+// doit plus jamais lire des champs fixes comme item.designation/item.cip/item.colisage.
+function emptyOrderTemplate() {
+  return { columns: [], colisageColumn: null, rows: [] };
+}
+
+// Valeur "titre" d'une ligne de produit (première colonne renseignée), utilisée
+// uniquement dans les résumés/historiques trop étroits pour afficher toutes les
+// colonnes (ex. carte "réponse déjà envoyée", historique archivé).
+function productDisplayLabel(values) {
+  const firstValue = Object.values(values || {}).find((value) => String(value || "").trim());
+  return firstValue || "Produit";
+}
+
+let currentOrderTemplate = emptyOrderTemplate();
 let adminShowingClosedCampaigns = false;
 let pollResponseCounts = {};
 let activeAdminSection = "new-campaign";
@@ -437,7 +465,12 @@ function saveLocalResponses(responses) {
 }
 
 function localOrderTemplate() {
-  return JSON.parse(localStorage.getItem(ORDER_TEMPLATE_KEY) || "[]");
+  const stored = JSON.parse(localStorage.getItem(ORDER_TEMPLATE_KEY) || "null");
+  // L'ancien cache local (mode hors API) stockait un tableau plat ; on ne le
+  // réutilise pas tel quel pour éviter de mélanger les deux formats côté écran.
+  return (stored && typeof stored === "object" && !Array.isArray(stored) && Array.isArray(stored.rows))
+    ? stored
+    : emptyOrderTemplate();
 }
 
 function saveLocalOrderTemplate(template) {
@@ -831,7 +864,7 @@ function saveLocalAnsweredPoll(pollId, answer) {
   localStorage.setItem(POLL_ANSWERED_KEY, JSON.stringify(answered));
 }
 
-function buildDefaultCampaigns(orderTemplate = []) {
+function buildDefaultCampaigns(orderTemplate = emptyOrderTemplate()) {
   return [
     {
       id: "herboristerie",
@@ -1579,7 +1612,7 @@ function archivedOrderRowsForCurrentPharmacy() {
       return products.map((product) => ({
         completedAt,
         operation,
-        designation: product.designation || product.product || "Produit",
+        designation: productDisplayLabel(product.values),
         quantity: product.quantity || ""
       }));
     }));
@@ -1821,7 +1854,7 @@ function campaignResponseSummary(response) {
   }
 
   const products = Array.isArray(response.products) ? response.products.filter((product) => Number(product.quantity) > 0) : [];
-  const productSummary = products.slice(0, 4).map((product) => `${product.designation} : ${product.quantity}`).join(", ");
+  const productSummary = products.slice(0, 4).map((product) => `${productDisplayLabel(product.values)} : ${product.quantity}`).join(", ");
   const extraCount = products.length > 4 ? `, + ${products.length - 4} autre${products.length - 4 > 1 ? "s" : ""}` : "";
   const notes = response.notes ? ` Commentaire : ${response.notes}` : "";
 
@@ -1977,10 +2010,6 @@ function latestResponses(responses = []) {
     if (nextDate >= previousDate) byOwner.set(key, response);
   });
   return [...byOwner.values()];
-}
-
-function productKey(product) {
-  return product?.cip || product?.designation || product?.product || product?.id || "";
 }
 
 function parseColisageMinimum(value) {
@@ -2210,6 +2239,11 @@ function normalizeHeader(value) {
     .replace(/[^a-z0-9]/g, "");
 }
 
+// Le bon de commande n'a plus de colonnes imposées (désignation/CIP/tarif/colisage...).
+// Ces alias ne servent plus qu'à deviner quelle colonne du fichier est le colisage
+// minimum de commande (suggestion pré-cochée, modifiable par l'admin) et à repérer
+// si la première ligne d'un fichier est une ligne d'en-tête. Toutes les colonnes du
+// fichier importé sont conservées telles quelles, quel que soit leur nom.
 const TEMPLATE_HEADER_ALIASES = {
   designation: [
     "designation", "desig", "libelle", "article", "articles", "produit", "produits",
@@ -2220,11 +2254,20 @@ const TEMPLATE_HEADER_ALIASES = {
     "tarif", "tarifunitaire", "prix", "prixunitaire", "prixht", "tarifht", "pvc",
     "pu", "punitaire", "montant", "prixpublic"
   ],
-  colisage: ["colisage", "conditionnement", "colis", "parcolis", "uvc", "pcb"]
+  colisage: [
+    "colisage", "conditionnement", "colis", "parcolis", "uvc", "pcb", "colisageminimum",
+    "colisageminimumdecommande", "colisagemini"
+  ]
 };
 
 function findTemplateColumn(headers, kind) {
-  return headers.findIndex((header) => (TEMPLATE_HEADER_ALIASES[kind] || []).includes(header));
+  const aliases = TEMPLATE_HEADER_ALIASES[kind] || [];
+  // 1) correspondance exacte du titre nettoyé
+  let index = headers.findIndex((header) => aliases.includes(header));
+  if (index !== -1) return index;
+  // 2) sinon, titre contenant un des mots-clés (ex: "Colisage minimum de commande")
+  index = headers.findIndex((header) => aliases.some((alias) => header.includes(alias)));
+  return index;
 }
 
 function cleanTemplateCell(value) {
@@ -2245,27 +2288,62 @@ function formatTemplateTarif(value) {
   return clean.replace(".", ",").replace(/\s*\u20ac?$/, " \u20ac").trim();
 }
 
+function isIgnoredTemplateLine(text) {
+  const header = normalizeHeader(text);
+  return !header
+    || [
+      "designation", "desig", "libelle", "article", "produit", "produits", "tarif",
+      "tarifunitaire", "cip", "colisage", "colisagepresentoir", "presentoir", "commandes", "quantite", "quantites"
+    ].includes(header)
+    || /^(total|soustotal|bondecommande|commande|precommande)$/.test(header);
+}
+
 function looksLikeHeaderRow(headers) {
   const score = ["designation", "cip", "tarif", "colisage"]
     .reduce((total, kind) => total + (findTemplateColumn(headers, kind) !== -1 ? 1 : 0), 0);
   return score >= 2 || (findTemplateColumn(headers, "designation") !== -1 && score >= 1);
 }
 
-function isIgnoredTemplateLine(text) {
-  const header = normalizeHeader(text);
-  return !header
-    || [
-      "designation", "desig", "libelle", "article", "produit", "produits", "tarif",
-      "tarifunitaire", "cip", "colisage", "commandes", "quantite", "quantites"
-    ].includes(header)
-    || /^(total|soustotal|bondecommande|commande|precommande)$/.test(header);
+// Construit un template \u00e0 colonnes 100% libres \u00e0 partir d'une ligne d'en-t\u00eate (les
+// noms de colonnes du fichier, conserv\u00e9s tels quels et dans l'ordre) et des lignes
+// de donn\u00e9es qui suivent. Toutes les colonnes du fichier sont gard\u00e9es, quel que
+// soit leur nom \u2014 on ne se limite plus \u00e0 une liste connue.
+function buildFreeColumnsTemplate(headerRow, dataRows) {
+  const seenNames = new Map();
+  const columns = headerRow.map((cell, index) => {
+    const label = cleanTemplateCell(cell) || `Colonne ${index + 1}`;
+    const count = seenNames.get(label) || 0;
+    seenNames.set(label, count + 1);
+    return count === 0 ? label : `${label} (${count + 1})`;
+  });
+
+  const rows = dataRows
+    .map((row, index) => {
+      const values = {};
+      columns.forEach((column, columnIndex) => { values[column] = cleanTemplateCell(row[columnIndex]); });
+      return { id: `line-${Date.now()}-${index}`, values };
+    })
+    .filter((row) => {
+      const joined = Object.values(row.values).filter(Boolean).join(" ");
+      return joined && !isIgnoredTemplateLine(joined);
+    });
+
+  const normalizedColumns = columns.map(normalizeHeader);
+  const colisageIndex = findTemplateColumn(normalizedColumns, "colisage");
+  const colisageColumn = colisageIndex !== -1 ? columns[colisageIndex] : null;
+
+  return { columns, colisageColumn, rows };
 }
 
+// Filet de s\u00e9curit\u00e9 quand aucune ligne d'en-t\u00eate n'a pu \u00eatre rep\u00e9r\u00e9e (ex. texte PDF
+// mal structur\u00e9) : on essaie de deviner d\u00e9signation / CIP / tarif ligne par ligne.
+// Produit quand m\u00eame la forme g\u00e9n\u00e9rique {columns, colisageColumn, rows}.
 function inferTemplateRows(rows) {
   const priceRegex = /(?:\d+[,.]\d{1,2}\s*\u20ac?|\d+\s*\u20ac)/;
   const cipRegex = /\b(?:\d[\s.-]*){7,14}\b/;
+  const columns = ["D\u00e9signation", "CIP", "Tarif", "Colisage minimum de commande"];
 
-  return rows
+  const dataRows = rows
     .map((row, index) => {
       const cells = row.map(cleanTemplateCell);
       const joined = cells.filter(Boolean).join(" ");
@@ -2285,56 +2363,42 @@ function inferTemplateRows(rows) {
 
       return {
         id: `line-${Date.now()}-${index}`,
-        designation,
-        cip: cipMatch ? cipMatch[0].replace(/\D/g, "") : "",
-        tarif: priceIndex !== -1 ? formatTemplateTarif(cells[priceIndex]) : "",
-        colisage: ""
+        values: {
+          "D\u00e9signation": designation,
+          "CIP": cipMatch ? cipMatch[0].replace(/\D/g, "") : "",
+          "Tarif": priceIndex !== -1 ? formatTemplateTarif(cells[priceIndex]) : "",
+          "Colisage minimum de commande": ""
+        }
       };
     })
     .filter(Boolean);
+
+  return { columns, colisageColumn: "Colisage minimum de commande", rows: dataRows };
 }
 
+// Point d'entrée du parsing : garde TOUTES les colonnes du fichier importé (Excel,
+// CSV/TSV ou texte extrait d'un PDF), quel que soit leur nom ou leur ordre. Renvoie
+// { columns, colisageColumn, rows } — colisageColumn n'est qu'une SUGGESTION, à
+// confirmer par l'admin dans l'étape d'aperçu avant enregistrement.
 function normalizeTemplateRows(rows) {
   const cleanRows = rows
     .map((row) => Array.isArray(row) ? row : [])
     .filter((row) => row.some((cell) => cleanTemplateCell(cell)));
-  if (!cleanRows.length) return [];
+  if (!cleanRows.length) return emptyOrderTemplate();
 
   const headerIndex = cleanRows.findIndex((row) => looksLikeHeaderRow(row.map(normalizeHeader)));
   if (headerIndex === -1) {
-    const inferredRows = inferTemplateRows(cleanRows);
-    if (inferredRows.length) return inferredRows;
+    const inferred = inferTemplateRows(cleanRows);
+    if (inferred.rows.length) return inferred;
     throw new Error("Aucune ligne produit exploitable n'a été trouvée.");
   }
 
-  const headers = cleanRows[headerIndex].map(normalizeHeader);
-  const indexes = {
-    designation: findTemplateColumn(headers, "designation"),
-    cip: findTemplateColumn(headers, "cip"),
-    tarif: findTemplateColumn(headers, "tarif"),
-    colisage: findTemplateColumn(headers, "colisage")
-  };
+  const dataRows = cleanRows.slice(headerIndex + 1);
+  const result = buildFreeColumnsTemplate(cleanRows[headerIndex], dataRows);
+  if (result.rows.length) return result;
 
-  if (indexes.designation === -1) {
-    const inferredRows = inferTemplateRows(cleanRows.slice(headerIndex + 1));
-    if (inferredRows.length) return inferredRows;
-    throw new Error("Colonnes attendues : désignation, CIP, tarif, colisage.");
-  }
-
-  const importedRows = cleanRows.slice(headerIndex + 1)
-    .map((row, index) => ({
-      id: `line-${Date.now()}-${index}`,
-      designation: cleanTemplateCell(row[indexes.designation]),
-      cip: indexes.cip === -1 ? "" : cleanTemplateCell(row[indexes.cip]),
-      tarif: indexes.tarif === -1 ? "" : formatTemplateTarif(row[indexes.tarif]),
-      colisage: indexes.colisage === -1 ? "" : cleanTemplateCell(row[indexes.colisage])
-    }))
-    .filter((row) => row.designation && !isIgnoredTemplateLine(row.designation));
-
-  if (importedRows.length) return importedRows;
-
-  const inferredRows = inferTemplateRows(cleanRows.slice(headerIndex + 1));
-  if (inferredRows.length) return inferredRows;
+  const inferred = inferTemplateRows(dataRows);
+  if (inferred.rows.length) return inferred;
   throw new Error("Aucune ligne produit exploitable n'a été trouvée.");
 }
 
@@ -2347,7 +2411,7 @@ function parseDelimited(text) {
 }
 
 function parsePdfOrderText(text) {
-  const rows = [["Désignation", "CIP", "Tarif", "Colisage"]];
+  const rows = [["Désignation", "CIP", "Tarif", "Colisage minimum de commande", "Colisage pour présentoir"]];
   const seen = new Set();
 
   function cleanDesignation(value) {
@@ -2360,16 +2424,17 @@ function parsePdfOrderText(text) {
       .trim();
   }
 
-  function addRow(designation, cip = "", tarif = "", colisage = "") {
+  function addRow(designation, cip = "", tarif = "", colisage = "", colisagePresentoir = "") {
     const cleanName = cleanDesignation(designation);
     const cleanCip = String(cip || "").replace(/\D/g, "");
     const cleanTarif = String(tarif || "").replace(".", ",").replace(/\s*\u20ac?$/, " \u20ac").trim();
     const cleanColisage = String(colisage || "").trim();
+    const cleanColisagePresentoir = String(colisagePresentoir || "").trim();
     const key = `${cleanName.toLowerCase()}|${cleanCip}|${cleanTarif}`;
 
     if (!cleanName || !cleanTarif || seen.has(key)) return;
     seen.add(key);
-    rows.push([cleanName, cleanCip, cleanTarif, cleanColisage]);
+    rows.push([cleanName, cleanCip, cleanTarif, cleanColisage, cleanColisagePresentoir]);
   }
 
   function parseProductLine(line) {
@@ -2474,7 +2539,7 @@ async function parseOrderFile(file) {
 }
 
 function campaignCard(campaign, target) {
-  const count = (campaign.template || []).length;
+  const count = (campaign.template?.rows || []).length;
   const isAdmin = target === "admin";
   const completedResponse = !isAdmin ? pharmacyCampaignResponses[campaign.id] : null;
   const isCompleted = Boolean(completedResponse);
@@ -2593,6 +2658,45 @@ function buildPollAnswersPreviewMarkup(questionList, showQuestionLabels, localAn
       </div>
     `;
   }).join("");
+}
+
+function isPresenceQuestionEl(questionEl) {
+  const id = (questionEl.dataset.questionId || "").toLowerCase();
+  const label = (questionEl.querySelector(".inline-poll-question-label")?.textContent || "").toLowerCase();
+  return id.includes("presence") || label.includes("presence") || label.includes("présence") || id.includes("présence");
+}
+
+function isMealQuestionEl(questionEl) {
+  const id = (questionEl.dataset.questionId || "").toLowerCase();
+  const label = (questionEl.querySelector(".inline-poll-question-label")?.textContent || "").toLowerCase();
+  return id.includes("plat") || id.includes("repas") || id.includes("menu")
+    || label.includes("plat") || label.includes("repas") || label.includes("menu");
+}
+
+function isAbsenceAnswerValue(value) {
+  return /\bnon\b/i.test(value || "");
+}
+
+// Si la personne répond qu'elle n'est pas présente, on grise la question du repas :
+// elle n'a plus à y répondre (et sa réponse est effacée si elle en avait déjà choisi une).
+function applyPollConditionalLogic(inlineForm) {
+  const questionEls = Array.from(inlineForm.querySelectorAll(".inline-poll-question[data-question-id]"));
+  const presenceEl = questionEls.find(isPresenceQuestionEl);
+  const mealEls = questionEls.filter(isMealQuestionEl);
+  if (!presenceEl || !mealEls.length) return;
+  const checkedInput = presenceEl.querySelector("input:checked");
+  const isAbsent = Boolean(checkedInput) && isAbsenceAnswerValue(checkedInput.value);
+  mealEls.forEach((mealEl) => {
+    mealEl.classList.toggle("inline-poll-question-disabled", isAbsent);
+    mealEl.querySelectorAll("input, textarea").forEach((input) => {
+      input.disabled = isAbsent;
+      if (isAbsent) {
+        if (input.type === "radio" || input.type === "checkbox") input.checked = false;
+        else input.value = "";
+        input.removeAttribute("required");
+      }
+    });
+  });
 }
 
 function buildPollQuestionsFormMarkup(questionList, showQuestionLabels) {
@@ -3001,7 +3105,7 @@ function selectCampaign(campaignId) {
   selectedCampaign = campaigns.find((campaign) => campaign.id === campaignId) || campaigns[0];
   selectedPoll = null;
   selectedInfoForm = null;
-  currentOrderTemplate = selectedCampaign?.template || [];
+  currentOrderTemplate = selectedCampaign?.template || emptyOrderTemplate();
   campaignPicker.hidden = true;
   setHeroVisible(false);
   form.hidden = false;
@@ -3386,7 +3490,7 @@ function showCampaignPicker() {
   selectedPoll = null;
   selectedInfoForm = null;
   selectedBatDocument = null;
-  currentOrderTemplate = [];
+  currentOrderTemplate = emptyOrderTemplate();
   archivedOrdersVisible = false;
   archivedOrdersFilterId = "";
   renderArchivedOrdersHistory();
@@ -3424,7 +3528,8 @@ async function selectAdminCampaign(campaignId) {
   selectedAdminCampaign = campaigns.find((campaign) => campaign.id === campaignId) || campaigns[0];
   selectedAdminPoll = null;
   selectedAdminPeriodId = "";
-  currentOrderTemplate = selectedAdminCampaign?.template || [];
+  currentOrderTemplate = selectedAdminCampaign?.template || emptyOrderTemplate();
+  hideOrderImportConfirm();
   adminSelectedCampaignName.textContent = selectedAdminCampaign.title;
   campaignPharmacyMessage.value = selectedAdminCampaign.pharmacyMessage || selectedAdminCampaign.description || "";
   campaignImageMessage.textContent = "";
@@ -3483,6 +3588,7 @@ async function showAdminCampaignPicker() {
   selectedAdminPoll = null;
   selectedAdminInfoForm = null;
   adminShowingClosedCampaigns = false;
+  hideOrderImportConfirm();
   adminCampaignPicker.hidden = false;
   adminDetail.hidden = true;
   adminPollDetail.hidden = true;
@@ -3497,25 +3603,36 @@ async function showAdminCampaignPicker() {
   showAdminSection(activeAdminSection);
 }
 
-function renderOrderTemplate() {
-  lineCount.textContent = `${currentOrderTemplate.length} ligne${currentOrderTemplate.length > 1 ? "s" : ""}`;
+// Construit la ligne d'en-tête (<tr>) d'un tableau à colonnes libres : les colonnes
+// du template, puis en dernier une colonne "Quantité" si demandé.
+function orderColumnsHeadRowMarkup(columns, withQuantity) {
+  return columns.map((column) => `<th>${escapeHtml(column)}</th>`).join("")
+    + (withQuantity ? '<th>Quantité</th>' : "");
+}
 
-  if (!currentOrderTemplate.length) {
+function renderOrderTemplate() {
+  const rows = currentOrderTemplate.rows || [];
+  const columns = currentOrderTemplate.columns || [];
+  lineCount.textContent = `${rows.length} ligne${rows.length > 1 ? "s" : ""}`;
+
+  if (orderTableHeadRow) orderTableHeadRow.innerHTML = orderColumnsHeadRowMarkup(columns, true);
+  if (orderTemplateHeadRow) orderTemplateHeadRow.innerHTML = orderColumnsHeadRowMarkup(columns, false);
+
+  if (!rows.length) {
     orderMessage.style.display = "block";
     productRows.innerHTML = "";
-    orderTemplateTable.innerHTML = '<tr><td colspan="4" class="empty-state">Aucun bon de commande chargé.</td></tr>';
+    orderTemplateTable.innerHTML = `<tr><td colspan="${Math.max(columns.length, 1)}" class="empty-state">Aucun bon de commande chargé.</td></tr>`;
     return;
   }
 
   orderMessage.style.display = "none";
-  productRows.innerHTML = currentOrderTemplate.map((item) => {
-    const colisageMinimum = parseColisageMinimum(item.colisage);
+  productRows.innerHTML = rows.map((item) => {
+    const colisageMinimum = currentOrderTemplate.colisageColumn
+      ? parseColisageMinimum(item.values?.[currentOrderTemplate.colisageColumn])
+      : 0;
     return `
     <tr class="order-row" data-line-id="${escapeHtml(item.id)}">
-      <td>${escapeHtml(item.designation)}</td>
-      <td>${escapeHtml(item.cip)}</td>
-      <td>${escapeHtml(item.tarif)}</td>
-      <td>${escapeHtml(item.colisage)}</td>
+      ${columns.map((column) => `<td>${escapeHtml(item.values?.[column] || "")}</td>`).join("")}
       <td>
         <input
           type="number"
@@ -3525,35 +3642,31 @@ function renderOrderTemplate() {
           inputmode="numeric"
           data-id="${escapeHtml(item.id)}"
           data-min-colisage="${escapeHtml(colisageMinimum)}"
-          aria-label="Quantité pour ${escapeHtml(item.designation)}"
+          aria-label="Quantité pour ${escapeHtml(productDisplayLabel(item.values))}"
         >
       </td>
     </tr>
   `;
   }).join("");
 
-  orderTemplateTable.innerHTML = currentOrderTemplate.map((item) => `
+  orderTemplateTable.innerHTML = rows.map((item) => `
     <tr>
-      <td>${escapeHtml(item.designation)}</td>
-      <td>${escapeHtml(item.cip)}</td>
-      <td>${escapeHtml(item.tarif)}</td>
-      <td>${escapeHtml(item.colisage)}</td>
+      ${columns.map((column) => `<td>${escapeHtml(item.values?.[column] || "")}</td>`).join("")}
     </tr>
   `).join("");
 }
 
 function collectProducts() {
+  const rows = currentOrderTemplate.rows || [];
   return [...document.querySelectorAll(".product-quantity")]
-    .map((row) => ({
-      template: currentOrderTemplate.find((item) => item.id === row.dataset.id),
-      quantity: row.value.trim()
+    .map((input) => ({
+      row: rows.find((item) => item.id === input.dataset.id),
+      quantity: input.value.trim()
     }))
-    .filter((item) => item.template && Number(item.quantity) > 0)
+    .filter((item) => item.row && Number(item.quantity) > 0)
     .map((item) => ({
-      designation: item.template.designation,
-      cip: item.template.cip,
-      tarif: item.template.tarif,
-      colisage: item.template.colisage,
+      rowId: item.row.id,
+      values: item.row.values,
       quantity: item.quantity
     }));
 }
@@ -3566,16 +3679,16 @@ function prefillCampaignResponse(response) {
   if (interestInput) interestInput.checked = true;
   document.querySelector("#notes").value = response.notes || "";
 
-  const quantitiesByKey = new Map();
+  const quantitiesByRowId = new Map();
   (response.products || []).forEach((product) => {
-    quantitiesByKey.set(productKey(product), product.quantity || "");
+    quantitiesByRowId.set(String(product.rowId || ""), product.quantity || "");
   });
 
-  currentOrderTemplate.forEach((template) => {
+  (currentOrderTemplate.rows || []).forEach((templateRow) => {
     const input = [...productRows.querySelectorAll(".product-quantity")]
-      .find((item) => item.dataset.id === template.id);
+      .find((item) => item.dataset.id === templateRow.id);
     if (!input) return;
-    input.value = quantitiesByKey.get(productKey(template)) || "";
+    input.value = quantitiesByRowId.get(String(templateRow.id)) || "";
     validateQuantityInput(input);
   });
 }
@@ -3640,10 +3753,7 @@ async function renderAdmin() {
     .reverse()
     .map((response) => {
       const products = response.products.length
-        ? response.products.map((item) => {
-            const label = item.designation || item.product || item.cip || "Produit";
-            return `${escapeHtml(label)} : ${escapeHtml(item.quantity || "0")}`;
-          }).join("<br>")
+        ? response.products.map((item) => `${escapeHtml(productDisplayLabel(item.values))} : ${escapeHtml(item.quantity || "0")}`).join("<br>")
         : "-";
 
       const modifiedLabel = response.updatedAt
@@ -3669,16 +3779,17 @@ async function renderAdmin() {
 }
 
 function renderQuantitySummary(responses = []) {
+  const columns = currentOrderTemplate.columns || [];
+  if (quantitySummaryHeadRow) quantitySummaryHeadRow.innerHTML = orderColumnsHeadRowMarkup(columns, false) + '<th>Quantité totale</th>';
+
   const totals = new Map();
 
   responses.forEach((response) => {
     (response.products || []).forEach((product) => {
-      const key = product.cip || product.designation || product.product || "Produit";
+      const key = String(product.rowId || productDisplayLabel(product.values));
       const existing = totals.get(key) || {
-        designation: product.designation || product.product || "",
-        cip: product.cip || "",
-        tarif: product.tarif || "",
-        colisage: product.colisage || "",
+        values: product.values || {},
+        label: productDisplayLabel(product.values),
         quantity: 0
       };
 
@@ -3688,19 +3799,17 @@ function renderQuantitySummary(responses = []) {
   });
 
   const rows = [...totals.values()].filter((row) => row.quantity > 0);
+  const colspan = Math.max(columns.length + 1, 1);
   if (!rows.length) {
-    quantitySummaryTable.innerHTML = '<tr><td colspan="5" class="empty-state">Aucune quantité commandée pour le moment.</td></tr>';
+    quantitySummaryTable.innerHTML = `<tr><td colspan="${colspan}" class="empty-state">Aucune quantité commandée pour le moment.</td></tr>`;
     return;
   }
 
   quantitySummaryTable.innerHTML = rows
-    .sort((a, b) => a.designation.localeCompare(b.designation, "fr"))
+    .sort((a, b) => a.label.localeCompare(b.label, "fr"))
     .map((row) => `
       <tr>
-        <td>${escapeHtml(row.designation)}</td>
-        <td>${escapeHtml(row.cip)}</td>
-        <td>${escapeHtml(row.tarif)}</td>
-        <td>${escapeHtml(row.colisage)}</td>
+        ${columns.map((column) => `<td>${escapeHtml(row.values[column] || "")}</td>`).join("")}
         <td><strong>${escapeHtml(row.quantity)}</strong></td>
       </tr>
     `)
@@ -4121,6 +4230,9 @@ async function exportToExcel() {
     return;
   }
 
+  // Les colonnes produit ne sont plus fixes : on prend l'union des colonnes
+  // rencontrées dans les réponses à exporter, dans l'ordre de première apparition
+  // (même logique que l'export généré côté serveur dans sendExcel()).
   const rows = responses.flatMap((response) => {
     if (!response.products.length) {
       return [{
@@ -4128,10 +4240,7 @@ async function exportToExcel() {
         updatedAt: response.updatedAt || "",
         pharmacie: response.pharmacyName,
         statut: response.interest,
-        designation: "",
-        cip: "",
-        tarif: "",
-        colisage: "",
+        values: {},
         quantite: "",
         commentaire: response.notes || ""
       }];
@@ -4142,26 +4251,27 @@ async function exportToExcel() {
       updatedAt: response.updatedAt || "",
       pharmacie: response.pharmacyName,
       statut: response.interest,
-      designation: item.designation || item.product || "",
-      cip: item.cip || "",
-      tarif: item.tarif || "",
-      colisage: item.colisage || "",
+      values: item.values || {},
       quantite: item.quantity,
       commentaire: response.notes || ""
     }));
   });
 
-  const headings = ["Date", "Modifié le", "Pharmacie", "Statut", "Désignation", "CIP", "Tarif", "Colisage", "Quantité", "Commentaire"];
+  const productColumns = [];
+  rows.forEach((row) => {
+    Object.keys(row.values || {}).forEach((column) => {
+      if (!productColumns.includes(column)) productColumns.push(column);
+    });
+  });
+
+  const headings = ["Date", "Modifié le", "Pharmacie", "Statut", ...productColumns, "Quantité", "Commentaire"];
   const body = rows.map((row) => `
     <tr>
       <td>${escapeHtml(row.date)}</td>
       <td>${escapeHtml(row.updatedAt)}</td>
       <td>${escapeHtml(row.pharmacie)}</td>
       <td>${escapeHtml(row.statut)}</td>
-      <td>${escapeHtml(row.designation)}</td>
-      <td>${escapeHtml(row.cip)}</td>
-      <td>${escapeHtml(row.tarif)}</td>
-      <td>${escapeHtml(row.colisage)}</td>
+      ${productColumns.map((column) => `<td>${escapeHtml(row.values[column] || "")}</td>`).join("")}
       <td>${escapeHtml(row.quantite)}</td>
       <td>${escapeHtml(row.commentaire)}</td>
     </tr>
@@ -4461,6 +4571,7 @@ sondagesListRows?.addEventListener("change", (event) => {
   inlineForm.querySelectorAll(".poll-choice").forEach((choice) => {
     choice.classList.toggle("is-selected", Boolean(choice.querySelector("input")?.checked));
   });
+  applyPollConditionalLogic(inlineForm);
 });
 
 sondagesListRows?.addEventListener("submit", async (event) => {
@@ -4521,6 +4632,7 @@ pollCards.addEventListener("change", (event) => {
   form.querySelectorAll(".poll-choice").forEach((choice) => {
     choice.classList.toggle("is-selected", Boolean(choice.querySelector("input")?.checked));
   });
+  applyPollConditionalLogic(form);
 });
 
 function collectInlinePollAnswers(poll, inlineForm) {
@@ -4528,6 +4640,8 @@ function collectInlinePollAnswers(poll, inlineForm) {
   const answers = {};
   let missingRequired = false;
   questionList.forEach((question) => {
+    const questionEl = inlineForm.querySelector(`.inline-poll-question[data-question-id="${CSS.escape(question.id)}"]`);
+    if (questionEl?.classList.contains("inline-poll-question-disabled")) return;
     if (question.type === "texte_libre") {
       const value = inlineForm.querySelector(`.inline-poll-textanswer[data-question-id="${CSS.escape(question.id)}"]`)?.value.trim() || "";
       if (value) answers[question.id] = value;
@@ -5112,7 +5226,7 @@ createCampaignForm.addEventListener("submit", async (event) => {
     imageData: "",
     imageData2: "",
     closed: false,
-    template: []
+    template: emptyOrderTemplate()
   };
 
   campaigns = [...campaigns, campaign];
@@ -5389,27 +5503,87 @@ pharmacyAccountsList.addEventListener("click", async (event) => {
   adminMessage.textContent = `Accès supprimé pour ${pharmacy.name}.`;
 });
 
+// Étape de confirmation après import : le fichier peut avoir n'importe quelles
+// colonnes, on demande juste à l'admin de confirmer laquelle sert de colisage
+// minimum de commande (pré-sélectionnée sur la détection automatique) avant
+// d'enregistrer réellement le bon de commande.
+function hideOrderImportConfirm() {
+  pendingOrderImport = null;
+  if (orderImportConfirm) orderImportConfirm.hidden = true;
+}
+
+function showOrderImportConfirm(template) {
+  pendingOrderImport = template;
+  if (!orderImportConfirm) return;
+
+  if (orderImportColumnsSummary) {
+    orderImportColumnsSummary.textContent = template.columns.join(", ") || "(aucune colonne détectée)";
+  }
+
+  if (orderImportColisageSelect) {
+    const options = ['<option value="">Aucune</option>']
+      .concat(template.columns.map((column) => `<option value="${escapeHtml(column)}">${escapeHtml(column)}</option>`));
+    orderImportColisageSelect.innerHTML = options.join("");
+    orderImportColisageSelect.value = template.colisageColumn && template.columns.includes(template.colisageColumn)
+      ? template.colisageColumn
+      : "";
+  }
+
+  if (orderImportPreviewHead) {
+    orderImportPreviewHead.innerHTML = orderColumnsHeadRowMarkup(template.columns, false);
+  }
+  if (orderImportPreviewBody) {
+    orderImportPreviewBody.innerHTML = template.rows.slice(0, 5).map((row) => `
+      <tr>${template.columns.map((column) => `<td>${escapeHtml(row.values?.[column] || "")}</td>`).join("")}</tr>
+    `).join("") || `<tr><td colspan="${Math.max(template.columns.length, 1)}" class="empty-state">Aucune ligne détectée.</td></tr>`;
+  }
+  if (orderImportRowCount) orderImportRowCount.textContent = String(template.rows.length);
+
+  orderImportConfirm.hidden = false;
+  orderImportConfirm.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
 orderFile.addEventListener("change", async () => {
   const file = orderFile.files[0];
   if (!file) return;
 
   try {
-    const rows = await parseOrderFile(file);
-    if (selectedAdminCampaign) {
-      selectedAdminCampaign.template = rows;
-      campaigns = campaigns.map((campaign) => campaign.id === selectedAdminCampaign.id ? selectedAdminCampaign : campaign);
-      await saveCampaigns(campaigns);
-    } else {
-      await saveOrderTemplate(rows);
-    }
-    currentOrderTemplate = rows;
-    renderOrderTemplate();
-    renderCampaignPickers();
-    orderAdminMessage.textContent = `${rows.length} lignes importées dans le bon de commande.`;
+    const template = await parseOrderFile(file);
+    orderAdminMessage.textContent = `${template.rows.length} ligne${template.rows.length > 1 ? "s" : ""} détectée${template.rows.length > 1 ? "s" : ""}. Confirmez la colonne du colisage minimum ci-dessous puis validez l'import.`;
+    showOrderImportConfirm(template);
   } catch (error) {
+    hideOrderImportConfirm();
     orderAdminMessage.textContent = error.message;
   } finally {
     orderFile.value = "";
+  }
+});
+
+orderImportCancelBtn?.addEventListener("click", () => {
+  hideOrderImportConfirm();
+  orderAdminMessage.textContent = "Import annulé.";
+});
+
+orderImportConfirmBtn?.addEventListener("click", async () => {
+  if (!pendingOrderImport) return;
+  const chosenColisageColumn = orderImportColisageSelect?.value || null;
+  const template = { ...pendingOrderImport, colisageColumn: chosenColisageColumn };
+
+  try {
+    if (selectedAdminCampaign) {
+      selectedAdminCampaign.template = template;
+      campaigns = campaigns.map((campaign) => campaign.id === selectedAdminCampaign.id ? selectedAdminCampaign : campaign);
+      await saveCampaigns(campaigns);
+    } else {
+      await saveOrderTemplate(template);
+    }
+    currentOrderTemplate = template;
+    hideOrderImportConfirm();
+    renderOrderTemplate();
+    renderCampaignPickers();
+    orderAdminMessage.textContent = `${template.rows.length} ligne${template.rows.length > 1 ? "s" : ""} importée${template.rows.length > 1 ? "s" : ""} dans le bon de commande.`;
+  } catch (error) {
+    orderAdminMessage.textContent = error.message || "Import impossible.";
   }
 });
 
@@ -5420,10 +5594,10 @@ downloadTemplateBtn.addEventListener("click", () => {
       <body>
         <table border="1">
           <thead>
-            <tr><th>Désignation</th><th>CIP</th><th>Tarif</th><th>Colisage</th></tr>
+            <tr><th>Désignation</th><th>CIP</th><th>Tarif</th><th>Colisage minimum de commande</th><th>Colisage présentoir</th></tr>
           </thead>
           <tbody>
-            <tr><td>Exemple produit</td><td>3400000000000</td><td>12,50</td><td>6</td></tr>
+            <tr><td>Exemple produit</td><td>3400000000000</td><td>12,50</td><td>6</td><td>4</td></tr>
           </tbody>
         </table>
       </body>

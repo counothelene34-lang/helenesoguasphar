@@ -42,7 +42,22 @@ function ensureDataFile() {
 
 function readResponses() {
   ensureDataFile();
-  return JSON.parse(fs.readFileSync(DATA_FILE, "utf8") || "[]");
+  const responses = JSON.parse(fs.readFileSync(DATA_FILE, "utf8") || "[]");
+  if (!responses.length) return responses;
+
+  // Même principe que readOrders()/normalizeTemplate() ci-dessous : les anciennes
+  // réponses ont des produits au format plat {designation,cip,tarif,colisage,quantity}.
+  // On les convertit à la volée vers la forme canonique {rowId, values, quantity} à
+  // chaque lecture, SANS jamais réécrire le fichier tant que rien d'autre ne
+  // provoque une sauvegarde — aucune donnée n'est perdue si cette migration a un bug.
+  // On lit les campagnes UNE SEULE FOIS (et pas une fois par réponse) : orders.json
+  // peut être volumineux (images encodées en base64 dans les campagnes).
+  const templatesByCampaign = new Map(readOrders().map((order) => [order.id, order.template]));
+  return responses.map((response) => {
+    const campaignId = String(response.campaignId || "herboristerie");
+    const template = templatesByCampaign.get(campaignId) || { rows: [] };
+    return { ...response, products: normalizeResponseProductsWithTemplate(response.products, template) };
+  });
 }
 
 function writeResponses(responses) {
@@ -80,7 +95,11 @@ function defaultOrders() {
 function readOrders() {
   ensureDataFile();
   const orders = JSON.parse(fs.readFileSync(ORDERS_FILE, "utf8") || "[]");
-  return orders.length ? orders : defaultOrders();
+  const list = orders.length ? orders : defaultOrders();
+  // Migration en mémoire (voir commentaire au-dessus de normalizeTemplate) :
+  // chaque lecture garantit un template dans la forme canonique {columns,
+  // colisageColumn, rows}, quelle que soit la forme stockée sur disque.
+  return list.map((order) => ({ ...order, template: normalizeTemplate(order.template) }));
 }
 
 function writeOrders(orders) {
@@ -278,6 +297,58 @@ function normalizePollAnswersMap(answers) {
     if (value) normalized[String(key)] = value;
   });
   return normalized;
+}
+
+function pollQuestionListMeta(poll) {
+  if (poll && Array.isArray(poll.questions) && poll.questions.length) {
+    return poll.questions.map((item, index) => ({
+      id: item.id || `question-${index + 1}`,
+      label: item.label || poll.question || ""
+    }));
+  }
+  return [{ id: "main", label: poll?.question || "" }];
+}
+
+function isPresenceQuestionMeta(question) {
+  const text = `${question.id} ${question.label}`.toLowerCase();
+  return text.includes("presence") || text.includes("présence");
+}
+
+function isMealQuestionMeta(question) {
+  const text = `${question.id} ${question.label}`.toLowerCase();
+  return text.includes("plat") || text.includes("repas") || text.includes("menu");
+}
+
+function isAbsenceAnswerText(value) {
+  const text = Array.isArray(value) ? value.join(" ") : String(value || "");
+  return /\bnon\b/i.test(text);
+}
+
+// Si la personne a répondu "non présent(e)" à la question de présence, on retire
+// automatiquement le choix de repas de sa réponse (elle ne doit pas être comptée
+// pour un repas si elle ne vient pas).
+function stripMealAnswerIfAbsent(poll, answers) {
+  if (!poll || !answers) return answers;
+  const questionList = pollQuestionListMeta(poll);
+  const presenceQuestion = questionList.find(isPresenceQuestionMeta);
+  const mealQuestions = questionList.filter(isMealQuestionMeta);
+  if (!presenceQuestion || !mealQuestions.length) return answers;
+  const presenceAnswer = answers[presenceQuestion.id];
+  if (presenceAnswer === undefined || !isAbsenceAnswerText(presenceAnswer)) return answers;
+  const cleaned = { ...answers };
+  mealQuestions.forEach((mealQuestion) => { delete cleaned[mealQuestion.id]; });
+  return cleaned;
+}
+
+function pollAnswersToTextMeta(poll, answers) {
+  const questionList = pollQuestionListMeta(poll);
+  if (!answers) return "";
+  const format = (value) => (Array.isArray(value) ? value.join(", ") : value || "");
+  if (questionList.length <= 1) return format(answers[questionList[0]?.id]);
+  return questionList
+    .filter((question) => answers[question.id] !== undefined)
+    .map((question) => `${question.label} : ${format(answers[question.id])}`)
+    .join(" | ");
 }
 
 function responseMatchesPoll(response, pollId) {
@@ -589,10 +660,6 @@ function normalizeInfoResponse(item) {
   };
 }
 
-function productKey(product) {
-  return String(product?.cip || product?.designation || product?.product || product?.id || "").trim().toLowerCase();
-}
-
 function parseColisageMinimum(value) {
   const match = String(value || "").replace(",", ".").match(/\d+(?:\.\d+)?/);
   return match ? Number(match[0]) : 0;
@@ -602,68 +669,180 @@ function colisageErrorMessage(minimum) {
   return minimum ? `Veuillez inscrire au minimum le colisage indiqué (${minimum} unités).` : "Inscrire le colisage minimum.";
 }
 
-function normalizeResponseProducts(products, campaignId) {
-  const campaign = readOrders().find((order) => order.id === campaignId);
-  const templateByKey = new Map((campaign?.template || []).map((product) => [productKey(product), product]));
+// --- Colonnes libres pour les bons de commande -----------------------------
+//
+// Avant : un bon de commande était une liste fixe {id, designation, cip, tarif,
+// colisage, colisagePresentoir}. Maintenant : {columns, colisageColumn, rows}
+// où `columns` sont les en-têtes EXACTES du fichier importé (dans l'ordre),
+// `colisageColumn` est le nom de la colonne choisie par l'admin comme colisage
+// minimum (ou null), et `rows` sont des lignes {id, values: {<colonne>: <valeur>}}.
+//
+// Les fichiers data/orders.json, data/responses.json, data/order-template.json
+// peuvent encore contenir l'ancienne forme (créée avant cette évolution). Choix
+// retenu : on migre EN MÉMOIRE à chaque lecture, sans jamais réécrire ces
+// fichiers tant que l'admin n'enregistre pas lui-même une modification. C'est
+// l'option la plus sûre : aucune donnée n'est modifiée sur disque par cette
+// migration, donc aucun risque de perte si la migration a un bug.
+const LEGACY_TEMPLATE_COLUMNS = ["Désignation", "CIP", "Tarif", "Colisage minimum de commande", "Colisage présentoir"];
+const LEGACY_COLISAGE_COLUMN = "Colisage minimum de commande";
 
-  return Array.isArray(products) ? products.map((product) => {
-    const normalized = {
-      designation: String(product.designation || product.product || "").trim(),
-      cip: String(product.cip || "").trim(),
-      tarif: String(product.tarif || "").trim(),
-      colisage: String(product.colisage || "").trim(),
-      quantity: String(product.quantity || "").trim()
-    };
-    const template = templateByKey.get(productKey(normalized));
-    return template ? {
-      ...normalized,
-      designation: normalized.designation || String(template.designation || "").trim(),
-      cip: normalized.cip || String(template.cip || "").trim(),
-      tarif: normalized.tarif || String(template.tarif || "").trim(),
-      colisage: String(template.colisage || normalized.colisage || "").trim()
-    } : normalized;
-  }) : [];
+function legacyProductKey(product) {
+  return String(product?.cip || product?.designation || product?.product || product?.id || "").trim().toLowerCase();
 }
 
-function validateProductsAgainstColisage(products = []) {
+function migrateLegacyTemplateRows(rows) {
+  return (Array.isArray(rows) ? rows : []).map((row, index) => ({
+    id: String(row.id || `row-legacy-${index}`),
+    values: {
+      "Désignation": String(row.designation || row.product || "").trim(),
+      "CIP": String(row.cip || "").trim(),
+      "Tarif": String(row.tarif || "").trim(),
+      "Colisage minimum de commande": String(row.colisage || "").trim(),
+      "Colisage présentoir": String(row.colisagePresentoir || "").trim()
+    }
+  }));
+}
+
+// Convertit n'importe quelle forme de template (ancienne liste plate, nouvelle
+// forme déjà correcte, ou valeur absente/invalide) vers la forme canonique
+// {columns, colisageColumn, rows}.
+function normalizeTemplate(template) {
+  if (Array.isArray(template)) {
+    return {
+      columns: LEGACY_TEMPLATE_COLUMNS.slice(),
+      colisageColumn: LEGACY_COLISAGE_COLUMN,
+      rows: migrateLegacyTemplateRows(template)
+    };
+  }
+
+  if (template && typeof template === "object") {
+    const columns = Array.isArray(template.columns)
+      ? template.columns.map((column) => String(column || "").trim()).filter(Boolean)
+      : [];
+    const colisageColumn = template.colisageColumn && columns.includes(template.colisageColumn)
+      ? template.colisageColumn
+      : null;
+    const rows = Array.isArray(template.rows) ? template.rows.map((row, index) => ({
+      id: String(row.id || `row-${index}`),
+      values: columns.reduce((values, column) => {
+        values[column] = String(row.values?.[column] ?? "").trim();
+        return values;
+      }, {})
+    })) : [];
+    return { columns, colisageColumn, rows };
+  }
+
+  return { columns: [], colisageColumn: null, rows: [] };
+}
+
+// Convertit une ancienne ligne de réponse plate {designation,cip,tarif,colisage,
+// colisagePresentoir,quantity} vers la nouvelle forme {rowId, values, quantity},
+// en retrouvant la ligne du template correspondante par CIP/désignation.
+function migrateLegacyProduct(product, templateRows, index) {
+  const values = {
+    "Désignation": String(product.designation || product.product || "").trim(),
+    "CIP": String(product.cip || "").trim(),
+    "Tarif": String(product.tarif || "").trim(),
+    "Colisage minimum de commande": String(product.colisage || "").trim(),
+    "Colisage présentoir": String(product.colisagePresentoir || "").trim()
+  };
+  const key = legacyProductKey(product);
+  const matchedRow = key && templateRows.find((row) => {
+    const rowKey = String(row.values?.["CIP"] || row.values?.["Désignation"] || "").trim().toLowerCase();
+    return rowKey && rowKey === key;
+  });
+
+  return {
+    rowId: matchedRow ? matchedRow.id : `row-legacy-${index}`,
+    values,
+    quantity: String(product.quantity || "").trim()
+  };
+}
+
+// Logique de normalisation partagée, prenant un template DÉJÀ normalisé en
+// paramètre (voir normalizeResponseProducts et readResponses ci-dessous). Séparée
+// ainsi pour ne pas relire/reparser orders.json à chaque réponse quand on traite
+// une liste entière (ex. readResponses), ce qui serait coûteux si orders.json est
+// volumineux (images encodées en base64 dans les campagnes).
+function normalizeResponseProductsWithTemplate(products, template) {
+  const rows = Array.isArray(template?.rows) ? template.rows : [];
+  const list = Array.isArray(products) ? products : [];
+
+  return list.map((product, index) => {
+    if (product && typeof product === "object" && product.rowId !== undefined && product.values && typeof product.values === "object") {
+      const templateRow = rows.find((row) => row.id === String(product.rowId));
+      // On garde en priorité les valeurs transmises par la pharmacie (la réponse
+      // garde sa propre "photo" du produit au moment où elle a répondu), et on
+      // complète seulement les colonnes manquantes avec le template actuel.
+      const values = { ...(templateRow ? templateRow.values : {}), ...product.values };
+      const cleanValues = {};
+      Object.keys(values).forEach((key) => { cleanValues[key] = String(values[key] ?? "").trim(); });
+      return {
+        rowId: String(product.rowId),
+        values: cleanValues,
+        quantity: String(product.quantity || "").trim()
+      };
+    }
+
+    return migrateLegacyProduct(product, rows, index);
+  });
+}
+
+function normalizeResponseProducts(products, campaignId) {
+  const campaign = readOrders().find((order) => order.id === campaignId);
+  const template = campaign ? normalizeTemplate(campaign.template) : { rows: [] };
+  return normalizeResponseProductsWithTemplate(products, template);
+}
+
+function colisageColumnForCampaign(campaignId) {
+  const campaign = readOrders().find((order) => order.id === campaignId);
+  return campaign ? normalizeTemplate(campaign.template).colisageColumn : null;
+}
+
+function validateProductsAgainstColisage(products = [], colisageColumn) {
+  if (!colisageColumn) return "";
   const invalidProduct = products.find((product) => {
     const quantity = Number(String(product.quantity || "").replace(",", "."));
-    const minimum = parseColisageMinimum(product.colisage);
+    const minimum = parseColisageMinimum(product.values?.[colisageColumn]);
     return quantity > 0 && minimum > 0 && quantity < minimum;
   });
 
-  return invalidProduct ? colisageErrorMessage(parseColisageMinimum(invalidProduct.colisage)) : "";
+  return invalidProduct ? colisageErrorMessage(parseColisageMinimum(invalidProduct.values?.[colisageColumn])) : "";
 }
 
 function rowsForExport(responses) {
   return latestResponses(responses).flatMap((item) => {
     if (!item.products || !item.products.length) {
-      return [{ ...item, designation: "", cip: "", tarif: "", colisage: "", quantity: "" }];
+      return [{ ...item, values: {}, quantity: "" }];
     }
 
     return item.products.map((product) => ({
       ...item,
-      designation: product.designation || product.product || "",
-      cip: product.cip || "",
-      tarif: product.tarif || "",
-      colisage: product.colisage || "",
+      values: product.values || {},
       quantity: product.quantity
     }));
   });
 }
 
+// Les colonnes produit ne sont plus fixes : on prend l'union des colonnes
+// rencontrées dans les lignes à exporter, dans l'ordre de première apparition.
 function sendExcel(response, responses) {
-  const headings = ["Date", "Modifié le", "Pharmacie", "Statut", "Désignation", "CIP", "Tarif", "Colisage", "Quantité", "Commentaire"];
-  const rows = rowsForExport(responses).map((row) => `
+  const rows = rowsForExport(responses);
+  const productColumns = [];
+  rows.forEach((row) => {
+    Object.keys(row.values || {}).forEach((column) => {
+      if (!productColumns.includes(column)) productColumns.push(column);
+    });
+  });
+
+  const headings = ["Date", "Modifié le", "Pharmacie", "Statut", ...productColumns, "Quantité", "Commentaire"];
+  const bodyRows = rows.map((row) => `
     <tr>
       <td>${escapeHtml(row.createdAt)}</td>
       <td>${escapeHtml(row.updatedAt || "")}</td>
       <td>${escapeHtml(row.pharmacyName)}</td>
       <td>${escapeHtml(row.interest)}</td>
-      <td>${escapeHtml(row.designation)}</td>
-      <td>${escapeHtml(row.cip)}</td>
-      <td>${escapeHtml(row.tarif)}</td>
-      <td>${escapeHtml(row.colisage)}</td>
+      ${productColumns.map((column) => `<td>${escapeHtml(row.values[column] || "")}</td>`).join("")}
       <td>${escapeHtml(row.quantity)}</td>
       <td>${escapeHtml(row.notes)}</td>
     </tr>
@@ -675,7 +854,7 @@ function sendExcel(response, responses) {
       <body>
         <table border="1">
           <thead><tr>${headings.map((heading) => `<th>${heading}</th>`).join("")}</tr></thead>
-          <tbody>${rows}</tbody>
+          <tbody>${bodyRows}</tbody>
         </table>
       </body>
     </html>
@@ -829,7 +1008,7 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/order-template" && request.method === "GET") {
-      sendJson(response, 200, readOrderTemplate());
+      sendJson(response, 200, normalizeTemplate(readOrderTemplate()));
       return;
     }
 
@@ -1009,7 +1188,7 @@ const server = http.createServer(async (request, response) => {
           startDate: String(period.startDate || "").trim(),
           endDate: String(period.endDate || "").trim()
         })).filter((period) => period.startDate) : [],
-        template: Array.isArray(order.template) ? order.template : []
+        template: normalizeTemplate(order.template)
       })) : [];
       writeOrders(orders);
       sendJson(response, 200, orders);
@@ -1058,13 +1237,7 @@ const server = http.createServer(async (request, response) => {
       }
 
       const payload = JSON.parse(await readBody(request));
-      const template = Array.isArray(payload) ? payload.map((row, index) => ({
-        id: String(row.id || `line-${Date.now()}-${index}`),
-        designation: String(row.designation || "").trim(),
-        cip: String(row.cip || "").trim(),
-        tarif: String(row.tarif || "").trim(),
-        colisage: String(row.colisage || "").trim()
-      })).filter((row) => row.designation || row.cip) : [];
+      const template = normalizeTemplate(payload);
 
       writeOrderTemplate(template);
       sendJson(response, 200, template);
@@ -1127,7 +1300,9 @@ const server = http.createServer(async (request, response) => {
         products: normalizeResponseProducts(item.products, String(item.campaignId || "herboristerie")),
         notes: String(item.notes || "").trim()
       })) : [];
-      const invalid = responses.map((item) => validateProductsAgainstColisage(item.products)).find(Boolean);
+      const invalid = responses
+        .map((item) => validateProductsAgainstColisage(item.products, colisageColumnForCampaign(item.campaignId)))
+        .find(Boolean);
       if (invalid) {
         sendJson(response, 400, { error: invalid });
         return;
@@ -1237,7 +1412,7 @@ const server = http.createServer(async (request, response) => {
       const responses = readResponses();
       const campaignId = String(payload.campaignId || "herboristerie");
       const products = normalizeResponseProducts(payload.products, campaignId);
-      const invalid = validateProductsAgainstColisage(products);
+      const invalid = validateProductsAgainstColisage(products, colisageColumnForCampaign(campaignId));
       if (invalid) {
         sendJson(response, 400, { error: invalid });
         return;
@@ -1275,6 +1450,9 @@ const server = http.createServer(async (request, response) => {
     if (url.pathname === "/api/poll-responses" && request.method === "POST") {
       const payload = JSON.parse(await readBody(request));
       const responses = readPollResponses();
+      const poll = readPolls().find((item) => item.id === String(payload.pollId || ""));
+      const cleanedAnswers = stripMealAnswerIfAbsent(poll, normalizePollAnswersMap(payload.answers));
+      const recomputedAnswer = poll ? pollAnswersToTextMeta(poll, cleanedAnswers) : "";
       const incoming = {
         id: String(payload.id || Date.now()),
         pollId: String(payload.pollId || ""),
@@ -1283,8 +1461,8 @@ const server = http.createServer(async (request, response) => {
         updatedAt: String(payload.updatedAt || ""),
         pharmacyId: String(payload.pharmacyId || "").trim(),
         pharmacyName: String(payload.pharmacyName || "").trim(),
-        answer: String(payload.answer || "").trim(),
-        answers: normalizePollAnswersMap(payload.answers),
+        answer: recomputedAnswer || String(payload.answer || "").trim(),
+        answers: cleanedAnswers,
         freeText: String(payload.freeText || "").trim()
       };
       const pharmacies = readPharmacies();

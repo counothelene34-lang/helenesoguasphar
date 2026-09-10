@@ -280,24 +280,24 @@ main::before {
 
 #viewPrecommandes,
 #viewSondages {
-  background: #6fbf8f;
-  box-shadow: 0 2px 8px rgba(111, 191, 143, 0.25);
+  background: #4f9d74;
+  box-shadow: 0 2px 8px rgba(79, 157, 116, 0.3);
 }
 
 #viewPrecommandes:hover,
 #viewSondages:hover {
-  background: #5fac7e;
-  box-shadow: 0 4px 12px rgba(111, 191, 143, 0.35);
+  background: #3d8760;
+  box-shadow: 0 4px 12px rgba(79, 157, 116, 0.4);
 }
 
 #viewArchives {
-  background: #d97b73;
-  box-shadow: 0 2px 8px rgba(217, 123, 115, 0.25);
+  background: #bf5d4f;
+  box-shadow: 0 2px 8px rgba(191, 93, 79, 0.3);
 }
 
 #viewArchives:hover {
-  background: #c8695f;
-  box-shadow: 0 4px 12px rgba(217, 123, 115, 0.35);
+  background: #a94e42;
+  box-shadow: 0 4px 12px rgba(191, 93, 79, 0.4);
 }
 
 .archived-orders-block {
@@ -1014,6 +1014,12 @@ main::before {
   margin-bottom: 8px;
   color: #101b16;
   font-weight: 900;
+}
+
+.inline-poll-question-disabled {
+  opacity: .4;
+  pointer-events: none;
+  filter: grayscale(.5);
 }
 
 .poll-question-blocks {
@@ -2326,19 +2332,11 @@ textarea:focus {
   width: 130px;
 }
 
-.order-table th:nth-child(3),
-.order-table td:nth-child(3),
-.admin-upload th:nth-child(3),
-.admin-upload td:nth-child(3),
+/* Les colonnes du bon de commande sont désormais libres (n'importe quel nombre,
+   n'importe quel ordre) : on ne peut plus cibler une colonne par sa position fixe
+   ("3e colonne = tarif") comme avant. */
 #responsesTable td:nth-child(4) {
   white-space: nowrap;
-}
-
-.order-table th:nth-child(3),
-.order-table td:nth-child(3),
-.admin-upload th:nth-child(3),
-.admin-upload td:nth-child(3) {
-  width: 94px;
 }
 
 .order-table input {
@@ -2436,6 +2434,33 @@ tbody tr:hover {
 
 .table-wrap.compact {
   max-height: 270px;
+}
+
+.order-import-confirm {
+  margin: 16px 0;
+  padding: 16px;
+  background: var(--green-soft);
+  border: 1px solid rgba(0, 140, 69, .28);
+  border-radius: 10px;
+}
+
+.order-import-confirm label {
+  margin-top: 10px;
+}
+
+.order-import-confirm select {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  color: var(--ink);
+  background: #fff;
+  border: 1px solid #cbd5d1;
+  border-radius: 8px;
+}
+
+.order-import-confirm .table-wrap.compact {
+  margin-top: 12px;
+  background: #fff;
 }
 
 .form-actions,

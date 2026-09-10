@@ -220,6 +220,7 @@
             <div>
               <span class="field-title">Bon de commande</span>
               <p>Renseignez uniquement les quantités souhaitées.</p>
+              <p><strong>Merci d'indiquer les quantités souhaitées, et non le nombre de colisages (exemple : si vous souhaitez 2 cartons de 6, notez 12 et non 2).</strong></p>
             </div>
             <span id="lineCount" class="line-count">0 ligne</span>
           </div>
@@ -227,13 +228,7 @@
           <div class="order-wrap">
             <table class="order-table">
               <thead>
-                <tr>
-                  <th>Désignation</th>
-                  <th>CIP</th>
-                  <th>Tarif</th>
-                  <th>Colisage</th>
-                  <th>Quantité</th>
-                </tr>
+                <tr id="orderTableHeadRow"></tr>
               </thead>
               <tbody id="productRows"></tbody>
             </table>
@@ -647,27 +642,39 @@
           <section class="admin-upload">
             <div>
               <h2>Bon de commande</h2>
-              <p>Importer un fichier Excel ou PDF. Pour Excel, les colonnes attendues sont : désignation, CIP, tarif, colisage.</p>
+              <p>Importer un fichier Excel, CSV ou PDF. Les colonnes de votre fichier sont conservées telles quelles, quel que soit leur nom ou leur ordre. Il vous sera juste demandé de confirmer quelle colonne contient le colisage minimum de commande.</p>
             </div>
             <div class="upload-actions">
               <label class="file-btn" for="orderFile">Importer Excel / PDF</label>
               <input id="orderFile" type="file" accept=".xlsx,.xls,.csv,.tsv,.txt,.pdf">
-              <button id="downloadTemplateBtn" class="ghost-btn" type="button">Modèle Excel</button>
+              <button id="downloadTemplateBtn" class="ghost-btn" type="button">Exemple de fichier Excel</button>
             </div>
             <p id="orderAdminMessage" class="status-message" role="status"></p>
+            <div id="orderImportConfirm" class="order-import-confirm" hidden>
+              <p>Colonnes détectées dans le fichier : <strong id="orderImportColumnsSummary"></strong></p>
+              <label for="orderImportColisageSelect">Quelle colonne contient le colisage minimum de commande ?</label>
+              <select id="orderImportColisageSelect"></select>
+              <p class="form-help">Choisissez "Aucune" si le fichier n'en comporte pas — aucun contrôle de colisage minimum ne sera alors appliqué.</p>
+              <div class="table-wrap compact">
+                <table>
+                  <thead><tr id="orderImportPreviewHead"></tr></thead>
+                  <tbody id="orderImportPreviewBody"></tbody>
+                </table>
+              </div>
+              <p class="form-help">Aperçu des 5 premières lignes sur <span id="orderImportRowCount">0</span> détectées au total.</p>
+              <div class="upload-actions">
+                <button id="orderImportConfirmBtn" class="primary-btn" type="button">Valider cet import</button>
+                <button id="orderImportCancelBtn" class="ghost-btn" type="button">Annuler</button>
+              </div>
+            </div>
             <div class="table-wrap compact">
               <table>
                 <thead>
-                  <tr>
-                    <th>Désignation</th>
-                    <th>CIP</th>
-                    <th>Tarif</th>
-                    <th>Colisage</th>
-                  </tr>
+                  <tr id="orderTemplateHeadRow"></tr>
                 </thead>
                 <tbody id="orderTemplateTable">
                   <tr>
-                    <td colspan="4" class="empty-state">Aucun bon de commande chargé.</td>
+                    <td class="empty-state">Aucun bon de commande chargé.</td>
                   </tr>
                 </tbody>
               </table>
@@ -695,17 +702,11 @@
             <div class="table-wrap compact">
               <table>
                 <thead>
-                  <tr>
-                    <th>Désignation</th>
-                    <th>CIP</th>
-                    <th>Tarif</th>
-                    <th>Colisage</th>
-                    <th>Quantité totale</th>
-                  </tr>
+                  <tr id="quantitySummaryHeadRow"></tr>
                 </thead>
                 <tbody id="quantitySummaryTable">
                   <tr>
-                    <td colspan="5" class="empty-state">Aucune quantité commandée pour le moment.</td>
+                    <td class="empty-state">Aucune quantité commandée pour le moment.</td>
                   </tr>
                 </tbody>
               </table>
