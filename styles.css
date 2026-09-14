@@ -2358,6 +2358,17 @@ textarea:focus {
   color: #991b1b;
 }
 
+.product-fillable-info {
+  width: 100%;
+  min-width: 220px;
+  min-height: 60px;
+  padding: 8px 10px;
+  font: inherit;
+  text-align: left;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
 .updated-at {
   display: inline-block;
   margin-top: 4px;

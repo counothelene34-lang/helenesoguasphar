@@ -237,6 +237,7 @@ const answeredPharmacies = document.querySelector("#answeredPharmacies");
 const notInterestedPharmacies = document.querySelector("#notInterestedPharmacies");
 const exportExcelBtn = document.querySelector("#exportExcelBtn");
 const quantitySummaryBtn = document.querySelector("#quantitySummaryBtn");
+const exportQuantitySummaryPdfBtn = document.querySelector("#exportQuantitySummaryPdfBtn");
 const quantitySummary = document.querySelector("#quantitySummary");
 const quantitySummaryTable = document.querySelector("#quantitySummaryTable");
 const quantitySummaryHeadRow = document.querySelector("#quantitySummaryHeadRow");
@@ -2964,16 +2965,18 @@ function renderCampaignPickers() {
   const currentBatDocument = currentPharmacy ? batDocumentForPharmacy(currentPharmacy) : null;
   const adminBatDocuments = batDocumentsForActivePharmacies();
 
-  campaignCards.innerHTML = openCampaigns.length
-    ? openCampaigns.map((campaign) => campaignCard(campaign, "form")).join("")
+  const openCampaignsRecentFirst = [...openCampaigns].reverse();
+  campaignCards.innerHTML = openCampaignsRecentFirst.length
+    ? openCampaignsRecentFirst.map((campaign) => campaignCard(campaign, "form")).join("")
     : '<p class="empty-campaigns">Aucune précommande disponible pour le moment.</p>';
 
   renderArchivedOrdersHistory();
   renderPrecommandesListPage();
   renderSondagesListPage();
 
-  pollCards.innerHTML = openPolls.length
-    ? openPolls.map((poll) => pollCard(poll, "form")).join("")
+  const openPollsRecentFirst = [...openPolls].reverse();
+  pollCards.innerHTML = openPollsRecentFirst.length
+    ? openPollsRecentFirst.map((poll) => pollCard(poll, "form")).join("")
     : '<p class="empty-campaigns">Aucun sondage disponible pour le moment.</p>';
 
   infoCards.innerHTML = openInfoForms.length
@@ -3603,6 +3606,12 @@ async function showAdminCampaignPicker() {
   showAdminSection(activeAdminSection);
 }
 
+// Une colonne "à remplir" (ex : informations pour un support de communication) doit
+// être une vraie zone de texte modifiable par la pharmacie, pas juste un texte affiché.
+function isFillableColumn(column) {
+  return /à remplir|a remplir/i.test(column || "");
+}
+
 // Construit la ligne d'en-tête (<tr>) d'un tableau à colonnes libres : les colonnes
 // du template, puis en dernier une colonne "Quantité" si demandé.
 function orderColumnsHeadRowMarkup(columns, withQuantity) {
@@ -3632,7 +3641,9 @@ function renderOrderTemplate() {
       : 0;
     return `
     <tr class="order-row" data-line-id="${escapeHtml(item.id)}">
-      ${columns.map((column) => `<td>${escapeHtml(item.values?.[column] || "")}</td>`).join("")}
+      ${columns.map((column) => isFillableColumn(column)
+        ? `<td><textarea class="product-fillable-info" rows="2" data-id="${escapeHtml(item.id)}" data-column="${escapeHtml(column)}" aria-label="${escapeHtml(column)}">${escapeHtml(item.values?.[column] || "")}</textarea></td>`
+        : `<td>${escapeHtml(item.values?.[column] || "")}</td>`).join("")}
       <td>
         <input
           type="number"
@@ -3656,6 +3667,17 @@ function renderOrderTemplate() {
   `).join("");
 }
 
+// Récupère, pour une ligne donnée, les colonnes "à remplir" que la pharmacie a
+// complétées (ex : ses coordonnées pour un support de communication), pour les
+// fusionner avec les valeurs du modèle avant enregistrement.
+function collectFillableValues(rowId) {
+  const values = {};
+  document.querySelectorAll(`.product-fillable-info[data-id="${CSS.escape(rowId)}"]`).forEach((textarea) => {
+    values[textarea.dataset.column] = textarea.value.trim();
+  });
+  return values;
+}
+
 function collectProducts() {
   const rows = currentOrderTemplate.rows || [];
   return [...document.querySelectorAll(".product-quantity")]
@@ -3666,7 +3688,7 @@ function collectProducts() {
     .filter((item) => item.row && Number(item.quantity) > 0)
     .map((item) => ({
       rowId: item.row.id,
-      values: item.row.values,
+      values: { ...item.row.values, ...collectFillableValues(item.row.id) },
       quantity: item.quantity
     }));
 }
@@ -3680,8 +3702,10 @@ function prefillCampaignResponse(response) {
   document.querySelector("#notes").value = response.notes || "";
 
   const quantitiesByRowId = new Map();
+  const fillableValuesByRowId = new Map();
   (response.products || []).forEach((product) => {
     quantitiesByRowId.set(String(product.rowId || ""), product.quantity || "");
+    fillableValuesByRowId.set(String(product.rowId || ""), product.values || {});
   });
 
   (currentOrderTemplate.rows || []).forEach((templateRow) => {
@@ -3690,6 +3714,13 @@ function prefillCampaignResponse(response) {
     if (!input) return;
     input.value = quantitiesByRowId.get(String(templateRow.id)) || "";
     validateQuantityInput(input);
+  });
+
+  productRows.querySelectorAll(".product-fillable-info").forEach((textarea) => {
+    const savedValues = fillableValuesByRowId.get(String(textarea.dataset.id));
+    if (savedValues && savedValues[textarea.dataset.column] !== undefined) {
+      textarea.value = savedValues[textarea.dataset.column] || "";
+    }
   });
 }
 
@@ -3778,6 +3809,8 @@ async function renderAdmin() {
   renderQuantitySummary(responses);
 }
 
+let lastQuantitySummary = { columns: [], rows: [] };
+
 function renderQuantitySummary(responses = []) {
   const columns = currentOrderTemplate.columns || [];
   if (quantitySummaryHeadRow) quantitySummaryHeadRow.innerHTML = orderColumnsHeadRowMarkup(columns, false) + '<th>Quantité totale</th>';
@@ -3798,7 +3831,8 @@ function renderQuantitySummary(responses = []) {
     });
   });
 
-  const rows = [...totals.values()].filter((row) => row.quantity > 0);
+  const rows = [...totals.values()].filter((row) => row.quantity > 0).sort((a, b) => a.label.localeCompare(b.label, "fr"));
+  lastQuantitySummary = { columns, rows };
   const colspan = Math.max(columns.length + 1, 1);
   if (!rows.length) {
     quantitySummaryTable.innerHTML = `<tr><td colspan="${colspan}" class="empty-state">Aucune quantité commandée pour le moment.</td></tr>`;
@@ -3806,7 +3840,6 @@ function renderQuantitySummary(responses = []) {
   }
 
   quantitySummaryTable.innerHTML = rows
-    .sort((a, b) => a.label.localeCompare(b.label, "fr"))
     .map((row) => `
       <tr>
         ${columns.map((column) => `<td>${escapeHtml(row.values[column] || "")}</td>`).join("")}
@@ -3814,6 +3847,54 @@ function renderQuantitySummary(responses = []) {
       </tr>
     `)
     .join("");
+}
+
+function exportQuantitySummaryToPdf() {
+  const { columns, rows } = lastQuantitySummary;
+
+  if (!rows.length) {
+    alert("Aucune quantité commandée à exporter pour cette période.");
+    return;
+  }
+
+  const JsPdfCtor = window.jspdf && window.jspdf.jsPDF;
+  if (!JsPdfCtor) {
+    alert("L'export PDF n'a pas pu se charger. Vérifiez votre connexion puis réessayez.");
+    return;
+  }
+
+  const doc = new JsPdfCtor({ orientation: "portrait", unit: "pt", format: "a4" });
+
+  const campaignLabel = selectedAdminCampaign ? (selectedAdminCampaign.title || selectedAdminCampaign.name || "") : "";
+  const periodLabel = (campaignPeriodFilter && campaignPeriodFilter.options.length && campaignPeriodFilter.selectedIndex >= 0)
+    ? campaignPeriodFilter.options[campaignPeriodFilter.selectedIndex].textContent
+    : "";
+
+  doc.setFontSize(14);
+  doc.text("Récap des quantités commandées", 40, 40);
+  doc.setFontSize(10);
+  doc.setTextColor(90);
+  const subtitleParts = [campaignLabel, periodLabel].filter(Boolean);
+  if (subtitleParts.length) doc.text(subtitleParts.join(" — "), 40, 58);
+  doc.setTextColor(0);
+
+  const head = [[...columns, "Quantité totale"]];
+  const body = rows.map((row) => [
+    ...columns.map((column) => String(row.values[column] || "")),
+    String(row.quantity)
+  ]);
+
+  doc.autoTable({
+    head,
+    body,
+    startY: subtitleParts.length ? 72 : 56,
+    styles: { fontSize: 9, cellPadding: 6 },
+    headStyles: { fillColor: [0, 105, 62], textColor: 255 },
+    columnStyles: { [columns.length]: { fontStyle: "bold", halign: "right" } }
+  });
+
+  const datePart = new Date().toISOString().slice(0, 10);
+  doc.save(`recap-quantites-${datePart}.pdf`);
 }
 
 const POLL_CHART_COLORS = [
@@ -5893,6 +5974,10 @@ quantitySummaryBtn.addEventListener("click", () => {
   quantitySummary.hidden = !quantitySummary.hidden;
   quantitySummaryBtn.textContent = quantitySummary.hidden ? "Récap des quantités" : "Masquer le récap";
 });
+
+if (exportQuantitySummaryPdfBtn) {
+  exportQuantitySummaryPdfBtn.addEventListener("click", exportQuantitySummaryToPdf);
+}
 
 async function init() {
   campaignPicker.hidden = true;
