@@ -238,6 +238,7 @@ const notInterestedPharmacies = document.querySelector("#notInterestedPharmacies
 const exportExcelBtn = document.querySelector("#exportExcelBtn");
 const quantitySummaryBtn = document.querySelector("#quantitySummaryBtn");
 const exportQuantitySummaryPdfBtn = document.querySelector("#exportQuantitySummaryPdfBtn");
+const exportQuantitySummaryExcelBtn = document.querySelector("#exportQuantitySummaryExcelBtn");
 const quantitySummary = document.querySelector("#quantitySummary");
 const quantitySummaryTable = document.querySelector("#quantitySummaryTable");
 const quantitySummaryHeadRow = document.querySelector("#quantitySummaryHeadRow");
@@ -3897,6 +3898,33 @@ function exportQuantitySummaryToPdf() {
   doc.save(`recap-quantites-${datePart}.pdf`);
 }
 
+function exportQuantitySummaryToExcel() {
+  const { columns, rows } = lastQuantitySummary;
+
+  if (!rows.length) {
+    alert("Aucune quantité commandée à exporter pour cette période.");
+    return;
+  }
+
+  if (!globalThis.XLSX) {
+    alert("L'export Excel n'a pas pu se charger. Vérifiez votre connexion puis réessayez.");
+    return;
+  }
+
+  const header = [...columns, "Quantité totale"];
+  const data = rows.map((row) => [
+    ...columns.map((column) => row.values[column] || ""),
+    row.quantity
+  ]);
+
+  const sheet = globalThis.XLSX.utils.aoa_to_sheet([header, ...data]);
+  const workbook = globalThis.XLSX.utils.book_new();
+  globalThis.XLSX.utils.book_append_sheet(workbook, sheet, "Récap quantités");
+
+  const datePart = new Date().toISOString().slice(0, 10);
+  globalThis.XLSX.writeFile(workbook, `recap-quantites-${datePart}.xlsx`);
+}
+
 const POLL_CHART_COLORS = [
   "#2a78d6", // bleu
   "#008300", // vert
@@ -5977,6 +6005,10 @@ quantitySummaryBtn.addEventListener("click", () => {
 
 if (exportQuantitySummaryPdfBtn) {
   exportQuantitySummaryPdfBtn.addEventListener("click", exportQuantitySummaryToPdf);
+}
+
+if (exportQuantitySummaryExcelBtn) {
+  exportQuantitySummaryExcelBtn.addEventListener("click", exportQuantitySummaryToExcel);
 }
 
 async function init() {
