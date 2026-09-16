@@ -16,6 +16,7 @@ const INFO_RESPONSES_FILE = path.join(DATA_DIR, "info-responses.json");
 const PHARMACIES_FILE = path.join(DATA_DIR, "pharmacies.json");
 const VALIDATION_FILE = path.join(DATA_DIR, "validation.json");
 const VALIDATION_RESPONSES_FILE = path.join(DATA_DIR, "validation-responses.json");
+const BAT_DOCUMENTS_DIR = path.join(DATA_DIR, "bat-calendriers-2027");
 
 const MIME_TYPES = {
   ".html": "text/html; charset=utf-8",
@@ -1008,6 +1009,26 @@ const server = http.createServer(async (request, response) => {
   const url = new URL(request.url, `http://${request.headers.host}`);
 
   try {
+    if (url.pathname.startsWith("/bat-2027/") && request.method === "GET") {
+      const requestedName = path.basename(url.pathname.slice("/bat-2027/".length));
+      const filePath = path.join(BAT_DOCUMENTS_DIR, requestedName);
+      if (!filePath.startsWith(BAT_DOCUMENTS_DIR) || !/^pharmacy-[\w-]+\.pdf$/.test(requestedName)) {
+        response.writeHead(403);
+        response.end("Forbidden");
+        return;
+      }
+      fs.readFile(filePath, (error, data) => {
+        if (error) {
+          response.writeHead(404);
+          response.end("Not found");
+          return;
+        }
+        response.writeHead(200, { "Content-Type": "application/pdf" });
+        response.end(data);
+      });
+      return;
+    }
+
     if (url.pathname === "/api/responses" && request.method === "GET") {
       if (request.headers["x-admin-code"] !== ADMIN_CODE) {
         sendJson(response, 401, { error: "Code administrateur incorrect" });
