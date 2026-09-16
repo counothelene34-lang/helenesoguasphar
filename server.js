@@ -867,14 +867,35 @@ function sendExcel(response, responses) {
   response.end(workbook);
 }
 
-function sendPollExcel(response, responses) {
-  const headings = ["Date", "Pharmacie", "Question", "Réponse", "Commentaire / précision"];
+// Une colonne par question du sondage (ex : "Présence" et "Repas" séparées) au lieu
+// de tout mélanger dans une seule colonne "Réponse".
+function pollAnswerCellValue(row, question, questionList) {
+  if (row.answers && row.answers[question.id] !== undefined) {
+    const value = row.answers[question.id];
+    return Array.isArray(value) ? value.join(", ") : String(value || "");
+  }
+  // Anciennes réponses enregistrées avant la séparation par question : on retombe
+  // sur le champ "answer" unique si le sondage n'a qu'une seule question.
+  if (questionList.length <= 1) return row.answer || "";
+  return "";
+}
+
+function sendPollExcel(response, responses, poll) {
+  const questionList = pollQuestionListMeta(poll);
+  const multiQuestion = questionList.length > 1;
+  const headings = [
+    "Date",
+    "Pharmacie",
+    ...(multiQuestion ? [] : ["Question"]),
+    ...questionList.map((question) => question.label || "Réponse"),
+    "Commentaire / précision"
+  ];
   const rows = responses.map((row) => `
     <tr>
       <td>${escapeHtml(row.createdAt)}</td>
       <td>${escapeHtml(row.pharmacyName)}</td>
-      <td>${escapeHtml(row.pollQuestion)}</td>
-      <td>${escapeHtml(row.answer)}</td>
+      ${multiQuestion ? "" : `<td>${escapeHtml(row.pollQuestion)}</td>`}
+      ${questionList.map((question) => `<td>${escapeHtml(pollAnswerCellValue(row, question, questionList))}</td>`).join("")}
       <td>${escapeHtml(row.freeText)}</td>
     </tr>
   `).join("");
@@ -1183,6 +1204,7 @@ const server = http.createServer(async (request, response) => {
         imageData: String(order.imageData || ""),
         imageData2: String(order.imageData2 || ""),
         closed: Boolean(order.closed),
+        draft: Boolean(order.draft),
         periods: Array.isArray(order.periods) ? order.periods.map((period) => ({
           id: String(period.id || Date.now()),
           startDate: String(period.startDate || "").trim(),
@@ -1567,7 +1589,8 @@ const server = http.createServer(async (request, response) => {
       const responses = pollId
         ? latestPollResponses(readPollResponses()).filter((item) => responseMatchesPoll(item, pollId))
         : latestPollResponses(readPollResponses());
-      sendPollExcel(response, responses);
+      const poll = pollId ? readPolls().find((item) => item.id === pollId) : null;
+      sendPollExcel(response, responses, poll);
       return;
     }
 

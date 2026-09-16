@@ -1584,9 +1584,9 @@ function campaignIsInterested(response) {
 
 function archivedPeriodsForCampaign(campaign) {
   const periods = sortedPeriods(campaign);
-  if (!periods.length) return campaign.closed ? [{ id: "" }] : [];
+  if (!periods.length) return (campaign.closed && !campaign.draft) ? [{ id: "" }] : [];
   const today = todayIso();
-  const active = campaign.closed ? null : currentPeriod(campaign);
+  const active = (campaign.closed || campaign.draft) ? null : currentPeriod(campaign);
   return periods.filter((period) => period.startDate <= today && period !== active);
 }
 
@@ -1916,13 +1916,13 @@ function periodLabel(period) {
 }
 
 function campaignIsOpenForPharmacy(campaign) {
-  if (!campaign || campaign.closed) return false;
+  if (!campaign || campaign.closed || campaign.draft) return false;
   if (!Array.isArray(campaign.periods) || !campaign.periods.length) return true;
   return Boolean(currentPeriod(campaign));
 }
 
 function campaignIsVisibleForPharmacy(campaign) {
-  if (!campaign || campaign.closed) return false;
+  if (!campaign || campaign.closed || campaign.draft) return false;
   if (!Array.isArray(campaign.periods) || !campaign.periods.length) return true;
   return Boolean(currentPeriod(campaign)) || futurePeriods(campaign).length > 0;
 }
@@ -2550,7 +2550,9 @@ function campaignCard(campaign, target) {
     .map((imageData, index) => `<a class="campaign-card-image" href="${imageData}" data-preview-image title="Voir la photo ${index + 1}"><img src="${imageData}" alt="Image ${index + 1} ${escapeHtml(campaign.title)}"></a>`)
     .join("");
   const isOpenNow = isAdmin || campaignIsOpenForPharmacy(campaign);
-  const statusLabel = campaign.closed ? "Clôturée" : (isOpenNow ? (campaign.type || "Commande") : "Bientôt disponible");
+  const statusLabel = campaign.closed
+    ? "Clôturée"
+    : (campaign.draft ? "Brouillon" : (isOpenNow ? (campaign.type || "Commande") : "Bientôt disponible"));
   const displayStatusLabel = isCompleted ? "Réalisée" : statusLabel;
   const summary = campaignResponseSummary(completedResponse);
   const completedDate = completedResponse?.updatedAt
@@ -2577,7 +2579,7 @@ function campaignCard(campaign, target) {
       ${imageMarkup}
       <div>
         <div class="campaign-card-top">
-          <span class="campaign-type ${campaign.closed ? "closed" : ""}">${escapeHtml(displayStatusLabel)}</span>
+          <span class="campaign-type ${campaign.closed ? "closed" : ""} ${campaign.draft ? "draft" : ""}">${escapeHtml(displayStatusLabel)}</span>
           ${isAdmin ? `<button class="delete-campaign-btn" type="button" title="Supprimer la campagne" aria-label="Supprimer ${escapeHtml(campaign.title)}" data-delete-campaign="${escapeHtml(campaign.id)}">&#128465;</button>` : ""}
         </div>
         <h3>${escapeHtml(campaign.title)}</h3>
@@ -2588,7 +2590,8 @@ function campaignCard(campaign, target) {
       <div class="campaign-foot">
         <span>${isCompleted ? completedDate : `${count} ligne${count > 1 ? "s" : ""}`}</span>
         <div class="campaign-actions">
-          ${isAdmin ? `<button class="ghost-btn" type="button" data-toggle-closed-campaign="${escapeHtml(campaign.id)}">${campaign.closed ? "Rouvrir" : "Clôturer"}</button>` : ""}
+          ${isAdmin && campaign.draft ? `<button class="primary-btn" type="button" data-publish-campaign="${escapeHtml(campaign.id)}">Publier</button>` : ""}
+          ${isAdmin && !campaign.draft ? `<button class="ghost-btn" type="button" data-toggle-closed-campaign="${escapeHtml(campaign.id)}">${campaign.closed ? "Rouvrir" : "Clôturer"}</button>` : ""}
           ${isCompleted
             ? `<button class="primary-btn" type="button" data-form-campaign="${escapeHtml(campaign.id)}">Modifier ma commande</button>`
             : (isOpenNow
@@ -4135,13 +4138,30 @@ async function exportPollToExcel() {
     return;
   }
 
-  const headings = ["Date", "Pharmacie", "Question", "Réponse", "Commentaire / précision"];
+  // Une colonne par question du sondage (ex : "Présence" et "Repas" séparées) au lieu
+  // de tout mélanger dans une seule colonne "Réponse".
+  const questionList = pollQuestionList(selectedAdminPoll);
+  const multiQuestion = questionList.length > 1;
+  const answerCellValue = (row, question) => {
+    if (row.answers && row.answers[question.id] !== undefined) {
+      const value = row.answers[question.id];
+      return Array.isArray(value) ? value.join(", ") : String(value || "");
+    }
+    return questionList.length <= 1 ? (row.answer || "") : "";
+  };
+  const headings = [
+    "Date",
+    "Pharmacie",
+    ...(multiQuestion ? [] : ["Question"]),
+    ...questionList.map((question) => question.label || "Réponse"),
+    "Commentaire / précision"
+  ];
   const body = responses.map((row) => `
     <tr>
       <td>${escapeHtml(row.createdAt)}</td>
       <td>${escapeHtml(row.pharmacyName)}</td>
-      <td>${escapeHtml(row.pollQuestion)}</td>
-      <td>${escapeHtml(row.answer)}</td>
+      ${multiQuestion ? "" : `<td>${escapeHtml(row.pollQuestion)}</td>`}
+      ${questionList.map((question) => `<td>${escapeHtml(answerCellValue(row, question))}</td>`).join("")}
       <td>${escapeHtml(row.freeText || "")}</td>
     </tr>
   `).join("");
@@ -4859,6 +4879,20 @@ adminCampaignCards.addEventListener("click", async (event) => {
     return;
   }
 
+  const publishButton = event.target.closest("[data-publish-campaign]");
+  if (publishButton) {
+    const campaign = campaigns.find((item) => item.id === publishButton.dataset.publishCampaign);
+    if (!campaign) return;
+    const confirmed = confirm(`Publier la précommande "${campaign.title}" ?\n\nElle deviendra visible par les adhérents.`);
+    if (!confirmed) return;
+    campaign.draft = false;
+    campaigns = campaigns.map((item) => item.id === campaign.id ? campaign : item);
+    await saveCampaigns(campaigns);
+    renderCampaignPickers();
+    adminMessage.textContent = `Précommande "${campaign.title}" publiée.`;
+    return;
+  }
+
   const toggleButton = event.target.closest("[data-toggle-closed-campaign]");
   if (toggleButton) {
     const campaign = campaigns.find((item) => item.id === toggleButton.dataset.toggleClosedCampaign);
@@ -5335,6 +5369,7 @@ createCampaignForm.addEventListener("submit", async (event) => {
     imageData: "",
     imageData2: "",
     closed: false,
+    draft: true,
     template: emptyOrderTemplate()
   };
 
@@ -5342,7 +5377,7 @@ createCampaignForm.addEventListener("submit", async (event) => {
   await saveCampaigns(campaigns);
   newCampaignTitle.value = "";
   showAdminSection("campaigns");
-  adminMessage.textContent = `Précommande "${title}" ajoutée. Ouvrez-la puis importez son bon Excel.`;
+  adminMessage.textContent = `Précommande "${title}" ajoutée en brouillon. Ouvrez-la, préparez-la, puis cliquez sur "Publier" quand elle est prête pour les adhérents.`;
 });
 
 newPollImageFile?.addEventListener("change", async () => {

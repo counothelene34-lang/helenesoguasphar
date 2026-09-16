@@ -1661,6 +1661,12 @@ main::before {
   border-color: #ffd0cc;
 }
 
+.campaign-type.draft {
+  color: #7a5a1e;
+  background: #fff6e6;
+  border-color: #ffdf9e;
+}
+
 .campaign-card-top {
   display: flex;
   align-items: center;
