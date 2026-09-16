@@ -380,9 +380,18 @@ const BAT_VALIDATION = {
 };
 
 function currentValidationConfig() {
-  const title = validationConfigState.title || localStorage.getItem(VALIDATION_TITLE_KEY) || "";
-  const description = validationConfigState.description || localStorage.getItem(VALIDATION_MESSAGE_KEY) || "";
-  const archived = Boolean(validationConfigState.archived) || localStorage.getItem(VALIDATION_ARCHIVED_KEY) === "true";
+  // Quand l'API serveur est disponible, validationConfigState (rafraîchi à chaque
+  // chargement par getValidationState()) fait foi : ne JAMAIS le mélanger avec un
+  // ancien indicateur "archived" resté dans le localStorage du navigateur (il peut
+  // dater d'une précédente campagne archivée sur ce même poste et bloquer à tort
+  // l'affichage d'une nouvelle campagne pourtant active côté serveur).
+  // Le localStorage ne sert de secours que pour les serveurs de prévisualisation
+  // sans API (API_AVAILABLE === false).
+  const title = validationConfigState.title || (!API_AVAILABLE && localStorage.getItem(VALIDATION_TITLE_KEY)) || "";
+  const description = validationConfigState.description || (!API_AVAILABLE && localStorage.getItem(VALIDATION_MESSAGE_KEY)) || "";
+  const archived = API_AVAILABLE
+    ? Boolean(validationConfigState.archived)
+    : (Boolean(validationConfigState.archived) || localStorage.getItem(VALIDATION_ARCHIVED_KEY) === "true");
   return {
     title: title || BAT_VALIDATION.title,
     description: description || BAT_VALIDATION.description,
