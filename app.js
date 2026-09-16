@@ -19,6 +19,14 @@ const BASE_PREFIX = (() => {
   return path.endsWith("/") ? path : path.slice(0, path.lastIndexOf("/") + 1);
 })();
 
+// Les URL de documents BAT ("/bat-2027/...") stockées côté serveur sont racine-relatives ;
+// il faut les faire pointer sous le sous-dossier de la copie (ex. "/preco-test/") sinon
+// le navigateur les cherche à la racine du domaine et Traefik répond 404.
+function resolveBatDocumentUrl(url) {
+  if (!url) return url;
+  return url.startsWith("/") ? `${BASE_PREFIX}${url.slice(1)}` : url;
+}
+
 const form = document.querySelector("#requestForm");
 const pharmacyGate = document.querySelector("#pharmacyGate");
 const pharmacyLoginForm = document.querySelector("#pharmacyLoginForm");
@@ -59,6 +67,7 @@ const backToSondagesMenuBtn = document.querySelector("#backToSondagesMenuBtn");
 const sondagesListRows = document.querySelector("#sondagesListRows");
 const sondagesEmpty = document.querySelector("#sondagesEmpty");
 const batCards = document.querySelector("#batCards");
+const batPickerBlock = document.querySelector("#batPickerBlock");
 const pollCards = document.querySelector("#pollCards");
 const infoCards = document.querySelector("#infoCards");
 const satisfactionEntryBtn = document.querySelector("#satisfactionEntryBtn");
@@ -1680,12 +1689,16 @@ function showArchivedOrdersPage(operationId = "") {
 
 function renderPrecommandesListPage() {
   if (!precommandandesListRows || !precommandandesEmpty) return;
+  const validationConfig = currentValidationConfig();
+  const currentBatDocument = currentPharmacy ? batDocumentForPharmacy(currentPharmacy) : null;
+  const showBatToPharmacy = Boolean(currentBatDocument) && validationConfig.exists && !validationConfig.archived;
   const openCampaigns = campaigns.filter((campaign) => campaignIsVisibleForPharmacy(campaign));
   const sorted = [...openCampaigns].reverse();
-  precommandandesListRows.innerHTML = sorted.length
-    ? sorted.map((campaign) => campaignCard(campaign, "form")).join("")
-    : "";
-  precommandandesEmpty.hidden = Boolean(sorted.length);
+  const cardsToDisplay = [];
+  if (showBatToPharmacy) cardsToDisplay.push(batValidationCard(currentBatDocument, "form"));
+  cardsToDisplay.push(...sorted.map((campaign) => campaignCard(campaign, "form")));
+  precommandandesListRows.innerHTML = cardsToDisplay.length ? cardsToDisplay.join("") : "";
+  precommandandesEmpty.hidden = Boolean(cardsToDisplay.length);
 }
 
 function showPrecommandesListPage() {
@@ -2846,10 +2859,12 @@ function batValidationCard(document, target) {
   const actionAttr = isAdmin
     ? `data-admin-bat-document="${escapeHtml(document.id)}"`
     : `data-form-bat="${escapeHtml(document.id)}"`;
-
   return `
     <article class="campaign-card bat-card ${response ? "completed" : ""} clickable" ${actionAttr} role="button" tabindex="0">
       <div>
+        <div class="campaign-card-top">
+          <span class="campaign-type bat-type">Validation de précommande</span>
+        </div>
         <h3>${escapeHtml(validationConfig.title)}</h3>
         <p>${escapeHtml(validationConfig.description)}</p>
         ${response ? `
@@ -2862,8 +2877,7 @@ function batValidationCard(document, target) {
       <div class="campaign-foot">
         <strong>${escapeHtml(document.pharmacyName)}</strong>
         <div class="campaign-actions">
-          <a class="ghost-btn" href="${escapeHtml(document.url)}" download="${escapeHtml(validationDocumentDownloadName(document))}" data-bat-pdf-link>Télécharger le document</a>
-          <button class="primary-btn" type="button" ${actionAttr}>${isAdmin ? "Voir le suivi" : (response ? "Modifier" : "Valider")}</button>
+          <button class="primary-btn" type="button" ${actionAttr}>${isAdmin ? "Voir le suivi" : (response ? "Modifier" : "Voir")}</button>
         </div>
       </div>
     </article>
@@ -2970,8 +2984,16 @@ function renderCampaignPickers() {
   const adminBatDocuments = batDocumentsForActivePharmacies();
 
   const openCampaignsRecentFirst = [...openCampaigns].reverse();
-  campaignCards.innerHTML = openCampaignsRecentFirst.length
-    ? openCampaignsRecentFirst.map((campaign) => campaignCard(campaign, "form")).join("")
+  const showBatToPharmacy = Boolean(currentBatDocument) && validationConfig.exists && !validationConfig.archived;
+
+  let cardsToDisplay = [];
+  if (showBatToPharmacy) {
+    cardsToDisplay.push(batValidationCard(currentBatDocument, "form"));
+  }
+  cardsToDisplay.push(...openCampaignsRecentFirst.map((campaign) => campaignCard(campaign, "form")));
+
+  campaignCards.innerHTML = cardsToDisplay.length
+    ? cardsToDisplay.join("")
     : '<p class="empty-campaigns">Aucune précommande disponible pour le moment.</p>';
 
   renderArchivedOrdersHistory();
@@ -2987,20 +3009,16 @@ function renderCampaignPickers() {
     ? openInfoForms.map((infoForm) => infoFormCard(infoForm, "form")).join("")
     : '<p class="empty-campaigns">Aucune mise à jour de fiche pharmacie disponible pour le moment.</p>';
 
-  if (batCards) {
-    batCards.innerHTML = currentBatDocument
-      && validationConfig.exists
-      && !validationConfig.archived
-      ? batValidationCard(currentBatDocument, "form")
-      : '<p class="empty-campaigns">Aucun document de validation disponible pour votre pharmacie pour le moment.</p>';
-  }
+  if (batPickerBlock) batPickerBlock.hidden = true;
 
-  adminCampaignCards.innerHTML = adminCampaigns.length
-    ? adminCampaigns.map((campaign) => campaignCard(campaign, "admin")).join("")
+  const adminCampaignsRecentFirst = [...adminCampaigns].reverse();
+  adminCampaignCards.innerHTML = adminCampaignsRecentFirst.length
+    ? adminCampaignsRecentFirst.map((campaign) => campaignCard(campaign, "admin")).join("")
     : `<p class="empty-campaigns">Aucune campagne ${adminShowingClosedCampaigns ? "clôturée" : "active"}.</p>`;
 
-  adminPollCards.innerHTML = adminPolls.length
-    ? adminPolls.map((poll) => pollCard(poll, "admin")).join("")
+  const adminPollsRecentFirst = [...adminPolls].reverse();
+  adminPollCards.innerHTML = adminPollsRecentFirst.length
+    ? adminPollsRecentFirst.map((poll) => pollCard(poll, "admin")).join("")
     : '<p class="empty-campaigns">Aucun sondage créé pour le moment.</p>';
 
   adminInfoCards.innerHTML = adminInfoForms.length
@@ -3245,14 +3263,14 @@ function selectBat(documentId) {
   const isImageDocument = selectedBatDocument.fileType?.startsWith("image/");
   if (batDocumentPreview) {
     batDocumentPreview.hidden = !isImageDocument;
-    batDocumentPreview.src = isImageDocument ? selectedBatDocument.url : "";
+    batDocumentPreview.src = isImageDocument ? resolveBatDocumentUrl(selectedBatDocument.url) : "";
     batDocumentPreview.alt = `Aperçu du document ${selectedBatDocument.pharmacyName}`;
   }
   if (batDocumentPdfPreview) {
     batDocumentPdfPreview.hidden = isImageDocument;
-    batDocumentPdfPreview.data = isImageDocument ? "" : selectedBatDocument.url;
+    batDocumentPdfPreview.data = isImageDocument ? "" : resolveBatDocumentUrl(selectedBatDocument.url);
   }
-  batPdfOpenLink.href = selectedBatDocument.url;
+  batPdfOpenLink.href = resolveBatDocumentUrl(selectedBatDocument.url);
   batPdfOpenLink.download = validationDocumentDownloadName(selectedBatDocument);
   batPdfOpenLink.textContent = "Télécharger le document";
   batPdfOpenLink.removeAttribute("target");
@@ -3389,7 +3407,7 @@ function renderBatResults() {
             <td><strong>${escapeHtml(document.pharmacyName)}</strong></td>
             <td>${escapeHtml(status)}</td>
             <td>${escapeHtml(response?.comment || "-")}</td>
-            <td><a class="ghost-btn small-btn" href="${escapeHtml(document.url)}" download="${escapeHtml(validationDocumentDownloadName(document))}" data-bat-pdf-link>Télécharger</a></td>
+            <td><a class="ghost-btn small-btn" href="${escapeHtml(resolveBatDocumentUrl(document.url))}" download="${escapeHtml(validationDocumentDownloadName(document))}" data-bat-pdf-link>Télécharger</a></td>
           </tr>
         `;
       }).join("")
@@ -3407,7 +3425,7 @@ function renderBatResults() {
         <td><strong>${escapeHtml(response.pharmacyName || document.pharmacyName)}</strong></td>
         <td>${escapeHtml(normalizeValidationStatus(response.status))}</td>
         <td>${escapeHtml(response.comment || "-")}</td>
-        <td><a class="ghost-btn small-btn" href="${escapeHtml(document.url)}" download="${escapeHtml(validationDocumentDownloadName(document))}" data-bat-pdf-link>Télécharger</a></td>
+        <td><a class="ghost-btn small-btn" href="${escapeHtml(resolveBatDocumentUrl(document.url))}" download="${escapeHtml(validationDocumentDownloadName(document))}" data-bat-pdf-link>Télécharger</a></td>
       </tr>
     `).join("")
     : '<tr><td colspan="5" class="empty-state">Aucune validation pour le moment.</td></tr>';
@@ -4629,7 +4647,12 @@ logoutPharmacyBtn.addEventListener("click", () => {
 });
 
 campaignCards.addEventListener("click", (event) => {
-  if (event.target.closest("[data-preview-image]")) return;
+  if (event.target.closest("[data-preview-image], [data-bat-pdf-link]")) return;
+  const batButton = event.target.closest("[data-form-bat]");
+  if (batButton) {
+    selectBat(batButton.dataset.formBat);
+    return;
+  }
   const button = event.target.closest("[data-form-campaign]");
   if (!button) return;
   selectCampaign(button.dataset.formCampaign);
@@ -4637,7 +4660,13 @@ campaignCards.addEventListener("click", (event) => {
 
 campaignCards.addEventListener("keydown", (event) => {
   if (event.key !== "Enter" && event.key !== " ") return;
-  if (event.target.closest("[data-preview-image], button, input, textarea")) return;
+  if (event.target.closest("[data-preview-image], [data-bat-pdf-link], button, input, textarea")) return;
+  const batCard = event.target.closest("[data-form-bat]");
+  if (batCard) {
+    event.preventDefault();
+    selectBat(batCard.dataset.formBat);
+    return;
+  }
   const card = event.target.closest("[data-form-campaign]");
   if (!card) return;
   event.preventDefault();
@@ -4665,7 +4694,12 @@ backToPrecomandesMenuBtn?.addEventListener("click", showCampaignPicker);
 backToSondagesMenuBtn?.addEventListener("click", showCampaignPicker);
 
 precommandandesListRows?.addEventListener("click", (event) => {
-  if (event.target.closest("[data-preview-image]")) return;
+  if (event.target.closest("[data-preview-image], [data-bat-pdf-link]")) return;
+  const batButton = event.target.closest("[data-form-bat]");
+  if (batButton) {
+    selectBat(batButton.dataset.formBat);
+    return;
+  }
   const button = event.target.closest("[data-form-campaign]");
   if (!button) return;
   selectCampaign(button.dataset.formCampaign);
@@ -4673,7 +4707,13 @@ precommandandesListRows?.addEventListener("click", (event) => {
 
 precommandandesListRows?.addEventListener("keydown", (event) => {
   if (event.key !== "Enter" && event.key !== " ") return;
-  if (event.target.closest("[data-preview-image], button, input, textarea")) return;
+  if (event.target.closest("[data-preview-image], [data-bat-pdf-link], button, input, textarea")) return;
+  const batCard = event.target.closest("[data-form-bat]");
+  if (batCard) {
+    event.preventDefault();
+    selectBat(batCard.dataset.formBat);
+    return;
+  }
   const card = event.target.closest("[data-form-campaign]");
   if (!card) return;
   event.preventDefault();

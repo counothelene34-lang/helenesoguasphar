@@ -508,6 +508,28 @@ main::before {
   flex-wrap: wrap;
 }
 
+.campaign-card.bat-card {
+  border-color: #c9a6f5;
+  background: linear-gradient(180deg, #faf5ff, #fff);
+}
+
+.campaign-card.bat-card.completed {
+  border-color: #a855f7;
+  background: linear-gradient(180deg, #f3e8ff, #ffffff);
+}
+
+.campaign-type.bat-type {
+  color: #6b21a8;
+  background: #f3e8ff;
+  border-color: #d8b4fe;
+}
+
+.campaign-card.bat-card.completed .campaign-type.bat-type {
+  color: #581c87;
+  background: #ead6ff;
+  border-color: #c084fc;
+}
+
 .validation-extra-message {
   margin-top: 10px;
   padding: 10px 12px;
@@ -516,6 +538,17 @@ main::before {
   border-radius: 8px;
   color: var(--green-dark);
   font-weight: 700;
+}
+
+.bat-visual-image {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  max-height: 50vh;
+  margin: 10px auto 0;
+  object-fit: contain;
+  border: 1px solid var(--line);
+  border-radius: 8px;
 }
 
 .document-preview-link {
