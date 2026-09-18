@@ -2738,7 +2738,10 @@ function pollQuestionList(poll) {
       id: item.id || `question-${index + 1}`,
       label: item.label || poll.question,
       type: ["choix_unique", "choix_multiple", "texte_libre"].includes(item.type) ? item.type : "choix_unique",
-      options: Array.isArray(item.options) ? item.options : []
+      options: Array.isArray(item.options) ? item.options : [],
+      required: Boolean(item.required),
+      showIf: (item.showIf && item.showIf.questionId && Array.isArray(item.showIf.values)) ? item.showIf : null,
+      hideIf: (item.hideIf && item.hideIf.questionId && Array.isArray(item.hideIf.values)) ? item.hideIf : null
     }));
   }
   return [{ id: "main", label: poll.question, type: "choix_unique", options: poll.options || [] }];
@@ -2815,14 +2818,79 @@ function applyPollConditionalLogic(inlineForm) {
   const questionEls = Array.from(inlineForm.querySelectorAll(".inline-poll-question[data-question-id]"));
   const presenceEl = questionEls.find(isPresenceQuestionEl);
   const mealEls = questionEls.filter(isMealQuestionEl);
-  if (!presenceEl || !mealEls.length) return;
-  const checkedInput = presenceEl.querySelector("input:checked");
-  const isAbsent = Boolean(checkedInput) && isAbsenceAnswerValue(checkedInput.value);
-  mealEls.forEach((mealEl) => {
-    mealEl.classList.toggle("inline-poll-question-disabled", isAbsent);
-    mealEl.querySelectorAll("input, textarea").forEach((input) => {
-      input.disabled = isAbsent;
-      if (isAbsent) {
+  if (presenceEl && mealEls.length) {
+    const checkedInput = presenceEl.querySelector("input:checked");
+    const isAbsent = Boolean(checkedInput) && isAbsenceAnswerValue(checkedInput.value);
+    mealEls.forEach((mealEl) => {
+      mealEl.classList.toggle("inline-poll-question-disabled", isAbsent);
+      mealEl.querySelectorAll("input, textarea").forEach((input) => {
+        input.disabled = isAbsent;
+        if (isAbsent) {
+          if (input.type === "radio" || input.type === "checkbox") input.checked = false;
+          else input.value = "";
+          input.removeAttribute("required");
+        }
+      });
+    });
+  }
+
+  // Questions à condition générique (data-show-if) : n'affichées que si la question
+  // référencée a reçu une réponse parmi les valeurs attendues.
+  questionEls.forEach((questionEl) => {
+    const raw = questionEl.dataset.showIf;
+    if (!raw) return;
+    let showIf;
+    try {
+      showIf = JSON.parse(raw);
+    } catch {
+      return;
+    }
+    const values = Array.isArray(showIf?.values) ? showIf.values : [];
+    const refCheckedRadio = inlineForm.querySelector(`input[type="radio"][data-question-id="${CSS.escape(showIf.questionId)}"]:checked`);
+    let shouldShow = false;
+    if (refCheckedRadio) {
+      shouldShow = values.includes(refCheckedRadio.value);
+    } else {
+      const refCheckedBoxes = Array.from(inlineForm.querySelectorAll(`input[type="checkbox"][data-question-id="${CSS.escape(showIf.questionId)}"]:checked`)).map((input) => input.value);
+      shouldShow = refCheckedBoxes.some((value) => values.includes(value));
+    }
+    questionEl.classList.toggle("inline-poll-question-disabled", !shouldShow);
+    questionEl.classList.toggle("inline-poll-question-hidden", !shouldShow);
+    questionEl.querySelectorAll("input, textarea").forEach((input) => {
+      input.disabled = !shouldShow;
+      if (!shouldShow) {
+        if (input.type === "radio" || input.type === "checkbox") input.checked = false;
+        else input.value = "";
+        input.removeAttribute("required");
+      }
+    });
+  });
+
+  // Questions à condition inverse (data-hide-if) : affichées par défaut, et
+  // masquées seulement si la question référencée a reçu une des valeurs indiquées.
+  questionEls.forEach((questionEl) => {
+    const raw = questionEl.dataset.hideIf;
+    if (!raw) return;
+    let hideIf;
+    try {
+      hideIf = JSON.parse(raw);
+    } catch {
+      return;
+    }
+    const values = Array.isArray(hideIf?.values) ? hideIf.values : [];
+    const refCheckedRadio = inlineForm.querySelector(`input[type="radio"][data-question-id="${CSS.escape(hideIf.questionId)}"]:checked`);
+    let shouldHide = false;
+    if (refCheckedRadio) {
+      shouldHide = values.includes(refCheckedRadio.value);
+    } else {
+      const refCheckedBoxes = Array.from(inlineForm.querySelectorAll(`input[type="checkbox"][data-question-id="${CSS.escape(hideIf.questionId)}"]:checked`)).map((input) => input.value);
+      shouldHide = refCheckedBoxes.some((value) => values.includes(value));
+    }
+    questionEl.classList.toggle("inline-poll-question-disabled", shouldHide);
+    questionEl.classList.toggle("inline-poll-question-hidden", shouldHide);
+    questionEl.querySelectorAll("input, textarea").forEach((input) => {
+      input.disabled = shouldHide;
+      if (shouldHide) {
         if (input.type === "radio" || input.type === "checkbox") input.checked = false;
         else input.value = "";
         input.removeAttribute("required");
@@ -2836,7 +2904,7 @@ function buildPollQuestionsFormMarkup(questionList, showQuestionLabels) {
     let controlsMarkup;
     if (question.type === "texte_libre") {
       controlsMarkup = `
-        <textarea class="inline-poll-textanswer" data-question-id="${escapeHtml(question.id)}" rows="3" placeholder="Votre r\u00e9ponse"></textarea>
+        <textarea class="inline-poll-textanswer" data-question-id="${escapeHtml(question.id)}" rows="3" placeholder="Votre r\u00e9ponse"${question.required ? " required" : ""}></textarea>
       `;
     } else {
       const inputType = question.type === "choix_multiple" ? "checkbox" : "radio";
@@ -2854,9 +2922,10 @@ function buildPollQuestionsFormMarkup(questionList, showQuestionLabels) {
         </div>
       `;
     }
+    const hiddenByDefault = Boolean(question.showIf);
     return `
-      <div class="inline-poll-question" data-question-id="${escapeHtml(question.id)}">
-        ${showQuestionLabels ? `<div class="inline-poll-question-label">${escapeHtml(question.label)}${question.type === "choix_multiple" ? ' <span class="poll-chart-type-tag">plusieurs r\u00e9ponses possibles</span>' : ""}</div>` : ""}
+      <div class="inline-poll-question${hiddenByDefault ? " inline-poll-question-disabled inline-poll-question-hidden" : ""}" data-question-id="${escapeHtml(question.id)}"${question.showIf ? ` data-show-if="${escapeHtml(JSON.stringify(question.showIf))}"` : ""}${question.hideIf ? ` data-hide-if="${escapeHtml(JSON.stringify(question.hideIf))}"` : ""}>
+        ${showQuestionLabels ? `<div class="inline-poll-question-label">${escapeHtml(question.label)}${question.required ? " *" : ""}${question.type === "choix_multiple" ? ' <span class="poll-chart-type-tag">plusieurs r\u00e9ponses possibles</span>' : ""}</div>` : ""}
         ${controlsMarkup}
       </div>
     `;
@@ -2885,12 +2954,20 @@ function pollCard(poll, target) {
     : "";
 
   if (!isAdmin) {
+    const introMarkup = poll.intro ? `<p class="whatsapp-poll-intro">${escapeHtml(poll.intro)}</p>` : "";
+    const attachmentMarkup = poll.attachmentUrl ? `
+      <a class="ghost-btn poll-attachment-link" href="${escapeHtml(poll.attachmentUrl)}" target="_blank" rel="noopener noreferrer">
+        ${escapeHtml(poll.attachmentLabel || "Voir le document")}
+      </a>
+    ` : "";
     return `
       <article class="whatsapp-poll-card ${localAnswers ? "answered" : "is-open"}">
         <div class="whatsapp-poll-head">
           ${pollImage}
           <div class="whatsapp-poll-title">${escapeHtml(poll.question)}</div>
         </div>
+        ${introMarkup}
+        ${attachmentMarkup}
         ${localAnswers ? `
           <div class="whatsapp-poll-options">
             ${optionsPreview}
@@ -4946,6 +5023,7 @@ function collectInlinePollAnswers(poll, inlineForm) {
     if (question.type === "texte_libre") {
       const value = inlineForm.querySelector(`.inline-poll-textanswer[data-question-id="${CSS.escape(question.id)}"]`)?.value.trim() || "";
       if (value) answers[question.id] = value;
+      else if (question.required) missingRequired = true;
       return;
     }
     if (question.type === "choix_multiple") {

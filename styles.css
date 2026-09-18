@@ -1088,6 +1088,22 @@ main::before {
   filter: grayscale(.5);
 }
 
+.inline-poll-question-hidden {
+  display: none;
+}
+
+.whatsapp-poll-intro {
+  margin: 4px 0 10px;
+  color: #3c4b44;
+  font-size: .92rem;
+}
+
+.poll-attachment-link {
+  display: inline-block;
+  margin-bottom: 12px;
+  text-decoration: none;
+}
+
 .poll-question-blocks {
   display: grid;
   gap: 14px;
