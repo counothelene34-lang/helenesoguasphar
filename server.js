@@ -1064,6 +1064,60 @@ const server = http.createServer(async (request, response) => {
       return;
     }
 
+    if (url.pathname.startsWith("/api/poll-results/") && request.method === "GET") {
+      const pollId = decodeURIComponent(url.pathname.slice("/api/poll-results/".length));
+      const poll = readPolls().find((item) => item.id === pollId);
+      if (!poll) {
+        sendJson(response, 404, { error: "Sondage introuvable" });
+        return;
+      }
+
+      // Résultats agrégés publics uniquement : jamais les commentaires libres
+      // (texte_libre) ni le texte brut des réponses, pour ne rien exposer de
+      // ce qu'une pharmacie a écrit en clair.
+      const questions = poll.questions && poll.questions.length
+        ? poll.questions.map((item, index) => ({
+            id: item.id || `question-${index + 1}`,
+            label: item.label || poll.question || "",
+            type: ["choix_unique", "choix_multiple", "texte_libre"].includes(item.type) ? item.type : "choix_unique",
+            options: Array.isArray(item.options) ? item.options : []
+          }))
+        : [{ id: "main", label: poll.question || "", type: "choix_unique", options: poll.options || [] }];
+      const publicQuestions = questions.filter((question) => question.type !== "texte_libre");
+
+      const responses = latestPollResponses(readPollResponses())
+        .filter((item) => responseMatchesPoll(item, pollId));
+
+      const counts = {};
+      publicQuestions.forEach((question) => {
+        const tally = new Map(question.options.map((option) => [option, 0]));
+        let answered = 0;
+        responses.forEach((item) => {
+          const raw = item.answers ? item.answers[question.id] : (questions.length === 1 ? item.answer : undefined);
+          const values = Array.isArray(raw) ? raw : (raw ? [raw] : []);
+          if (!values.length) return;
+          answered += 1;
+          values.forEach((value) => {
+            if (tally.has(value)) tally.set(value, tally.get(value) + 1);
+          });
+        });
+        counts[question.id] = {
+          answered,
+          options: question.options.map((option) => ({ option, count: tally.get(option) || 0 }))
+        };
+      });
+
+      sendJson(response, 200, {
+        id: poll.id,
+        question: poll.question,
+        closed: Boolean(poll.closed),
+        totalResponses: responses.length,
+        questions: publicQuestions.map((question) => ({ id: question.id, label: question.label, type: question.type })),
+        counts
+      });
+      return;
+    }
+
     if (url.pathname === "/api/info-forms" && request.method === "GET") {
       sendJson(response, 200, readInfoForms());
       return;

@@ -204,6 +204,11 @@ const backToAdminPollsBtn = document.querySelector("#backToAdminPollsBtn");
 const adminPollTitle = document.querySelector("#adminPollTitle");
 const pollResultsSummary = document.querySelector("#pollResultsSummary");
 const pollChartsContainer = document.querySelector("#pollChartsContainer");
+const publicPollResultsPage = document.querySelector("#publicPollResultsPage");
+const publicPollResultsTitle = document.querySelector("#publicPollResultsTitle");
+const publicPollResultsMeta = document.querySelector("#publicPollResultsMeta");
+const publicPollResultsCharts = document.querySelector("#publicPollResultsCharts");
+const publicPollResultsEmpty = document.querySelector("#publicPollResultsEmpty");
 const pollResponsesTable = document.querySelector("#pollResponsesTable");
 const exportPollExcelBtn = document.querySelector("#exportPollExcelBtn");
 const pollImageFile = document.querySelector("#pollImageFile");
@@ -4239,6 +4244,95 @@ function renderPollCharts(questionList, responses) {
     .join("");
 }
 
+let publicPollResultsTimer = null;
+let publicPollResultsPollId = "";
+
+function renderPublicPollQuestionChart(question, countData) {
+  const total = countData ? countData.answered : 0;
+  const options = countData ? countData.options : [];
+  const bars = options.map((entry, index) => {
+    const pct = total ? Math.round((entry.count / total) * 100) : 0;
+    const color = pollChartColor(index);
+    return `
+      <div class="poll-bar-row">
+        <div class="poll-bar-label">${escapeHtml(entry.option)}</div>
+        <div class="poll-bar-track">
+          <div class="poll-bar-fill" style="width:${pct}%; background:${color};"></div>
+        </div>
+        <div class="poll-bar-value">${entry.count} <span>(${pct}%)</span></div>
+      </div>
+    `;
+  }).join("");
+
+  return `
+    <div class="poll-chart-card">
+      <h3>${escapeHtml(question.label)}${question.type === "choix_multiple" ? ' <span class="poll-chart-type-tag">choix multiple</span>' : ""}</h3>
+      <p class="poll-chart-meta">${total} réponse${total > 1 ? "s" : ""} sur cette question${question.type === "choix_multiple" ? " — plusieurs choix possibles, le total peut dépasser 100 %" : ""}</p>
+      <div class="poll-bar-chart">${bars}</div>
+    </div>
+  `;
+}
+
+async function refreshPublicPollResults(pollId) {
+  if (!publicPollResultsCharts) return;
+  let data = null;
+  try {
+    data = await requestJson(`/api/poll-results/${encodeURIComponent(pollId)}`);
+  } catch (error) {
+    data = null;
+  }
+
+  if (!data) {
+    if (publicPollResultsTitle) publicPollResultsTitle.textContent = "Sondage introuvable";
+    if (publicPollResultsMeta) publicPollResultsMeta.textContent = "";
+    publicPollResultsCharts.innerHTML = "";
+    if (publicPollResultsEmpty) {
+      publicPollResultsEmpty.hidden = false;
+      publicPollResultsEmpty.textContent = "Ce sondage n'existe pas ou n'est plus disponible.";
+    }
+    return;
+  }
+
+  if (publicPollResultsTitle) publicPollResultsTitle.textContent = data.question || "Résultats du sondage";
+  if (publicPollResultsMeta) {
+    publicPollResultsMeta.textContent = `${data.totalResponses} réponse${data.totalResponses > 1 ? "s" : ""} au total${data.closed ? " — sondage clos" : " — sondage en cours"}`;
+  }
+
+  if (!data.totalResponses || !data.questions.length) {
+    publicPollResultsCharts.innerHTML = "";
+    if (publicPollResultsEmpty) {
+      publicPollResultsEmpty.hidden = false;
+      publicPollResultsEmpty.textContent = "Aucune réponse pour le moment.";
+    }
+    return;
+  }
+
+  if (publicPollResultsEmpty) publicPollResultsEmpty.hidden = true;
+  publicPollResultsCharts.innerHTML = data.questions
+    .map((question) => renderPublicPollQuestionChart(question, data.counts[question.id]))
+    .join("");
+}
+
+function showPublicPollResults(pollId) {
+  publicPollResultsPollId = pollId;
+  campaignPicker.hidden = true;
+  setHeroVisible(false);
+  form.hidden = true;
+  pollForm.hidden = true;
+  if (satisfactionPage) satisfactionPage.hidden = true;
+  profileUpdateForm.hidden = true;
+  batValidationForm.hidden = true;
+  if (precommandandesListPage) precommandandesListPage.hidden = true;
+  if (sondagesListPage) sondagesListPage.hidden = true;
+  if (pharmacyGate) pharmacyGate.hidden = true;
+
+  refreshPublicPollResults(pollId);
+  if (publicPollResultsTimer) clearInterval(publicPollResultsTimer);
+  publicPollResultsTimer = setInterval(() => refreshPublicPollResults(pollId), 15000);
+  publicPollResultsPage.hidden = false;
+  publicPollResultsPage.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
 async function renderPollResults() {
   if (!adminUnlocked || !selectedAdminPoll) return;
 
@@ -6297,6 +6391,12 @@ if (exportQuantitySummaryExcelBtn) {
 }
 
 async function init() {
+  const publicResultsPollId = String(new URLSearchParams(window.location.search).get("resultats") || "").trim();
+  if (publicResultsPollId && publicPollResultsPage) {
+    showPublicPollResults(publicResultsPollId);
+    return;
+  }
+
   campaignPicker.hidden = true;
   setHeroVisible(false);
   form.hidden = true;
