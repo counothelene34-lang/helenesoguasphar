@@ -85,6 +85,8 @@ const satisfactionSubmitRow = document.querySelector("#satisfactionSubmitRow");
 const satisfactionFormMessage = document.querySelector("#satisfactionFormMessage");
 const backToCampaignsBtn = document.querySelector("#backToCampaignsBtn");
 const campaignNotice = document.querySelector("#campaignNotice");
+const campaignDirectLink = document.querySelector("#campaignDirectLink");
+const satisfactionDirectLink = document.querySelector("#satisfactionDirectLink");
 const responseSuccess = document.querySelector("#responseSuccess");
 const returnToMenuBtn = document.querySelector("#returnToMenuBtn");
 const batValidationForm = document.querySelector("#batValidationForm");
@@ -95,6 +97,8 @@ const batDocumentPreview = document.querySelector("#batDocumentPreview");
 const batDocumentPdfPreview = document.querySelector("#batDocumentPdfPreview");
 const batPdfOpenLink = document.querySelector("#batPdfOpenLink");
 const batPharmacyName = document.querySelector("#batPharmacyName");
+const batOrderSummaryBlock = document.querySelector("#batOrderSummaryBlock");
+const batOrderSummaryContent = document.querySelector("#batOrderSummaryContent");
 const batComment = document.querySelector("#batComment");
 const batMessage = document.querySelector("#batMessage");
 const pollForm = document.querySelector("#pollForm");
@@ -378,6 +382,89 @@ const BAT_VALIDATION = {
   title: "Validation en attente",
   description: "Validation et contrôle."
 };
+
+// Détail (quantité / format / prix) de la précommande "Calendriers 2027" (data/orders.json,
+// campagne "calendriers-2027") repris depuis les réponses pharmacie (data/responses.json).
+// GAMBETTA, DE DOUVILLE et ISSA ont commandé les deux formats (Souple + Rigide) : leur BAT
+// contient les deux visuels à la suite (Souple puis Rigide), donc les deux lignes sont affichées.
+// SAMINADIN avait demandé un format différent (55x40cm) en commentaire libre de précommande,
+// mais le BAT reçu du graphiste est au format Rigide standard 43x33cm : c'est celui-ci qui est
+// retenu ici, à l'identique de ce qui a été validé avec Hélène.
+const BAT_ORDER_DETAILS_CALENDRIERS_2027 = {
+  "VILA": [{ format: "42x30cm Souple", quantity: 1000, unitPrice: 0.49 }],
+  "GAMBETTA": [
+    { format: "42x30cm Souple", quantity: 500, unitPrice: 0.49 },
+    { format: "43x33cm Rigide", quantity: 2000, unitPrice: 1.40 }
+  ],
+  "PORT LOUIS": [{ format: "42x30cm Souple", quantity: 1500, unitPrice: 0.49 }],
+  "DU SEMAPHORE": [{ format: "42x30cm Souple", quantity: 1000, unitPrice: 0.49 }],
+  "SAINTE ANNE": [{ format: "42x30cm Souple", quantity: 500, unitPrice: 0.49 }],
+  "DU MARCHE": [{ format: "42x30cm Souple", quantity: 1500, unitPrice: 0.49 }],
+  "DE LA SOURCE": [{ format: "42x30cm Souple", quantity: 500, unitPrice: 0.49 }],
+  "DORVILLE": [{ format: "42x30cm Souple", quantity: 500, unitPrice: 0.49 }],
+  "BAMBOU VERT": [{ format: "42x30cm Souple", quantity: 500, unitPrice: 0.49 }],
+  "FLEUR DE CANNE": [{ format: "42x30cm Souple", quantity: 2500, unitPrice: 0.49 }],
+  "DU PELICAN": [{ format: "42x30cm Souple", quantity: 1000, unitPrice: 0.49 }],
+  "DU STADE": [{ format: "42x30cm Souple", quantity: 1000, unitPrice: 0.49 }],
+  "MANGOU": [{ format: "42x30cm Souple", quantity: 500, unitPrice: 0.49 }],
+  "COMBE": [{ format: "42x30cm Souple", quantity: 1500, unitPrice: 0.49 }],
+  "DE DOUVILLE": [
+    { format: "42x30cm Souple", quantity: 500, unitPrice: 0.49 },
+    { format: "43x33cm Rigide", quantity: 500, unitPrice: 1.40 }
+  ],
+  "ISSA": [
+    { format: "42x30cm Souple", quantity: 500, unitPrice: 0.49 },
+    { format: "43x33cm Rigide", quantity: 500, unitPrice: 1.40 }
+  ],
+  "DE LA POINTE": [{ format: "42x30cm Souple", quantity: 500, unitPrice: 0.49 }],
+  "HELIOS": [{ format: "43x33cm Rigide", quantity: 1500, unitPrice: 1.40 }],
+  "DE RIGAUD": [{ format: "43x33cm Rigide", quantity: 500, unitPrice: 1.40 }],
+  "DU CENTRE": [{ format: "43x33cm Rigide", quantity: 1000, unitPrice: 1.40 }],
+  "BERTHELOT F": [{ format: "43x33cm Rigide", quantity: 500, unitPrice: 1.40 }],
+  "ROSE DES VENTS": [{ format: "43x33cm Rigide", quantity: 1000, unitPrice: 1.40 }],
+  "DU PLATEAU": [{ format: "43x33cm Rigide", quantity: 1000, unitPrice: 1.40 }],
+  "DU GOSIER": [{ format: "43x33cm Rigide", quantity: 500, unitPrice: 1.40 }],
+  "DE LA CITÉ DES MÉTIERS": [{ format: "43x33cm Rigide", quantity: 500, unitPrice: 1.40 }],
+  "GIRARD DUGAMIN": [{ format: "43x33cm Rigide", quantity: 500, unitPrice: 1.40 }],
+  "DE LA MELISSE": [{ format: "43x33cm Rigide", quantity: 1500, unitPrice: 1.40 }],
+  "DEVAUX Sylvie": [{ format: "43x33cm Rigide", quantity: 1500, unitPrice: 1.40 }],
+  "LA LICORNE": [{ format: "43x33cm Rigide", quantity: 1000, unitPrice: 1.40 }],
+  "MEDICIS": [{ format: "43x33cm Rigide", quantity: 1000, unitPrice: 1.40 }],
+  "EBOUE": [{ format: "43x33cm Rigide", quantity: 500, unitPrice: 1.40 }],
+  "SAMINADIN": [{ format: "43x33cm Rigide", quantity: 1000, unitPrice: 1.40 }]
+};
+
+function batOrderDetailsForPharmacyName(pharmacyName) {
+  const key = pharmacyNameKey(pharmacyName || "");
+  const entry = Object.keys(BAT_ORDER_DETAILS_CALENDRIERS_2027)
+    .find((name) => pharmacyNameKey(name) === key);
+  return entry ? BAT_ORDER_DETAILS_CALENDRIERS_2027[entry] : null;
+}
+
+function formatEuros(amount) {
+  return `${amount.toFixed(2).replace(".", ",")} €`;
+}
+
+function renderBatOrderSummary(pharmacyName) {
+  if (!batOrderSummaryBlock || !batOrderSummaryContent) return;
+  const items = batOrderDetailsForPharmacyName(pharmacyName);
+  if (!items || !items.length) {
+    batOrderSummaryBlock.hidden = true;
+    batOrderSummaryContent.innerHTML = "";
+    return;
+  }
+  const ambiguousNote = items.length > 1
+    ? `<p class="bat-order-summary-note">Deux formats ont été commandés pour cette pharmacie : les deux visuels sont réunis dans ce document (Souple puis Rigide).</p>`
+    : "";
+  batOrderSummaryContent.innerHTML = items.map((item) => `
+    <div class="bat-order-summary-line">
+      <span>Quantité commandée : ${item.quantity.toLocaleString("fr-FR")} ex.</span>
+      <span>Format : ${escapeHtml(item.format)}</span>
+      <span>Prix unitaire : ${formatEuros(item.unitPrice)}</span>
+    </div>
+  `).join("") + ambiguousNote;
+  batOrderSummaryBlock.hidden = false;
+}
 
 function currentValidationConfig() {
   // Quand l'API serveur est disponible, validationConfigState (rafraîchi à chaque
@@ -924,6 +1011,18 @@ function findCampaignByOperationId(operationId) {
     const campaignId = normalizeOperationId(campaign.id);
     const campaignSlug = normalizeOperationId(slugify(campaign.title));
     return campaignId === normalizedId || campaignSlug === normalizedId;
+  }) || null;
+}
+
+function findPollByOperationId(operationId) {
+  const normalizedId = normalizeOperationId(operationId);
+  if (!normalizedId) return null;
+
+  return polls.find((poll) => {
+    if (poll.category !== "satisfaction") return false;
+    const pollId = normalizeOperationId(poll.id);
+    const pollSlug = normalizeOperationId(slugify(poll.question));
+    return pollId === normalizedId || pollSlug === normalizedId;
   }) || null;
 }
 
@@ -1793,17 +1892,22 @@ function showRequestedOperationOrMenu() {
   }
 
   const requestedCampaign = findCampaignByOperationId(requestedOperationId);
-  if (!requestedCampaign) {
-    showCampaignPicker();
+  if (requestedCampaign) {
+    if (!campaignIsOpenForPharmacy(requestedCampaign)) {
+      showArchivedOrdersPage(requestedCampaign.id);
+      return;
+    }
+    selectCampaign(requestedCampaign.id);
     return;
   }
 
-  if (!campaignIsOpenForPharmacy(requestedCampaign)) {
-    showArchivedOrdersPage(requestedCampaign.id);
+  const requestedPoll = findPollByOperationId(requestedOperationId);
+  if (requestedPoll) {
+    openSatisfactionPage(requestedPoll.id);
     return;
   }
 
-  selectCampaign(requestedCampaign.id);
+  showCampaignPicker();
 }
 
 function exportArchivedOrdersPdf() {
@@ -2605,6 +2709,7 @@ function campaignCard(campaign, target) {
           ${isAdmin ? `<button class="delete-campaign-btn" type="button" title="Supprimer la campagne" aria-label="Supprimer ${escapeHtml(campaign.title)}" data-delete-campaign="${escapeHtml(campaign.id)}">&#128465;</button>` : ""}
         </div>
         <h3>${escapeHtml(campaign.title)}</h3>
+        ${isAdmin ? `<p class="campaign-direct-link"><a href="${escapeHtml(`${window.location.origin}${window.location.pathname}?operation=${slugify(campaign.title)}`)}" target="_blank" rel="noopener">${escapeHtml(`${window.location.origin}${window.location.pathname}?operation=${slugify(campaign.title)}`)}</a></p>` : ""}
         <p>${escapeHtml(campaign.description || campaign.pharmacyMessage || "")}</p>
         ${periodInfoMarkup}
         ${isCompleted ? `<div class="campaign-done-summary"><strong>Réponse déjà envoyée</strong><span>${escapeHtml(summary)}</span></div>` : ""}
@@ -3127,6 +3232,13 @@ function openSatisfactionPage(pollId) {
   if (pharmacyHidden) pharmacyHidden.value = currentPharmacy?.name || "";
 
   renderSatisfactionQuestions(poll);
+  const pollOperationSlug = slugify(poll.question);
+  const pollDirectUrl = `${window.location.pathname}?operation=${pollOperationSlug}`;
+  window.history.pushState({ operation: pollOperationSlug }, "", pollDirectUrl);
+  if (satisfactionDirectLink) {
+    satisfactionDirectLink.hidden = true;
+    satisfactionDirectLink.innerHTML = "";
+  }
   satisfactionPage.hidden = false;
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
@@ -3159,6 +3271,13 @@ function selectCampaign(campaignId) {
     campaignNotice.textContent = "";
   }
   refreshCampaignImagePreview(selectedCampaign);
+  const operationSlug = slugify(selectedCampaign.title);
+  const directUrl = `${window.location.pathname}?operation=${operationSlug}`;
+  window.history.pushState({ operation: operationSlug }, "", directUrl);
+  if (campaignDirectLink) {
+    campaignDirectLink.hidden = true;
+    campaignDirectLink.innerHTML = "";
+  }
   formMessage.textContent = "";
   form.reset();
   applyCurrentPharmacyToForms();
@@ -3285,6 +3404,7 @@ function selectBat(documentId) {
   batPdfOpenLink.removeAttribute("target");
   batPharmacyName.value = previousResponse?.pharmacyName || currentPharmacy?.name || selectedBatDocument.pharmacyName;
   batPharmacyName.readOnly = Boolean(currentPharmacy?.name);
+  renderBatOrderSummary(batPharmacyName.value || selectedBatDocument.pharmacyName);
   batComment.value = previousResponse?.comment || "";
   batValidationForm.querySelectorAll('input[name="batStatus"]').forEach((input) => {
     input.checked = input.value === previousResponse?.status;
@@ -3543,6 +3663,9 @@ function showCampaignPicker() {
   refreshCampaignImagePreview(null);
   form.reset();
   formMessage.textContent = "";
+  if (window.location.search) {
+    window.history.pushState({}, "", window.location.pathname);
+  }
 }
 
 function showSuccessScreen() {

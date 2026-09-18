@@ -145,6 +145,7 @@
 
       <section id="satisfactionPage" class="form-shell satisfaction-page" hidden>
         <button id="backToSatisfactionMenuBtn" class="back-strong-btn" type="button">← Retour au menu</button>
+        <p id="satisfactionDirectLink" class="campaign-direct-link" hidden></p>
         <section class="question-block profile-intro-block">
           <span class="poll-kicker">Questionnaire de satisfaction</span>
           <h2 id="satisfactionPageTitle">Questionnaire de satisfaction</h2>
@@ -191,6 +192,7 @@
 
       <form id="requestForm" class="form-shell" hidden>
         <button id="backToCampaignsBtn" class="back-strong-btn" type="button">← Retour au menu</button>
+        <p id="campaignDirectLink" class="campaign-direct-link" hidden></p>
         <section id="campaignNotice" class="campaign-notice" hidden></section>
         <section id="campaignImageBlock" class="campaign-image-block" hidden>
           <a id="campaignImageLink" href="#" data-preview-image>
@@ -278,6 +280,10 @@
         <section class="question-block">
           <label for="batPharmacyName">Nom de la pharmacie <span aria-hidden="true">*</span></label>
           <input id="batPharmacyName" type="text" autocomplete="organization" required>
+        </section>
+        <section id="batOrderSummaryBlock" class="question-block bat-order-summary" hidden>
+          <span class="field-title">Votre précommande</span>
+          <div id="batOrderSummaryContent" class="bat-order-summary-content"></div>
         </section>
         <section class="question-block">
           <span class="field-title">Votre validation <span aria-hidden="true">*</span></span>
@@ -975,6 +981,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=20260914-export-pdf-recap"></script>
+  <script src="app.js?v=20260917-lien-satisfaction"></script>
 </body>
 </html>

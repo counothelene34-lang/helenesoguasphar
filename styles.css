@@ -530,6 +530,39 @@ main::before {
   border-color: #c084fc;
 }
 
+.bat-order-summary {
+  border: 1px solid #c9a6f5;
+  background: linear-gradient(180deg, #faf5ff, #fff);
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+
+.bat-order-summary-content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.bat-order-summary-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  color: #6b21a8;
+  font-weight: 600;
+}
+
+.bat-order-summary-line span {
+  white-space: nowrap;
+}
+
+.bat-order-summary-note {
+  margin: 4px 0 0;
+  color: #6b7280;
+  font-size: 0.85em;
+  font-style: italic;
+}
+
 .validation-extra-message {
   margin-top: 10px;
   padding: 10px 12px;
@@ -1705,6 +1738,16 @@ main::before {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+}
+
+.campaign-direct-link {
+  margin: 2px 0 6px;
+  font-size: 12px;
+  word-break: break-all;
+}
+
+.campaign-direct-link a {
+  color: var(--blue, #2563eb);
 }
 
 .delete-campaign-btn {
