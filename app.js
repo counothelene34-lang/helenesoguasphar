@@ -2070,6 +2070,17 @@ function campaignIsVisibleForPharmacy(campaign) {
   return Boolean(currentPeriod(campaign)) || futurePeriods(campaign).length > 0;
 }
 
+// Une opération est "clôturée dans les faits" si elle a été fermée à la main,
+// OU si elle a des périodes mais qu'elles sont toutes passées (personne n'a pensé
+// à cliquer "Clôturer" ni à programmer une nouvelle période) : dans les deux cas
+// elle est invisible pour les pharmacies et doit apparaître comme clôturée côté admin.
+function campaignIsEffectivelyClosed(campaign) {
+  if (!campaign || campaign.draft) return false;
+  if (campaign.closed) return true;
+  if (!Array.isArray(campaign.periods) || !campaign.periods.length) return false;
+  return !currentPeriod(campaign) && futurePeriods(campaign).length === 0;
+}
+
 function periodStatusLabel(campaign, period) {
   const today = todayIso();
   if (period.startDate > today) return "À venir";
@@ -2693,7 +2704,8 @@ function campaignCard(campaign, target) {
     .map((imageData, index) => `<a class="campaign-card-image" href="${imageData}" data-preview-image title="Voir la photo ${index + 1}"><img src="${imageData}" alt="Image ${index + 1} ${escapeHtml(campaign.title)}"></a>`)
     .join("");
   const isOpenNow = isAdmin || campaignIsOpenForPharmacy(campaign);
-  const statusLabel = campaign.closed
+  const isEffectivelyClosed = campaignIsEffectivelyClosed(campaign);
+  const statusLabel = isEffectivelyClosed
     ? "Clôturée"
     : (campaign.draft ? "Brouillon" : (isOpenNow ? (campaign.type || "Commande") : "Bientôt disponible"));
   const displayStatusLabel = isCompleted ? "Réalisée" : statusLabel;
@@ -2722,7 +2734,7 @@ function campaignCard(campaign, target) {
       ${imageMarkup}
       <div>
         <div class="campaign-card-top">
-          <span class="campaign-type ${campaign.closed ? "closed" : ""} ${campaign.draft ? "draft" : ""}">${escapeHtml(displayStatusLabel)}</span>
+          <span class="campaign-type ${isEffectivelyClosed ? "closed" : ""} ${campaign.draft ? "draft" : ""}">${escapeHtml(displayStatusLabel)}</span>
           ${isAdmin ? `<button class="delete-campaign-btn" type="button" title="Supprimer la campagne" aria-label="Supprimer ${escapeHtml(campaign.title)}" data-delete-campaign="${escapeHtml(campaign.id)}">&#128465;</button>` : ""}
         </div>
         <h3>${escapeHtml(campaign.title)}</h3>
@@ -2736,7 +2748,7 @@ function campaignCard(campaign, target) {
         <div class="campaign-actions">
           ${isAdmin && campaign.draft ? `<button class="primary-btn" type="button" data-publish-campaign="${escapeHtml(campaign.id)}">Publier</button>` : ""}
           ${isAdmin && !campaign.draft
-            ? (campaign.closed
+            ? (isEffectivelyClosed
               ? `<button class="primary-btn" type="button" data-relaunch-campaign="${escapeHtml(campaign.id)}">Relancer</button>`
               : `<button class="ghost-btn" type="button" data-toggle-closed-campaign="${escapeHtml(campaign.id)}">Clôturer</button>`)
             : ""}
@@ -3186,7 +3198,7 @@ async function showAdminSectionFresh(section) {
 function renderCampaignPickers() {
   const validationConfig = currentValidationConfig();
   const openCampaigns = campaigns.filter((campaign) => campaignIsVisibleForPharmacy(campaign));
-  const adminCampaigns = campaigns.filter((campaign) => activeAdminSection === "archives" ? campaign.closed : !campaign.closed);
+  const adminCampaigns = campaigns.filter((campaign) => activeAdminSection === "archives" ? campaignIsEffectivelyClosed(campaign) : !campaignIsEffectivelyClosed(campaign));
   const openPolls = polls.filter((poll) => !poll.closed && poll.category !== "satisfaction");
   const adminPolls = polls.filter((poll) => activeAdminSection === "archives" ? poll.closed : !poll.closed);
   const satisfactionPoll = polls.find((poll) => poll.category === "satisfaction");
