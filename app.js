@@ -2694,6 +2694,15 @@ async function parseOrderFile(file) {
   return normalizeTemplateRows(parseDelimited(text));
 }
 
+function completedResponseOperationDateLabel(campaign, response) {
+  const period = Array.isArray(campaign?.periods)
+    ? campaign.periods.find((item) => item.id === response?.periodId)
+    : null;
+  if (period?.startDate) return formatDateFr(period.startDate);
+  const rawDate = String(response?.createdAt || "").split(" ")[0];
+  return rawDate || "une date antérieure";
+}
+
 function campaignCard(campaign, target) {
   const count = (campaign.template?.rows || []).length;
   const isAdmin = target === "admin";
@@ -2708,11 +2717,22 @@ function campaignCard(campaign, target) {
   const statusLabel = isEffectivelyClosed
     ? "Clôturée"
     : (campaign.draft ? "Brouillon" : (isOpenNow ? (campaign.type || "Commande") : "Bientôt disponible"));
-  const displayStatusLabel = isCompleted ? "Réalisée" : statusLabel;
+  // Une réponse "complétée" n'est en réalité rattachable à MAINTENANT que s'il y a une
+  // période active. Si la campagne a des périodes mais qu'aucune n'est en cours (ex :
+  // opération relancée, nouvelle période pas encore commencée), la réponse affichée est
+  // celle d'un tour précédent : on le dit clairement au lieu de faire croire qu'elle
+  // répond déjà à la nouvelle opération.
+  const isStaleCompletedResponse = isCompleted
+    && Array.isArray(campaign.periods) && campaign.periods.length > 0
+    && !currentPeriod(campaign);
+  const displayStatusLabel = (isCompleted && !isStaleCompletedResponse) ? "Réalisée" : statusLabel;
   const summary = campaignResponseSummary(completedResponse);
   const completedDate = completedResponse?.updatedAt
     ? `Modifiée le ${escapeHtml(completedResponse.updatedAt)}`
     : `Réalisée le ${escapeHtml(completedResponse?.createdAt || "")}`;
+  const doneSummaryTitle = isStaleCompletedResponse
+    ? `Réponse pour l'opération du ${completedResponseOperationDateLabel(campaign, completedResponse)}`
+    : "Réponse déjà envoyée";
   const cardAction = !isAdmin && !isCompleted && isOpenNow
     ? `data-form-campaign="${escapeHtml(campaign.id)}" role="button" tabindex="0"`
     : "";
@@ -2741,7 +2761,7 @@ function campaignCard(campaign, target) {
         ${isAdmin ? `<p class="campaign-direct-link"><a href="${escapeHtml(`${window.location.origin}${window.location.pathname}?operation=${slugify(campaign.title)}`)}" target="_blank" rel="noopener">${escapeHtml(`${window.location.origin}${window.location.pathname}?operation=${slugify(campaign.title)}`)}</a></p>` : ""}
         <p>${escapeHtml(campaign.description || campaign.pharmacyMessage || "")}</p>
         ${periodInfoMarkup}
-        ${isCompleted ? `<div class="campaign-done-summary"><strong>Réponse déjà envoyée</strong><span>${escapeHtml(summary)}</span></div>` : ""}
+        ${isCompleted ? `<div class="campaign-done-summary"><strong>${escapeHtml(doneSummaryTitle)}</strong><span>${escapeHtml(summary)}</span></div>` : ""}
       </div>
       <div class="campaign-foot">
         <span>${isCompleted ? completedDate : `${count} ligne${count > 1 ? "s" : ""}`}</span>
