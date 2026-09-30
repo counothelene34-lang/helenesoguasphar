@@ -317,7 +317,15 @@ function emptyOrderTemplate() {
 // uniquement dans les résumés/historiques trop étroits pour afficher toutes les
 // colonnes (ex. carte "réponse déjà envoyée", historique archivé).
 function productDisplayLabel(values) {
-  const firstValue = Object.values(values || {}).find((value) => String(value || "").trim());
+  const entries = Object.entries(values || {});
+  // On préfère la colonne "désignation" (nom du produit) si le fichier importé en a une,
+  // même si elle n'est pas en première colonne (ex : EAN en 1ère colonne, Désignation en 2e,
+  // comme sur Oxyprolane) — sinon les résumés affichaient le code EAN au lieu du nom.
+  const designationEntry = entries.find(([key, value]) =>
+    String(value || "").trim() && TEMPLATE_HEADER_ALIASES.designation.some((alias) => normalizeHeader(key).includes(alias))
+  );
+  if (designationEntry) return designationEntry[1];
+  const firstValue = entries.map(([, value]) => value).find((value) => String(value || "").trim());
   return firstValue || "Produit";
 }
 
