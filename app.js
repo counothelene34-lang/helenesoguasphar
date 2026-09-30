@@ -5284,32 +5284,44 @@ adminCampaignCards.addEventListener("click", async (event) => {
     const campaign = campaigns.find((item) => item.id === relaunchButton.dataset.relaunchCampaign);
     if (!campaign) return;
 
-    const defaultStart = todayIso();
-    const startDate = prompt(`Relancer la campagne "${campaign.title}"\n\nDate de début de la nouvelle période (AAAA-MM-JJ) :`, defaultStart);
-    if (startDate === null) return;
-    if (!isValidIsoDate(startDate)) {
-      alert("Date de début invalide. Utilisez le format AAAA-MM-JJ (ex : 2026-10-01).");
-      return;
-    }
+    // Une relance prolonge l'opération en cours (mêmes commandes déjà reçues
+    // conservées) : on ne crée PAS une nouvelle période à part, sinon les
+    // commandes déjà passées deviennent invisibles derrière le filtre de
+    // période côté admin. On repousse simplement la date de clôture de la
+    // dernière période existante. Seule une opération sans aucune période
+    // programmée en obtient une nouvelle (elle n'en a jamais eu).
+    const periods = sortedPeriods(campaign);
+    const lastPeriod = periods.length ? periods[periods.length - 1] : null;
 
-    const endDate = prompt("Date de clôture de la nouvelle période (AAAA-MM-JJ) :", addDaysToIso(startDate, 30));
+    const endDate = prompt(
+      `Relancer la campagne "${campaign.title}"\n\nLes commandes déjà reçues sont conservées. Nouvelle date de clôture (AAAA-MM-JJ) :`,
+      addDaysToIso(todayIso(), 30)
+    );
     if (endDate === null) return;
     if (!isValidIsoDate(endDate)) {
       alert("Date de clôture invalide. Utilisez le format AAAA-MM-JJ (ex : 2026-10-31).");
       return;
     }
-    if (endDate < startDate) {
-      alert("La date de clôture doit être après la date de début.");
+    if (lastPeriod && endDate < lastPeriod.startDate) {
+      alert(`La date de clôture doit être après le début de la période en cours (${formatDateFr(lastPeriod.startDate)}).`);
+      return;
+    }
+    if (!lastPeriod && endDate < todayIso()) {
+      alert("La date de clôture doit être aujourd'hui ou plus tard.");
       return;
     }
 
-    const period = { id: createId(), startDate, endDate };
-    campaign.periods = [...(campaign.periods || []), period];
+    if (lastPeriod) {
+      lastPeriod.endDate = endDate;
+      campaign.periods = campaign.periods.map((period) => period.id === lastPeriod.id ? lastPeriod : period);
+    } else {
+      campaign.periods = [...(campaign.periods || []), { id: createId(), startDate: todayIso(), endDate }];
+    }
     campaign.closed = false;
     campaigns = campaigns.map((item) => item.id === campaign.id ? campaign : item);
     await saveCampaigns(campaigns);
     renderCampaignPickers();
-    adminMessage.textContent = `Campagne "${campaign.title}" relancée du ${formatDateFr(startDate)} au ${formatDateFr(endDate)}.`;
+    adminMessage.textContent = `Campagne "${campaign.title}" relancée jusqu'au ${formatDateFr(endDate)}. Les commandes déjà reçues sont conservées.`;
     return;
   }
 
