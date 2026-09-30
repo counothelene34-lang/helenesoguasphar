@@ -2008,6 +2008,18 @@ function todayIso() {
   return local.toISOString().slice(0, 10);
 }
 
+function addDaysToIso(iso, days) {
+  const date = new Date(`${iso}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return iso;
+  date.setDate(date.getDate() + days);
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 10);
+}
+
+function isValidIsoDate(value) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(new Date(`${value}T00:00:00`).getTime());
+}
+
 function sortedPeriods(campaign) {
   return Array.isArray(campaign?.periods)
     ? [...campaign.periods].filter((period) => period && period.startDate).sort((a, b) => a.startDate.localeCompare(b.startDate))
@@ -2723,7 +2735,11 @@ function campaignCard(campaign, target) {
         <span>${isCompleted ? completedDate : `${count} ligne${count > 1 ? "s" : ""}`}</span>
         <div class="campaign-actions">
           ${isAdmin && campaign.draft ? `<button class="primary-btn" type="button" data-publish-campaign="${escapeHtml(campaign.id)}">Publier</button>` : ""}
-          ${isAdmin && !campaign.draft ? `<button class="ghost-btn" type="button" data-toggle-closed-campaign="${escapeHtml(campaign.id)}">${campaign.closed ? "Rouvrir" : "Clôturer"}</button>` : ""}
+          ${isAdmin && !campaign.draft
+            ? (campaign.closed
+              ? `<button class="primary-btn" type="button" data-relaunch-campaign="${escapeHtml(campaign.id)}">Relancer</button>`
+              : `<button class="ghost-btn" type="button" data-toggle-closed-campaign="${escapeHtml(campaign.id)}">Clôturer</button>`)
+            : ""}
           ${isCompleted
             ? `<button class="primary-btn" type="button" data-form-campaign="${escapeHtml(campaign.id)}">Modifier ma commande</button>`
             : (isOpenNow
@@ -5241,16 +5257,47 @@ adminCampaignCards.addEventListener("click", async (event) => {
   if (toggleButton) {
     const campaign = campaigns.find((item) => item.id === toggleButton.dataset.toggleClosedCampaign);
     if (!campaign) return;
-    const nextClosed = !campaign.closed;
-    const confirmed = confirm(nextClosed
-      ? `Clôturer la campagne "${campaign.title}" ?\n\nElle ne sera plus visible par les adhérents, mais restera consultable côté admin.`
-      : `Rouvrir la campagne "${campaign.title}" ?\n\nElle redeviendra visible par les adhérents.`);
+    const confirmed = confirm(`Clôturer la campagne "${campaign.title}" ?\n\nElle ne sera plus visible par les adhérents, mais restera consultable côté admin.`);
     if (!confirmed) return;
-    campaign.closed = nextClosed;
+    campaign.closed = true;
     campaigns = campaigns.map((item) => item.id === campaign.id ? campaign : item);
     await saveCampaigns(campaigns);
     renderCampaignPickers();
-    adminMessage.textContent = nextClosed ? `Campagne "${campaign.title}" clôturée.` : `Campagne "${campaign.title}" rouverte.`;
+    adminMessage.textContent = `Campagne "${campaign.title}" clôturée.`;
+    return;
+  }
+
+  const relaunchButton = event.target.closest("[data-relaunch-campaign]");
+  if (relaunchButton) {
+    const campaign = campaigns.find((item) => item.id === relaunchButton.dataset.relaunchCampaign);
+    if (!campaign) return;
+
+    const defaultStart = todayIso();
+    const startDate = prompt(`Relancer la campagne "${campaign.title}"\n\nDate de début de la nouvelle période (AAAA-MM-JJ) :`, defaultStart);
+    if (startDate === null) return;
+    if (!isValidIsoDate(startDate)) {
+      alert("Date de début invalide. Utilisez le format AAAA-MM-JJ (ex : 2026-10-01).");
+      return;
+    }
+
+    const endDate = prompt("Date de clôture de la nouvelle période (AAAA-MM-JJ) :", addDaysToIso(startDate, 30));
+    if (endDate === null) return;
+    if (!isValidIsoDate(endDate)) {
+      alert("Date de clôture invalide. Utilisez le format AAAA-MM-JJ (ex : 2026-10-31).");
+      return;
+    }
+    if (endDate < startDate) {
+      alert("La date de clôture doit être après la date de début.");
+      return;
+    }
+
+    const period = { id: createId(), startDate, endDate };
+    campaign.periods = [...(campaign.periods || []), period];
+    campaign.closed = false;
+    campaigns = campaigns.map((item) => item.id === campaign.id ? campaign : item);
+    await saveCampaigns(campaigns);
+    renderCampaignPickers();
+    adminMessage.textContent = `Campagne "${campaign.title}" relancée du ${formatDateFr(startDate)} au ${formatDateFr(endDate)}.`;
     return;
   }
 

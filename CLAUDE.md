@@ -62,6 +62,12 @@ Avant de modifier des données à la main : copie datée dans `data-backups/`.
   `buildFreeColumnsTemplate` (colonnes libres), `parsePdfOrderText`
 - Sondages : `pollCard`, `selectPoll`, `buildPollQuestionsFormMarkup`,
   `applyPollConditionalLogic` (présence → repas), `renderPollResults`, `exportPollToExcel`
+- Résultats publics d'un sondage (page consultable par tous, sans code admin, en direct) :
+  adresse `preco.soguasphar.fr/?resultats=<id du sondage>` ; fonctions `showPublicPollResults`,
+  `refreshPublicPollResults` (rafraîchit toutes les 15 s) dans `app.js` ; route serveur
+  publique `GET /api/poll-results/<id>` dans `server.js` — renvoie UNIQUEMENT des comptages
+  agrégés par question à choix, exclut toujours les questions `texte_libre` (jamais le texte
+  d'un commentaire, ni via cette route ni ailleurs côté public).
 - Validations (BAT…) : `batValidationCard`, `selectBat`, `importValidationDocuments`,
   `renderBatResults`, `getValidationSummary`
 - Admin : `renderAdmin`, `showAdminSection`, `renderQuantitySummary`,
