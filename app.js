@@ -2413,8 +2413,20 @@ const TEMPLATE_HEADER_ALIASES = {
   colisage: [
     "colisage", "conditionnement", "colis", "parcolis", "uvc", "pcb", "colisageminimum",
     "colisageminimumdecommande", "colisagemini"
-  ]
+  ],
+  dlc: ["dlc", "peremption", "dateperemption", "datelimiteconsommation", "datelimiteutilisation", "dluo"]
 };
+
+// Excel stocke les dates comme un simple numéro de jours depuis le 30/12/1899. Quand un
+// fichier importé a une colonne DLC (ou "date de péremption"...), ce numéro apparaissait
+// tel quel (ex. "46485.5") au lieu d'une vraie date. On le reconvertit en date lisible.
+function excelSerialToFrDate(value) {
+  const num = Number(String(value ?? "").trim().replace(",", "."));
+  if (!Number.isFinite(num) || num < 20000 || num > 60000) return null;
+  const date = new Date(Math.round((num - 25569) * 86400 * 1000));
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" });
+}
 
 function findTemplateColumn(headers, kind) {
   const aliases = TEMPLATE_HEADER_ALIASES[kind] || [];
@@ -2473,10 +2485,18 @@ function buildFreeColumnsTemplate(headerRow, dataRows) {
     return count === 0 ? label : `${label} (${count + 1})`;
   });
 
+  const normalizedColumnsForDlc = columns.map(normalizeHeader);
+  const isDlcColumn = normalizedColumnsForDlc.map((header) =>
+    TEMPLATE_HEADER_ALIASES.dlc.some((alias) => header.includes(alias))
+  );
+
   const rows = dataRows
     .map((row, index) => {
       const values = {};
-      columns.forEach((column, columnIndex) => { values[column] = cleanTemplateCell(row[columnIndex]); });
+      columns.forEach((column, columnIndex) => {
+        const cell = cleanTemplateCell(row[columnIndex]);
+        values[column] = isDlcColumn[columnIndex] ? (excelSerialToFrDate(cell) || cell) : cell;
+      });
       return { id: `line-${Date.now()}-${index}`, values };
     })
     .filter((row) => {
