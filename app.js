@@ -4101,23 +4101,32 @@ function renderMixedDiscountSummary() {
 
   if (isValid) {
     mixedDiscountSummary.className = "mixed-discount-summary ok";
-    mixedDiscountSummary.innerHTML = `<strong>Remise ${escapeHtml(reachedTier.label)} obtenue</strong>${total} paquet${total > 1 ? "s" : ""} sur ${distinctReferences} référence${distinctReferences > 1 ? "s" : ""} différente${distinctReferences > 1 ? "s" : ""}.`;
+    const nextTier = sortedTiers.find((tier) => tier.quantity > total) || null;
+    const nextHint = nextTier
+      ? ` Encore ${nextTier.quantity - total} paquet${nextTier.quantity - total > 1 ? "s" : ""} pour passer à la remise ${escapeHtml(nextTier.label)}.`
+      : "";
+    mixedDiscountSummary.innerHTML = `<strong>Remise ${escapeHtml(reachedTier.label)} obtenue</strong>${total} paquet${total > 1 ? "s" : ""} sur ${distinctReferences} référence${distinctReferences > 1 ? "s" : ""} différente${distinctReferences > 1 ? "s" : ""}.${nextHint}`;
     return;
   }
 
+  mixedDiscountSummary.className = "mixed-discount-summary pending";
+  mixedDiscountSummary.innerHTML = `<strong>Offre pas encore atteinte</strong>${escapeHtml(mixedDiscountMissingMessage(state))}`;
+}
+
+function mixedDiscountMissingMessage(state) {
+  const { total, distinctReferences, minReferences, firstTier } = state;
   const missingQuantity = Math.max(0, firstTier.quantity - total);
   const missingReferences = Math.max(0, minReferences - distinctReferences);
   const parts = [];
   if (missingQuantity > 0) parts.push(`${missingQuantity} paquet${missingQuantity > 1 ? "s" : ""} de plus`);
   if (missingReferences > 0) parts.push(`${missingReferences} référence${missingReferences > 1 ? "s" : ""} différente${missingReferences > 1 ? "s" : ""} de plus`);
-  mixedDiscountSummary.className = "mixed-discount-summary pending";
-  mixedDiscountSummary.innerHTML = `<strong>Offre pas encore atteinte</strong>Il manque ${escapeHtml(parts.join(" et "))} pour bénéficier de la remise ${escapeHtml(firstTier.label)} (minimum ${firstTier.quantity} paquets sur ${minReferences} références différentes).`;
+  return `Il manque ${parts.join(" et ")} pour bénéficier de la remise ${firstTier.label} (minimum ${firstTier.quantity} paquets sur ${minReferences} références différentes).`;
 }
 
 function validateMixedDiscountRule() {
   const state = mixedDiscountState(selectedCampaign?.mixedDiscountRule);
   if (!state || state.isValid) return "";
-  return `Cette offre nécessite au moins ${state.firstTier.quantity} paquets mélangés sur au moins ${state.minReferences} références différentes (ou aucune commande sur ces références).`;
+  return mixedDiscountMissingMessage(state);
 }
 
 function resetQuantities() {
