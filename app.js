@@ -137,6 +137,7 @@ const orderTableHeadRow = document.querySelector("#orderTableHeadRow");
 const quantitySection = document.querySelector("#quantitySection");
 const orderMessage = document.querySelector("#orderMessage");
 const lineCount = document.querySelector("#lineCount");
+const mixedDiscountSummary = document.querySelector("#mixedDiscountSummary");
 const adminLogin = document.querySelector("#adminLogin");
 const adminPanel = document.querySelector(".admin-panel");
 const adminContent = document.querySelector("#adminContent");
@@ -3977,6 +3978,8 @@ function renderOrderTemplate() {
       ${columns.map((column) => `<td>${escapeHtml(item.values?.[column] || "")}</td>`).join("")}
     </tr>
   `).join("");
+
+  renderMixedDiscountSummary();
 }
 
 // Récupère, pour une ligne donnée, les colonnes "à remplir" que la pharmacie a
@@ -4034,6 +4037,8 @@ function prefillCampaignResponse(response) {
       textarea.value = savedValues[textarea.dataset.column] || "";
     }
   });
+
+  renderMixedDiscountSummary();
 }
 
 function validateQuantityInput(input) {
@@ -4054,12 +4059,74 @@ function validateColisageQuantities() {
   return invalidInput.validationMessage || "Inscrire le colisage minimum.";
 }
 
+// Certaines opérations offrent une remise si on commande un minimum de paquets
+// MÉLANGÉS sur plusieurs références obligatoires (ex : 5 paquets sur au moins
+// 3 références différentes = -12,6 %, 10 paquets = -17,2 %). Se configure par
+// campagne avec campaign.mixedDiscountRule = { minReferences, tiers: [{ quantity,
+// label }, ...] } (facultatif, absent pour toutes les campagnes classiques).
+function mixedDiscountState(rule) {
+  if (!rule || !Array.isArray(rule.tiers) || !rule.tiers.length) return null;
+  const sortedTiers = [...rule.tiers].sort((a, b) => a.quantity - b.quantity);
+  const quantities = [...document.querySelectorAll(".product-quantity")]
+    .map((input) => Number(String(input.value || "").replace(",", ".")) || 0)
+    .filter((quantity) => quantity > 0);
+  const total = quantities.reduce((sum, quantity) => sum + quantity, 0);
+  const distinctReferences = quantities.length;
+  const minReferences = rule.minReferences || 1;
+  const firstTier = sortedTiers[0];
+  const reachedTier = [...sortedTiers].reverse().find((tier) => total >= tier.quantity) || null;
+  const isValid = total === 0 || (distinctReferences >= minReferences && Boolean(reachedTier));
+  return { total, distinctReferences, minReferences, firstTier, sortedTiers, reachedTier, isValid };
+}
+
+function renderMixedDiscountSummary() {
+  if (!mixedDiscountSummary) return;
+  const state = mixedDiscountState(selectedCampaign?.mixedDiscountRule);
+  if (!state) {
+    mixedDiscountSummary.hidden = true;
+    mixedDiscountSummary.className = "mixed-discount-summary";
+    mixedDiscountSummary.innerHTML = "";
+    return;
+  }
+
+  mixedDiscountSummary.hidden = false;
+  const { total, distinctReferences, minReferences, firstTier, reachedTier, isValid, sortedTiers } = state;
+  const tiersLabel = sortedTiers.map((tier) => `${tier.quantity} paquets = ${tier.label}`).join(", ");
+
+  if (total === 0) {
+    mixedDiscountSummary.className = "mixed-discount-summary";
+    mixedDiscountSummary.innerHTML = `<strong>Offre mélangée disponible</strong>Commandez au moins ${firstTier.quantity} paquets mélangés sur ${minReferences} références différentes minimum pour bénéficier d'une remise (${escapeHtml(tiersLabel)}).`;
+    return;
+  }
+
+  if (isValid) {
+    mixedDiscountSummary.className = "mixed-discount-summary ok";
+    mixedDiscountSummary.innerHTML = `<strong>Remise ${escapeHtml(reachedTier.label)} obtenue</strong>${total} paquet${total > 1 ? "s" : ""} sur ${distinctReferences} référence${distinctReferences > 1 ? "s" : ""} différente${distinctReferences > 1 ? "s" : ""}.`;
+    return;
+  }
+
+  const missingQuantity = Math.max(0, firstTier.quantity - total);
+  const missingReferences = Math.max(0, minReferences - distinctReferences);
+  const parts = [];
+  if (missingQuantity > 0) parts.push(`${missingQuantity} paquet${missingQuantity > 1 ? "s" : ""} de plus`);
+  if (missingReferences > 0) parts.push(`${missingReferences} référence${missingReferences > 1 ? "s" : ""} différente${missingReferences > 1 ? "s" : ""} de plus`);
+  mixedDiscountSummary.className = "mixed-discount-summary pending";
+  mixedDiscountSummary.innerHTML = `<strong>Offre pas encore atteinte</strong>Il manque ${escapeHtml(parts.join(" et "))} pour bénéficier de la remise ${escapeHtml(firstTier.label)} (minimum ${firstTier.quantity} paquets sur ${minReferences} références différentes).`;
+}
+
+function validateMixedDiscountRule() {
+  const state = mixedDiscountState(selectedCampaign?.mixedDiscountRule);
+  if (!state || state.isValid) return "";
+  return `Cette offre nécessite au moins ${state.firstTier.quantity} paquets mélangés sur au moins ${state.minReferences} références différentes (ou aucune commande sur ces références).`;
+}
+
 function resetQuantities() {
   document.querySelectorAll(".product-quantity").forEach((input) => {
     input.value = "";
     input.setCustomValidity("");
     input.classList.remove("is-invalid");
   });
+  renderMixedDiscountSummary();
 }
 
 function updateQuantityVisibility() {
@@ -4867,11 +4934,13 @@ document.querySelectorAll('input[name="interest"]').forEach((input) => {
 productRows?.addEventListener("input", (event) => {
   const input = event.target.closest(".product-quantity");
   if (input) validateQuantityInput(input);
+  if (event.target.closest(".product-quantity")) renderMixedDiscountSummary();
 });
 
 productRows?.addEventListener("change", (event) => {
   const input = event.target.closest(".product-quantity");
   if (input) validateQuantityInput(input);
+  if (event.target.closest(".product-quantity")) renderMixedDiscountSummary();
 });
 
 adminDashboardNav?.addEventListener("click", async (event) => {
@@ -6403,6 +6472,11 @@ form.addEventListener("submit", async (event) => {
     const colisageError = validateColisageQuantities();
     if (colisageError) {
       formMessage.textContent = colisageError;
+      return;
+    }
+    const mixedDiscountError = validateMixedDiscountRule();
+    if (mixedDiscountError) {
+      formMessage.textContent = mixedDiscountError;
       return;
     }
   }

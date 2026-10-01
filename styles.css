@@ -2456,6 +2456,40 @@ textarea:focus {
   color: #991b1b;
 }
 
+.mixed-discount-summary {
+  margin-top: 14px;
+  padding: 12px 14px;
+  font-size: 14px;
+  line-height: 1.45;
+  border-radius: 10px;
+  border: 1px solid #b8c8c2;
+  background: var(--soft);
+  color: var(--muted);
+}
+
+.mixed-discount-summary strong {
+  display: block;
+  margin-bottom: 2px;
+}
+
+.mixed-discount-summary.pending {
+  border-color: #f3c969;
+  background: #fff8e6;
+  color: #7a5b00;
+}
+
+.mixed-discount-summary.ok {
+  border-color: #9de08f;
+  background: #eefbea;
+  color: #0b3420;
+}
+
+.mixed-discount-summary.error {
+  border-color: #f0b4b4;
+  background: #fff2f2;
+  color: #8a1f1f;
+}
+
 .product-fillable-info {
   width: 100%;
   min-width: 220px;
