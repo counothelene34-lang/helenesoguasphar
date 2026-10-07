@@ -4777,15 +4777,25 @@ function exportBatToExcel() {
     return;
   }
 
-  const headings = ["Pharmacie", "Statut", "Date", "Correction / commentaire", "Document"];
+  const headings = ["Pharmacie", "Statut", "Date", "Format(s) commandé(s)", "Quantité commandée", "Prix unitaire", "Montant total", "Correction / commentaire", "Document"];
   const body = documents.map((document) => {
     const response = batResponseForDocument(document);
     const status = normalizeValidationStatus(response?.status) || "En attente";
+    const pharmacyName = response?.pharmacyName || document.pharmacyName;
+    const orderItems = batOrderDetailsForPharmacyName(pharmacyName) || [];
+    const formats = orderItems.map((item) => item.format).join(" + ");
+    const quantities = orderItems.map((item) => item.quantity.toLocaleString("fr-FR")).join(" + ");
+    const unitPrices = orderItems.map((item) => formatEuros(item.unitPrice)).join(" + ");
+    const total = orderItems.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
     return `
       <tr>
-        <td>${escapeHtml(response?.pharmacyName || document.pharmacyName)}</td>
+        <td>${escapeHtml(pharmacyName)}</td>
         <td>${escapeHtml(status)}</td>
         <td>${escapeHtml(response?.updatedAt || response?.createdAt || "")}</td>
+        <td>${escapeHtml(formats)}</td>
+        <td>${escapeHtml(quantities)}</td>
+        <td>${escapeHtml(unitPrices)}</td>
+        <td>${orderItems.length ? escapeHtml(formatEuros(total)) : ""}</td>
         <td>${escapeHtml(response?.comment || "")}</td>
         <td>${escapeHtml(document.url)}</td>
       </tr>
