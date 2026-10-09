@@ -1529,6 +1529,12 @@ main::before {
   color: var(--red);
 }
 
+.delivery-date-info {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: var(--green-dark, #006633);
+}
+
 .next-periods-block {
   margin-top: 10px;
   padding: 10px 14px;

@@ -227,6 +227,7 @@ const adminDetail = document.querySelector("#adminDetail");
 const backToAdminCampaignsBtn = document.querySelector("#backToAdminCampaignsBtn");
 const adminSelectedCampaignName = document.querySelector("#adminSelectedCampaignName");
 const campaignPharmacyMessage = document.querySelector("#campaignPharmacyMessage");
+const campaignDeliveryDate = document.querySelector("#campaignDeliveryDate");
 const saveCampaignMessageBtn = document.querySelector("#saveCampaignMessageBtn");
 const campaignImageBlock = document.querySelector("#campaignImageBlock");
 const campaignImageLink = document.querySelector("#campaignImageLink");
@@ -1764,6 +1765,9 @@ function archivedOperationCard({ campaign, period, response }) {
     ? `Modifiée le ${escapeHtml(response.updatedAt)}`
     : `Réalisée le ${escapeHtml(response.createdAt || "")}`;
   const summary = campaignResponseSummary(response);
+  const deliveryDateMarkup = campaign.deliveryDate
+    ? `<p class="delivery-date-info">Livraison prévue le <strong>${escapeHtml(formatDateFr(campaign.deliveryDate))}</strong></p>`
+    : "";
   return `
     <article class="campaign-card completed archived-order-card">
       ${imageMarkup}
@@ -1773,6 +1777,7 @@ function archivedOperationCard({ campaign, period, response }) {
           <button class="delete-campaign-btn" type="button" title="Supprimer cette archive" aria-label="Supprimer ${escapeHtml(operationLabel)}" data-hide-archived-response="${escapeHtml(response.id)}">&#128465;</button>
         </div>
         <h3>${escapeHtml(operationLabel)}</h3>
+        ${deliveryDateMarkup}
         <div class="campaign-done-summary"><strong>Réponse envoyée</strong><span>${escapeHtml(summary)}</span></div>
       </div>
       <div class="campaign-foot">
@@ -2876,6 +2881,9 @@ function campaignCard(campaign, target) {
       ` : ""}
     `
     : "";
+  const deliveryDateMarkup = campaign.deliveryDate
+    ? `<p class="delivery-date-info">Livraison prévue le <strong>${escapeHtml(formatDateFr(campaign.deliveryDate))}</strong></p>`
+    : "";
   return `
     <article class="campaign-card ${isCompleted ? "completed" : ""} ${cardAction ? "clickable" : ""}" ${cardAction}>
       ${imageMarkup}
@@ -2887,6 +2895,7 @@ function campaignCard(campaign, target) {
         <h3>${escapeHtml(campaign.title)}</h3>
         ${isAdmin ? `<p class="campaign-direct-link"><a href="${escapeHtml(`${window.location.origin}${window.location.pathname}?operation=${slugify(campaign.title)}`)}" target="_blank" rel="noopener">${escapeHtml(`${window.location.origin}${window.location.pathname}?operation=${slugify(campaign.title)}`)}</a></p>` : ""}
         <p>${escapeHtml(campaign.description || campaign.pharmacyMessage || "")}</p>
+        ${deliveryDateMarkup}
         ${periodInfoMarkup}
         ${isCompleted ? `<div class="campaign-done-summary"><strong>${escapeHtml(doneSummaryTitle)}</strong><span>${escapeHtml(summary)}</span></div>` : ""}
       </div>
@@ -3946,6 +3955,7 @@ async function selectAdminCampaign(campaignId) {
   hideOrderImportConfirm();
   adminSelectedCampaignName.textContent = selectedAdminCampaign.title;
   campaignPharmacyMessage.value = selectedAdminCampaign.pharmacyMessage || selectedAdminCampaign.description || "";
+  if (campaignDeliveryDate) campaignDeliveryDate.value = selectedAdminCampaign.deliveryDate || "";
   campaignImageMessage.textContent = "";
   campaignImageFile.value = "";
   campaignImageFile2.value = "";
@@ -5846,10 +5856,11 @@ saveCampaignMessageBtn.addEventListener("click", async () => {
   if (!selectedAdminCampaign) return;
   selectedAdminCampaign.pharmacyMessage = campaignPharmacyMessage.value.trim();
   selectedAdminCampaign.description = selectedAdminCampaign.pharmacyMessage || selectedAdminCampaign.description || "Précommande à compléter.";
+  selectedAdminCampaign.deliveryDate = campaignDeliveryDate ? campaignDeliveryDate.value : "";
   campaigns = campaigns.map((campaign) => campaign.id === selectedAdminCampaign.id ? selectedAdminCampaign : campaign);
   await saveCampaigns(campaigns);
   renderCampaignPickers();
-  adminMessage.textContent = "Message pharmacie enregistré.";
+  adminMessage.textContent = "Message et date de livraison enregistrés.";
 });
 
 addCampaignPeriodForm?.addEventListener("submit", async (event) => {
@@ -6041,6 +6052,7 @@ createCampaignForm.addEventListener("submit", async (event) => {
     type: "Précommande",
     description: "Nouvelle précommande à paramétrer.",
     pharmacyMessage: "",
+    deliveryDate: "",
     imageData: "",
     imageData2: "",
     closed: false,

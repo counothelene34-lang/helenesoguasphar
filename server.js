@@ -1307,6 +1307,7 @@ const server = http.createServer(async (request, response) => {
         type: String(order.type || "Commande").trim(),
         description: String(order.description || "").trim(),
         pharmacyMessage: String(order.pharmacyMessage || "").trim(),
+        deliveryDate: String(order.deliveryDate || "").trim(),
         imageData: String(order.imageData || ""),
         imageData2: String(order.imageData2 || ""),
         closed: Boolean(order.closed),
