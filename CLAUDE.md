@@ -9,7 +9,8 @@
 Site du groupement pour les **pharmacies adhérentes** : précommandes (bons de
 commande par opération), sondages, questionnaires de satisfaction, formulaires
 d'informations, et **validations de documents** (ex. BAT calendriers 2027).
-Espace admin protégé par un code (`ADMIN_CODE`, défini côté serveur, jamais dans le code).
+Espace admin protégé par un code (`ADMIN_CODE`, dans `.env`, jamais dans le code
+JavaScript envoyé au navigateur — voir « Sécurité : sessions » ci-dessous).
 Propriétaire : Hélène (partagée avec Chantal).
 
 ## Où elle vit
@@ -45,6 +46,44 @@ Déploiement automatique : un push sur `main` → webhook → `git pull` + recon
 - `index.html`, `styles.css` : page unique. Pas de compilation : **une erreur de
   syntaxe fait tomber le site** → `node --check server.js && node --check app.js` avant
   toute publication (`appctl publier` le fait pour toi).
+
+## Sécurité : sessions (depuis le 09/10/2026)
+Avant cette date, le code admin était écrit en clair dans `app.js` et vérifié
+côté navigateur (faille critique), et une pharmacie connectée était reconnue
+par un simple `pharmacyId`/`pharmacyName` envoyé dans l'adresse (faille IDOR :
+une pharmacie pouvait changer cet identifiant pour lire les données d'une autre).
+Corrigé par un système de sessions signées côté serveur :
+- `ADMIN_CODE` et `SESSION_SECRET` vivent uniquement dans `.env` (jamais dans
+  `app.js`/`server.js`, jamais dans git). Les deux sont **différents entre
+  `preco` et `preco-test`** (sauf `ADMIN_CODE` volontairement identique pour
+  simplifier la vie d'Hélène/Chantal — à reconsidérer si besoin).
+- `POST /api/admin-login { code }` et `POST /api/pharmacy-login { password }`
+  vérifient côté serveur et posent un cookie `HttpOnly; Secure; SameSite=Lax`
+  contenant un jeton signé (HMAC-SHA256 avec `crypto` natif, pas de dépendance) :
+  `preco_admin_session` (12 h) et `preco_pharmacy_session` (60 jours).
+- Toutes les routes `/api/*` qui exigent l'admin vérifient ce cookie via
+  `isAdminAuthenticated(request)` — plus jamais l'en-tête `X-Admin-Code` ni
+  `?code=...` dans l'URL des exports.
+- Les routes `pharmacy-*` (lecture et dépôt de réponses) utilisent
+  `getPharmacySession(request)` : l'identité vient **uniquement** du cookie,
+  jamais d'un `pharmacyId`/`pharmacyName` fourni par le client.
+- `GET /api/admin-session` permet au front de savoir si une session admin est
+  encore valide (utilisé au chargement de la page).
+- En-têtes de sécurité (CSP, HSTS, X-Frame-Options, X-Content-Type-Options,
+  Referrer-Policy) envoyés sur toutes les réponses, définis en haut du
+  gestionnaire de requêtes dans `server.js`. Si un script/police externe est
+  ajouté un jour (nouvelle CDN), il faudra l'ajouter à la `Content-Security-Policy`
+  sinon le navigateur le bloquera silencieusement (vérifier la console après
+  tout ajout de script tiers).
+- Fichiers statiques (`app.js`, `styles.css`) servis avec `?v=...` : mise en
+  cache longue durée (`immutable`) ; sans `?v=` ou pour `index.html` : toujours
+  `no-store` (sinon un ancien `app.js` resterait affiché après publication).
+  Compression gzip automatique sur `.html/.js/.css/.json/.svg` si le navigateur
+  l'accepte.
+- Non corrigé pour l'instant (risque plus faible, à surveiller) : les PDF BAT
+  (`/bat-2027/pharmacy-*.pdf`) restent accessibles sans vérifier que la
+  pharmacie qui les demande en est bien propriétaire, si on devine le nom de
+  fichier. À corriger si ça devient sensible.
 
 ## Données (`data/`, jamais dans git, jamais servies au public)
 `orders.json` (opérations de précommande), `responses.json` (réponses aux

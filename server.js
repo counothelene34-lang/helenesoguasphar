@@ -1,9 +1,19 @@
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const crypto = require("crypto");
+const zlib = require("zlib");
 
 const PORT = Number(process.env.PORT || 56651);
 const ADMIN_CODE = process.env.ADMIN_CODE || "SOGUASPHAR2026";
+const SESSION_SECRET = process.env.SESSION_SECRET;
+if (!SESSION_SECRET) {
+  throw new Error("SESSION_SECRET manquant dans .env : impossible de signer les sessions en toute sécurité.");
+}
+const ADMIN_SESSION_COOKIE = "preco_admin_session";
+const PHARMACY_SESSION_COOKIE = "preco_pharmacy_session";
+const ADMIN_SESSION_MAX_AGE = 12 * 60 * 60; // 12 heures
+const PHARMACY_SESSION_MAX_AGE = 60 * 24 * 60 * 60; // 60 jours
 const ROOT = __dirname;
 const DATA_DIR = path.join(ROOT, "data");
 const DATA_FILE = path.join(DATA_DIR, "responses.json");
@@ -28,6 +38,91 @@ const MIME_TYPES = {
   ".jpg": "image/jpeg",
   ".jpeg": "image/jpeg"
 };
+
+// --- Sessions (jetons signés, jamais de mot de passe renvoyé au navigateur) ---
+// Un jeton = corps encodé en base64url + sa signature HMAC-SHA256, séparés par un point.
+// Le navigateur ne voit jamais le secret de signature ni le mot de passe : il reçoit
+// seulement ce jeton dans un cookie protégé (HttpOnly = invisible en JavaScript,
+// Secure = jamais envoyé en http, SameSite=Lax = pas envoyé depuis un autre site).
+function base64UrlEncode(text) {
+  return Buffer.from(text, "utf8").toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+function base64UrlDecode(text) {
+  const normalized = String(text || "").replace(/-/g, "+").replace(/_/g, "/");
+  const padding = normalized.length % 4 === 0 ? "" : "=".repeat(4 - (normalized.length % 4));
+  return Buffer.from(normalized + padding, "base64").toString("utf8");
+}
+
+function signToken(payload, maxAgeSeconds) {
+  const body = { ...payload, exp: Date.now() + maxAgeSeconds * 1000 };
+  const encodedBody = base64UrlEncode(JSON.stringify(body));
+  const signature = crypto.createHmac("sha256", SESSION_SECRET).update(encodedBody).digest("hex");
+  return `${encodedBody}.${signature}`;
+}
+
+function verifyToken(token) {
+  if (!token || typeof token !== "string" || !token.includes(".")) return null;
+  const [encodedBody, signature] = token.split(".");
+  if (!encodedBody || !signature) return null;
+  const expectedSignature = crypto.createHmac("sha256", SESSION_SECRET).update(encodedBody).digest("hex");
+  const signatureBuffer = Buffer.from(signature, "hex");
+  const expectedBuffer = Buffer.from(expectedSignature, "hex");
+  if (signatureBuffer.length !== expectedBuffer.length || !crypto.timingSafeEqual(signatureBuffer, expectedBuffer)) {
+    return null;
+  }
+  try {
+    const payload = JSON.parse(base64UrlDecode(encodedBody));
+    if (!payload.exp || payload.exp < Date.now()) return null;
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
+function parseCookies(request) {
+  const header = request.headers.cookie || "";
+  const cookies = {};
+  header.split(";").forEach((part) => {
+    const separatorIndex = part.indexOf("=");
+    if (separatorIndex === -1) return;
+    const key = part.slice(0, separatorIndex).trim();
+    const value = part.slice(separatorIndex + 1).trim();
+    if (key) {
+      try {
+        cookies[key] = decodeURIComponent(value);
+      } catch {
+        cookies[key] = value;
+      }
+    }
+  });
+  return cookies;
+}
+
+function setSessionCookie(response, name, value, maxAgeSeconds) {
+  const existing = response.getHeader("Set-Cookie");
+  const cookie = `${name}=${encodeURIComponent(value)}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${maxAgeSeconds}`;
+  const next = existing ? (Array.isArray(existing) ? [...existing, cookie] : [existing, cookie]) : [cookie];
+  response.setHeader("Set-Cookie", next);
+}
+
+function clearSessionCookie(response, name) {
+  setSessionCookie(response, name, "", 0);
+}
+
+function getAdminSession(request) {
+  const payload = verifyToken(parseCookies(request)[ADMIN_SESSION_COOKIE]);
+  return payload && payload.role === "admin" ? payload : null;
+}
+
+function isAdminAuthenticated(request) {
+  return Boolean(getAdminSession(request));
+}
+
+function getPharmacySession(request) {
+  const payload = verifyToken(parseCookies(request)[PHARMACY_SESSION_COOKIE]);
+  return payload && payload.role === "pharmacy" && payload.id ? payload : null;
+}
 
 function ensureDataFile() {
   if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -974,7 +1069,9 @@ function sendInfoExcel(response, responses) {
   response.end(workbook);
 }
 
-function serveStatic(request, response, pathname) {
+const COMPRESSIBLE_EXTENSIONS = new Set([".html", ".js", ".css", ".json", ".svg"]);
+
+function serveStatic(request, response, pathname, hasVersionParam) {
   const fileName = pathname === "/" ? "index.html" : pathname.slice(1);
   const filePath = path.resolve(ROOT, fileName);
 
@@ -995,11 +1092,37 @@ function serveStatic(request, response, pathname) {
     const headers = {
       "Content-Type": MIME_TYPES[ext] || "application/octet-stream"
     };
-    if ([".html", ".js", ".css"].includes(ext)) {
+    if (ext === ".html") {
+      // La page HTML elle-même n'est jamais versionnée par ?v=... : on la garde
+      // toujours fraîche pour être sûr que les nouvelles adresses de app.js/styles.css
+      // (avec leur numéro de version) soient vues immédiatement.
+      headers["Cache-Control"] = "no-store, no-cache, must-revalidate, proxy-revalidate";
+      headers.Pragma = "no-cache";
+      headers.Expires = "0";
+    } else if ([".js", ".css"].includes(ext) && hasVersionParam) {
+      // Adresse avec ?v=... : un changement de contenu change toujours cette adresse,
+      // donc on peut la garder longtemps en cache sans risquer de servir une version périmée.
+      headers["Cache-Control"] = "public, max-age=31536000, immutable";
+    } else if ([".js", ".css"].includes(ext)) {
       headers["Cache-Control"] = "no-store, no-cache, must-revalidate, proxy-revalidate";
       headers.Pragma = "no-cache";
       headers.Expires = "0";
     }
+
+    const acceptEncoding = String(request.headers["accept-encoding"] || "");
+    if (COMPRESSIBLE_EXTENSIONS.has(ext) && data.length > 1024 && acceptEncoding.includes("gzip")) {
+      zlib.gzip(data, (gzipError, compressed) => {
+        if (gzipError) {
+          response.writeHead(200, headers);
+          response.end(data);
+          return;
+        }
+        response.writeHead(200, { ...headers, "Content-Encoding": "gzip", Vary: "Accept-Encoding" });
+        response.end(compressed);
+      });
+      return;
+    }
+
     response.writeHead(200, headers);
     response.end(data);
   });
@@ -1007,6 +1130,26 @@ function serveStatic(request, response, pathname) {
 
 const server = http.createServer(async (request, response) => {
   const url = new URL(request.url, `http://${request.headers.host}`);
+
+  // En-têtes de sécurité envoyés sur toutes les réponses (protègent contre le
+  // clic-jacking, le flairage de type de fichier, et forcent le cadenas https).
+  response.setHeader("X-Content-Type-Options", "nosniff");
+  response.setHeader("X-Frame-Options", "SAMEORIGIN");
+  response.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  response.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+  response.setHeader(
+    "Content-Security-Policy",
+    "default-src 'self'; " +
+      "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; " +
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+      "font-src 'self' https://fonts.gstatic.com; " +
+      "img-src 'self' data: blob:; " +
+      "connect-src 'self'; " +
+      "worker-src 'self' blob: https://cdn.jsdelivr.net; " +
+      "frame-ancestors 'self'; " +
+      "object-src 'none'; " +
+      "base-uri 'self'"
+  );
 
   try {
     if (url.pathname.startsWith("/bat-2027/") && request.method === "GET") {
@@ -1029,8 +1172,35 @@ const server = http.createServer(async (request, response) => {
       return;
     }
 
+    if (url.pathname === "/api/admin-login" && request.method === "POST") {
+      const payload = JSON.parse(await readBody(request));
+      const code = String(payload.code || "").trim();
+      const codeBuffer = Buffer.from(code);
+      const expectedBuffer = Buffer.from(ADMIN_CODE);
+      const matches = codeBuffer.length === expectedBuffer.length && crypto.timingSafeEqual(codeBuffer, expectedBuffer);
+      if (!matches) {
+        sendJson(response, 401, { error: "Code administrateur incorrect" });
+        return;
+      }
+      const token = signToken({ role: "admin" }, ADMIN_SESSION_MAX_AGE);
+      setSessionCookie(response, ADMIN_SESSION_COOKIE, token, ADMIN_SESSION_MAX_AGE);
+      sendJson(response, 200, { ok: true });
+      return;
+    }
+
+    if (url.pathname === "/api/admin-logout" && request.method === "POST") {
+      clearSessionCookie(response, ADMIN_SESSION_COOKIE);
+      sendJson(response, 200, { ok: true });
+      return;
+    }
+
+    if (url.pathname === "/api/admin-session" && request.method === "GET") {
+      sendJson(response, 200, { authenticated: isAdminAuthenticated(request) });
+      return;
+    }
+
     if (url.pathname === "/api/responses" && request.method === "GET") {
-      if (request.headers["x-admin-code"] !== ADMIN_CODE) {
+      if (!isAdminAuthenticated(request)) {
         sendJson(response, 401, { error: "Code administrateur incorrect" });
         return;
       }
@@ -1039,8 +1209,13 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/pharmacy-responses" && request.method === "GET") {
-      const pharmacyId = url.searchParams.get("pharmacyId");
-      const pharmacyName = normalizeLookup(url.searchParams.get("pharmacyName"));
+      const pharmacySession = getPharmacySession(request);
+      if (!pharmacySession) {
+        sendJson(response, 401, { error: "Connexion pharmacie requise" });
+        return;
+      }
+      const pharmacyId = pharmacySession.id;
+      const pharmacyName = normalizeLookup(pharmacySession.name);
       const responses = latestResponses(readResponses()).filter((item) => {
         if (pharmacyId && item.pharmacyId === pharmacyId) return true;
         return pharmacyName && normalizeLookup(item.pharmacyName) === pharmacyName;
@@ -1129,7 +1304,7 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/validation" && request.method === "PUT") {
-      if (request.headers["x-admin-code"] !== ADMIN_CODE) {
+      if (!isAdminAuthenticated(request)) {
         sendJson(response, 401, { error: "Code administrateur incorrect" });
         return;
       }
@@ -1141,7 +1316,7 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/info-forms" && request.method === "PUT") {
-      if (request.headers["x-admin-code"] !== ADMIN_CODE) {
+      if (!isAdminAuthenticated(request)) {
         sendJson(response, 401, { error: "Code administrateur incorrect" });
         return;
       }
@@ -1161,7 +1336,7 @@ const server = http.createServer(async (request, response) => {
 
     if (url.pathname === "/api/pharmacies" && request.method === "GET") {
       const pharmacies = readPharmacies();
-      if (request.headers["x-admin-code"] === ADMIN_CODE) {
+      if (isAdminAuthenticated(request)) {
         sendJson(response, 200, pharmacies);
         return;
       }
@@ -1170,7 +1345,7 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/pharmacies" && request.method === "PUT") {
-      if (request.headers["x-admin-code"] !== ADMIN_CODE) {
+      if (!isAdminAuthenticated(request)) {
         sendJson(response, 401, { error: "Code administrateur incorrect" });
         return;
       }
@@ -1225,6 +1400,8 @@ const server = http.createServer(async (request, response) => {
         sendJson(response, 401, { error: "Mot de passe pharmacie incorrect" });
         return;
       }
+      const token = signToken({ role: "pharmacy", id: pharmacy.id, name: pharmacy.name }, PHARMACY_SESSION_MAX_AGE);
+      setSessionCookie(response, PHARMACY_SESSION_COOKIE, token, PHARMACY_SESSION_MAX_AGE);
       sendJson(response, 200, {
         id: pharmacy.id,
         name: pharmacy.name,
@@ -1233,11 +1410,22 @@ const server = http.createServer(async (request, response) => {
       return;
     }
 
+    if (url.pathname === "/api/pharmacy-logout" && request.method === "POST") {
+      clearSessionCookie(response, PHARMACY_SESSION_COOKIE);
+      sendJson(response, 200, { ok: true });
+      return;
+    }
+
     if (url.pathname === "/api/pharmacy-password" && request.method === "PUT") {
       const payload = JSON.parse(await readBody(request));
       const pharmacyId = String(payload.pharmacyId || "").trim();
       const oldPassword = String(payload.oldPassword || "").trim();
       const newPassword = String(payload.newPassword || "").trim();
+      const pharmacySession = getPharmacySession(request);
+      if (!pharmacySession || pharmacySession.id !== pharmacyId) {
+        sendJson(response, 401, { error: "Reconnectez-vous puis réessayez" });
+        return;
+      }
       const pharmacies = readPharmacies();
       const pharmacy = pharmacies.find((item) => item.active !== false && item.id === pharmacyId && item.password === oldPassword);
 
@@ -1259,12 +1447,14 @@ const server = http.createServer(async (request, response) => {
         passwordResetRequestedAt: ""
       } : item);
       writePharmacies(updatedPharmacies);
+      const token = signToken({ role: "pharmacy", id: pharmacy.id, name: pharmacy.name }, PHARMACY_SESSION_MAX_AGE);
+      setSessionCookie(response, PHARMACY_SESSION_COOKIE, token, PHARMACY_SESSION_MAX_AGE);
       sendJson(response, 200, { id: pharmacy.id, name: pharmacy.name, mustChangePassword: false });
       return;
     }
 
     if (url.pathname === "/api/orders" && request.method === "PUT") {
-      if (request.headers["x-admin-code"] !== ADMIN_CODE) {
+      if (!isAdminAuthenticated(request)) {
         sendJson(response, 401, { error: "Code administrateur incorrect" });
         return;
       }
@@ -1293,7 +1483,7 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/polls" && request.method === "PUT") {
-      if (request.headers["x-admin-code"] !== ADMIN_CODE) {
+      if (!isAdminAuthenticated(request)) {
         sendJson(response, 401, { error: "Code administrateur incorrect" });
         return;
       }
@@ -1328,7 +1518,7 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/order-template" && request.method === "PUT") {
-      if (request.headers["x-admin-code"] !== ADMIN_CODE) {
+      if (!isAdminAuthenticated(request)) {
         sendJson(response, 401, { error: "Code administrateur incorrect" });
         return;
       }
@@ -1342,7 +1532,7 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/poll-responses" && request.method === "GET") {
-      if (request.headers["x-admin-code"] !== ADMIN_CODE) {
+      if (!isAdminAuthenticated(request)) {
         sendJson(response, 401, { error: "Code administrateur incorrect" });
         return;
       }
@@ -1351,7 +1541,7 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/info-responses" && request.method === "GET") {
-      if (request.headers["x-admin-code"] !== ADMIN_CODE) {
+      if (!isAdminAuthenticated(request)) {
         sendJson(response, 401, { error: "Code administrateur incorrect" });
         return;
       }
@@ -1360,7 +1550,7 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/validation-responses" && request.method === "GET") {
-      if (request.headers["x-admin-code"] !== ADMIN_CODE) {
+      if (!isAdminAuthenticated(request)) {
         sendJson(response, 401, { error: "Code administrateur incorrect" });
         return;
       }
@@ -1369,7 +1559,7 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/validation-summary" && request.method === "GET") {
-      if (request.headers["x-admin-code"] !== ADMIN_CODE) {
+      if (!isAdminAuthenticated(request)) {
         sendJson(response, 401, { error: "Code administrateur incorrect" });
         return;
       }
@@ -1378,7 +1568,7 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/responses" && request.method === "PUT") {
-      if (request.headers["x-admin-code"] !== ADMIN_CODE) {
+      if (!isAdminAuthenticated(request)) {
         sendJson(response, 401, { error: "Code administrateur incorrect" });
         return;
       }
@@ -1411,7 +1601,7 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/poll-responses" && request.method === "PUT") {
-      if (request.headers["x-admin-code"] !== ADMIN_CODE) {
+      if (!isAdminAuthenticated(request)) {
         sendJson(response, 401, { error: "Code administrateur incorrect" });
         return;
       }
@@ -1436,7 +1626,7 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/info-responses" && request.method === "PUT") {
-      if (request.headers["x-admin-code"] !== ADMIN_CODE) {
+      if (!isAdminAuthenticated(request)) {
         sendJson(response, 401, { error: "Code administrateur incorrect" });
         return;
       }
@@ -1450,7 +1640,7 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/validation-responses" && request.method === "PUT") {
-      if (request.headers["x-admin-code"] !== ADMIN_CODE) {
+      if (!isAdminAuthenticated(request)) {
         sendJson(response, 401, { error: "Code administrateur incorrect" });
         return;
       }
@@ -1464,8 +1654,13 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/pharmacy-poll-responses" && request.method === "GET") {
-      const pharmacyId = url.searchParams.get("pharmacyId");
-      const pharmacyName = normalizeLookup(url.searchParams.get("pharmacyName"));
+      const pharmacySession = getPharmacySession(request);
+      if (!pharmacySession) {
+        sendJson(response, 401, { error: "Connexion pharmacie requise" });
+        return;
+      }
+      const pharmacyId = pharmacySession.id;
+      const pharmacyName = normalizeLookup(pharmacySession.name);
       const responses = latestPollResponses(readPollResponses())
         .filter((item) => {
           if (pharmacyId && item.pharmacyId === pharmacyId) return true;
@@ -1481,8 +1676,13 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/pharmacy-info-responses" && request.method === "GET") {
-      const pharmacyId = url.searchParams.get("pharmacyId");
-      const pharmacyName = normalizeLookup(url.searchParams.get("pharmacyName"));
+      const pharmacySession = getPharmacySession(request);
+      if (!pharmacySession) {
+        sendJson(response, 401, { error: "Connexion pharmacie requise" });
+        return;
+      }
+      const pharmacyId = pharmacySession.id;
+      const pharmacyName = normalizeLookup(pharmacySession.name);
       const responses = latestInfoResponses(readInfoResponses())
         .filter((item) => {
           if (pharmacyId && item.pharmacyId === pharmacyId) return true;
@@ -1493,8 +1693,13 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/pharmacy-validation-responses" && request.method === "GET") {
-      const pharmacyId = url.searchParams.get("pharmacyId");
-      const pharmacyName = normalizeLookup(url.searchParams.get("pharmacyName"));
+      const pharmacySession = getPharmacySession(request);
+      if (!pharmacySession) {
+        sendJson(response, 401, { error: "Connexion pharmacie requise" });
+        return;
+      }
+      const pharmacyId = pharmacySession.id;
+      const pharmacyName = normalizeLookup(pharmacySession.name);
       const responses = latestValidationResponses(readValidationResponses())
         .filter((item) => {
           if (pharmacyId && item.pharmacyId === pharmacyId) return true;
@@ -1505,7 +1710,14 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/responses" && request.method === "POST") {
+      const pharmacySession = getPharmacySession(request);
+      if (!pharmacySession) {
+        sendJson(response, 401, { error: "Connexion pharmacie requise" });
+        return;
+      }
       const payload = JSON.parse(await readBody(request));
+      payload.pharmacyId = pharmacySession.id;
+      payload.pharmacyName = pharmacySession.name;
       const responses = readResponses();
       const campaignId = String(payload.campaignId || "herboristerie");
       const products = normalizeResponseProducts(payload.products, campaignId);
@@ -1545,7 +1757,14 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/poll-responses" && request.method === "POST") {
+      const pharmacySession = getPharmacySession(request);
+      if (!pharmacySession) {
+        sendJson(response, 401, { error: "Connexion pharmacie requise" });
+        return;
+      }
       const payload = JSON.parse(await readBody(request));
+      payload.pharmacyId = pharmacySession.id;
+      payload.pharmacyName = pharmacySession.name;
       const responses = readPollResponses();
       const poll = readPolls().find((item) => item.id === String(payload.pollId || ""));
       const cleanedAnswers = stripMealAnswerIfAbsent(poll, normalizePollAnswersMap(payload.answers));
@@ -1579,7 +1798,14 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/info-responses" && request.method === "POST") {
+      const pharmacySession = getPharmacySession(request);
+      if (!pharmacySession) {
+        sendJson(response, 401, { error: "Connexion pharmacie requise" });
+        return;
+      }
       const payload = JSON.parse(await readBody(request));
+      payload.pharmacyId = pharmacySession.id;
+      payload.pharmacyName = pharmacySession.name;
       const responses = readInfoResponses();
       const incoming = normalizeInfoResponse(payload);
       const pharmacies = readPharmacies();
@@ -1599,7 +1825,14 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/validation-responses" && request.method === "POST") {
+      const pharmacySession = getPharmacySession(request);
+      if (!pharmacySession) {
+        sendJson(response, 401, { error: "Connexion pharmacie requise" });
+        return;
+      }
       const payload = JSON.parse(await readBody(request));
+      payload.pharmacyId = pharmacySession.id;
+      payload.pharmacyName = pharmacySession.name;
       const responses = readValidationResponses();
       const incoming = normalizeValidationResponse(payload);
       const pharmacies = readPharmacies();
@@ -1619,7 +1852,7 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/responses" && request.method === "DELETE") {
-      if (request.headers["x-admin-code"] !== ADMIN_CODE) {
+      if (!isAdminAuthenticated(request)) {
         sendJson(response, 401, { error: "Code administrateur incorrect" });
         return;
       }
@@ -1629,7 +1862,7 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname.startsWith("/api/responses/") && request.method === "DELETE") {
-      if (request.headers["x-admin-code"] !== ADMIN_CODE) {
+      if (!isAdminAuthenticated(request)) {
         sendJson(response, 401, { error: "Code administrateur incorrect" });
         return;
       }
@@ -1642,7 +1875,7 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/export.xls" && request.method === "GET") {
-      if (url.searchParams.get("code") !== ADMIN_CODE) {
+      if (!isAdminAuthenticated(request)) {
         sendJson(response, 401, { error: "Code administrateur incorrect" });
         return;
       }
@@ -1656,7 +1889,7 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/poll-export.xls" && request.method === "GET") {
-      if (url.searchParams.get("code") !== ADMIN_CODE) {
+      if (!isAdminAuthenticated(request)) {
         sendJson(response, 401, { error: "Code administrateur incorrect" });
         return;
       }
@@ -1670,7 +1903,7 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/info-export.xls" && request.method === "GET") {
-      if (url.searchParams.get("code") !== ADMIN_CODE) {
+      if (!isAdminAuthenticated(request)) {
         response.writeHead(401);
         response.end("Code administrateur incorrect");
         return;
@@ -1683,7 +1916,7 @@ const server = http.createServer(async (request, response) => {
       return;
     }
 
-    serveStatic(request, response, url.pathname);
+    serveStatic(request, response, url.pathname, url.searchParams.has("v"));
   } catch (error) {
     sendJson(response, 500, { error: error.message });
   }

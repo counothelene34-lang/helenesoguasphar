@@ -9,7 +9,6 @@ const VALIDATION_DOCUMENTS_KEY = "soguasphar_validation_documents_preview";
 const VALIDATION_TITLE_KEY = "soguasphar_validation_title_preview";
 const VALIDATION_MESSAGE_KEY = "soguasphar_validation_message_preview";
 const VALIDATION_ARCHIVED_KEY = "soguasphar_validation_archived_preview";
-const ADMIN_CODE = "SOGUASPHAR2026";
 const API_AVAILABLE = location.protocol === "http:" || location.protocol === "https:";
 const PHARMACY_SESSION_KEY = "soguasphar_current_pharmacy";
 // Préfixe du dossier où la page est servie (ex. "/preco-test/" en copie de test, "/" sur le vrai site),
@@ -693,7 +692,6 @@ async function saveValidationState(nextState) {
     try {
       const saved = await requestJson("/api/validation", {
         method: "PUT",
-        headers: { "X-Admin-Code": ADMIN_CODE },
         body: JSON.stringify(payload)
       });
       validationConfigState = {
@@ -724,7 +722,6 @@ async function getValidationResponses(options = {}) {
   if (API_AVAILABLE && adminUnlocked) {
     try {
       const responses = await requestJson("/api/validation-responses", {
-        headers: { "X-Admin-Code": ADMIN_CODE }
       });
       if (Array.isArray(responses)) {
         saveLocalBatResponses(responses);
@@ -748,7 +745,6 @@ async function getValidationResponses(options = {}) {
 async function getValidationSummary() {
   if (!API_AVAILABLE || !adminUnlocked) return null;
   return requestJson("/api/validation-summary", {
-    headers: { "X-Admin-Code": ADMIN_CODE }
   });
 }
 
@@ -800,7 +796,6 @@ async function saveValidationResponses(nextResponses) {
     try {
       const saved = await requestJson("/api/validation-responses", {
         method: "PUT",
-        headers: { "X-Admin-Code": ADMIN_CODE },
         body: JSON.stringify(nextResponses)
       });
       saveLocalBatResponses(saved);
@@ -877,7 +872,6 @@ async function saveInfoForms(nextForms) {
     try {
       const savedForms = await requestJson("/api/info-forms", {
         method: "PUT",
-        headers: { "X-Admin-Code": ADMIN_CODE },
         body: JSON.stringify(nextForms)
       });
       saveLocalInfoForms(savedForms);
@@ -896,7 +890,6 @@ async function getInfoResponses() {
 
   try {
     const responses = await requestJson("/api/info-responses", {
-      headers: adminUnlocked ? { "X-Admin-Code": ADMIN_CODE } : {}
     });
     if (Array.isArray(responses)) saveLocalInfoResponses(responses);
     return responses;
@@ -910,7 +903,6 @@ async function saveInfoResponses(nextResponses) {
     try {
       const savedResponses = await requestJson("/api/info-responses", {
         method: "PUT",
-        headers: { "X-Admin-Code": ADMIN_CODE },
         body: JSON.stringify(nextResponses)
       });
       saveLocalInfoResponses(savedResponses);
@@ -1106,7 +1098,6 @@ async function saveCampaigns(nextCampaigns) {
     try {
       await requestJson("/api/orders", {
         method: "PUT",
-        headers: { "X-Admin-Code": ADMIN_CODE },
         body: JSON.stringify(nextCampaigns)
       });
       return;
@@ -1136,7 +1127,6 @@ async function savePolls(nextPolls) {
   if (API_AVAILABLE) {
     const savedPolls = await requestJson("/api/polls", {
       method: "PUT",
-      headers: { "X-Admin-Code": ADMIN_CODE },
       body: JSON.stringify(nextPolls)
     });
     saveLocalPolls(savedPolls);
@@ -1152,7 +1142,6 @@ async function getPharmacies(admin = false) {
 
   try {
     return await requestJson("/api/pharmacies", {
-      headers: admin ? { "X-Admin-Code": ADMIN_CODE } : {}
     });
   } catch {
     return admin ? [] : { count: 0 };
@@ -1164,7 +1153,6 @@ async function savePharmacies(nextPharmacies) {
 
   return requestJson("/api/pharmacies", {
     method: "PUT",
-    headers: { "X-Admin-Code": ADMIN_CODE },
     body: JSON.stringify(nextPharmacies)
   });
 }
@@ -1266,7 +1254,6 @@ async function saveOrderTemplate(template) {
     try {
       await requestJson("/api/order-template", {
         method: "PUT",
-        headers: { "X-Admin-Code": ADMIN_CODE },
         body: JSON.stringify(template)
       });
       saveLocalOrderTemplate(template);
@@ -1284,7 +1271,6 @@ async function getResponses() {
 
   try {
     const responses = await requestJson("/api/responses", {
-      headers: adminUnlocked ? { "X-Admin-Code": ADMIN_CODE } : {}
     });
     const latest = latestResponses(responses);
     saveLocalResponses(latest);
@@ -1313,7 +1299,6 @@ async function clearResponses() {
     try {
       await requestJson("/api/responses", {
         method: "DELETE",
-        headers: { "X-Admin-Code": ADMIN_CODE }
       });
       saveLocalResponses([]);
       return;
@@ -1329,7 +1314,6 @@ async function deleteResponse(responseId) {
   if (API_AVAILABLE) {
     await requestJson(`/api/responses/${encodeURIComponent(responseId)}`, {
       method: "DELETE",
-      headers: { "X-Admin-Code": ADMIN_CODE }
     });
     return;
   }
@@ -1342,7 +1326,6 @@ async function getPollResponses() {
 
   try {
     const responses = await requestJson("/api/poll-responses", {
-      headers: adminUnlocked ? { "X-Admin-Code": ADMIN_CODE } : {}
     });
     if (Array.isArray(responses)) saveLocalPollResponses(responses);
     return responses;
@@ -4612,7 +4595,7 @@ async function exportPollToExcel() {
   if (!selectedAdminPoll) return;
 
   if (API_AVAILABLE && adminUnlocked) {
-    window.location.href = `/api/poll-export.xls?code=${encodeURIComponent(ADMIN_CODE)}&poll=${encodeURIComponent(selectedAdminPoll.id)}`;
+    window.location.href = `/api/poll-export.xls?poll=${encodeURIComponent(selectedAdminPoll.id)}`;
     adminMessage.textContent = "Export Excel du sondage généré.";
     return;
   }
@@ -4678,7 +4661,7 @@ async function exportPollToExcel() {
 function exportInfoToExcel() {
   if (!selectedAdminInfoForm) return;
   if (API_AVAILABLE && adminUnlocked) {
-    window.location.href = `/api/info-export.xls?code=${encodeURIComponent(ADMIN_CODE)}&form=${encodeURIComponent(selectedAdminInfoForm.id)}`;
+    window.location.href = `/api/info-export.xls?form=${encodeURIComponent(selectedAdminInfoForm.id)}`;
     adminMessage.textContent = "Export Excel des fiches pharmacies généré.";
     return;
   }
@@ -4841,7 +4824,7 @@ function exportBatToExcel() {
 async function exportToExcel() {
   if (API_AVAILABLE && adminUnlocked && selectedAdminCampaign) {
     const periodParam = selectedAdminPeriodId ? `&period=${encodeURIComponent(selectedAdminPeriodId)}` : "";
-    window.location.href = `/api/export.xls?code=${encodeURIComponent(ADMIN_CODE)}&campaign=${encodeURIComponent(selectedAdminCampaign.id)}${periodParam}`;
+    window.location.href = `/api/export.xls?campaign=${encodeURIComponent(selectedAdminCampaign.id)}${periodParam}`;
     adminMessage.textContent = "Export Excel généré.";
     return;
   }
@@ -5114,6 +5097,9 @@ pharmacyPasswordChangeForm.addEventListener("submit", async (event) => {
 });
 
 logoutPharmacyBtn.addEventListener("click", () => {
+  if (API_AVAILABLE) {
+    requestJson("/api/pharmacy-logout", { method: "POST" }).catch(() => {});
+  }
   currentPharmacy = null;
   pendingPasswordPharmacy = null;
   pendingInitialPassword = "";
@@ -6561,7 +6547,12 @@ form.addEventListener("reset", () => {
 adminLogin.addEventListener("submit", async (event) => {
   event.preventDefault();
   const code = document.querySelector("#adminCode").value.trim();
-  if (code !== ADMIN_CODE) {
+  try {
+    await requestJson("/api/admin-login", {
+      method: "POST",
+      body: JSON.stringify({ code })
+    });
+  } catch {
     adminMessage.textContent = "Code administrateur incorrect.";
     return;
   }
@@ -6619,6 +6610,15 @@ async function init() {
   if (publicResultsPollId && publicPollResultsPage) {
     showPublicPollResults(publicResultsPollId);
     return;
+  }
+
+  if (API_AVAILABLE) {
+    try {
+      const session = await requestJson("/api/admin-session");
+      adminUnlocked = Boolean(session?.authenticated);
+    } catch {
+      adminUnlocked = false;
+    }
   }
 
   campaignPicker.hidden = true;
