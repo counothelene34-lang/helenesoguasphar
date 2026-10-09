@@ -1726,14 +1726,32 @@ function archivedPeriodsForCampaign(campaign) {
 
 // Une opération archivée = une réponse (précommande) de la pharmacie sur une période
 // close d'une campagne. Une carte par opération (avec photo), pas une ligne par produit.
+// Les dates de réponse sont enregistrées au format français ("09/10/2026, 17:30:00"),
+// pas trié alphabétiquement dans le bon ordre : on les reconvertit en vraie date pour
+// classer les archives de la plus récente à la plus ancienne.
+function parseFrenchDateTime(value) {
+  const match = String(value || "").match(/(\d{1,2})\/(\d{1,2})\/(\d{4})(?:,?\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
+  if (!match) return 0;
+  const [, day, month, year, hour = "0", minute = "0", second = "0"] = match;
+  const timestamp = new Date(Number(year), Number(month) - 1, Number(day), Number(hour), Number(minute), Number(second)).getTime();
+  return Number.isNaN(timestamp) ? 0 : timestamp;
+}
+
+function archivedOperationSortTime(entry) {
+  return parseFrenchDateTime(entry.response.updatedAt)
+    || parseFrenchDateTime(entry.response.createdAt)
+    || 0;
+}
+
 function archivedOperationsForCurrentPharmacy() {
-  return campaigns
+  const entries = campaigns
     .filter((campaign) => !archivedOrdersFilterId || campaign.id === archivedOrdersFilterId)
     .flatMap((campaign) => archivedPeriodsForCampaign(campaign).flatMap((period) => {
       const response = pharmacyPeriodResponses[`${campaign.id}|${period.id || ""}`];
       if (!response) return [];
       return [{ campaign, period, response }];
     }));
+  return entries.sort((a, b) => archivedOperationSortTime(b) - archivedOperationSortTime(a));
 }
 
 function archivedOperationCard({ campaign, period, response }) {
@@ -1789,12 +1807,8 @@ async function hideArchivedResponse(responseId) {
 }
 
 function archivedOrderRowsForCurrentPharmacy() {
-  return campaigns
-    .filter((campaign) => !archivedOrdersFilterId || campaign.id === archivedOrdersFilterId)
-    .flatMap((campaign) => archivedPeriodsForCampaign(campaign).flatMap((period) => {
-      const response = pharmacyPeriodResponses[`${campaign.id}|${period.id || ""}`];
-      if (!response) return [];
-
+  return archivedOperationsForCurrentPharmacy()
+    .flatMap(({ campaign, period, response }) => {
       const operation = `${response.campaignTitle || campaign.title || "Précommande"}${period.id ? ` — ${periodLabel(period)}` : ""}`;
       const completedAt = response.updatedAt || response.createdAt || "-";
       if (campaignIsNotInterested(response)) {
@@ -1815,7 +1829,7 @@ function archivedOrderRowsForCurrentPharmacy() {
         designation: productDisplayLabel(product.values),
         quantity: product.quantity || ""
       }));
-    }));
+    });
 }
 
 // Recherche simple (insensible à la casse et aux accents) sur le nom de l'opération
