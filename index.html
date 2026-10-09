@@ -1,0 +1,993 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SOGUASPHAR - Commande pharmacies</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css?v=20261009-revert-securite">
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js" defer></script>
+  <script type="module">
+    import * as pdfjsLib from "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.min.mjs";
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.worker.min.mjs";
+    window.pdfjsLib = pdfjsLib;
+  </script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand" aria-label="SOGUASPHAR">
+      <img class="brand-logo" src="logo-soguasphar.png" alt="SOGUASPHAR">
+    </div>
+    <nav class="view-switch" aria-label="Changer de vue">
+      <button class="switch-btn active" data-view="formView" type="button">Formulaire</button>
+      <button class="switch-btn" data-view="adminView" type="button">Administration</button>
+    </nav>
+  </header>
+
+  <main>
+    <section id="formView" class="view active" aria-labelledby="formTitle">
+      <section id="pharmacyGate" class="pharmacy-gate" hidden>
+        <div class="pharmacy-gate-card">
+          <p class="eyebrow">Accès pharmacie</p>
+          <h2>Identifiez votre pharmacie</h2>
+          <p>Entrez le mot de passe transmis par SOGUASPHAR pour accéder aux commandes et sondages.</p>
+          <form id="pharmacyLoginForm">
+            <label for="pharmacyPassword">Mot de passe pharmacie</label>
+            <div class="password-field">
+              <input id="pharmacyPassword" type="password" autocomplete="current-password" placeholder="Mot de passe">
+              <button id="togglePharmacyPassword" class="password-toggle" type="button" aria-label="Afficher le mot de passe">Voir</button>
+            </div>
+            <button class="primary-btn" type="submit">Entrer</button>
+          </form>
+          <button id="forgotPharmacyPasswordBtn" class="link-btn" type="button">Mot de passe oublié ?</button>
+          <form id="forgotPharmacyPasswordForm" class="forgot-password-form" hidden>
+            <label for="forgotPharmacyName">Nom de la pharmacie</label>
+            <input id="forgotPharmacyName" type="text" autocomplete="organization" placeholder="Ex. Pharmacie du Centre">
+            <button class="ghost-btn" type="submit">Demander une réinitialisation</button>
+          </form>
+          <form id="pharmacyPasswordChangeForm" class="pharmacy-password-change" hidden>
+            <label for="newPharmacyPassword">Nouveau mot de passe</label>
+            <input id="newPharmacyPassword" type="password" autocomplete="new-password" placeholder="Nouveau mot de passe" minlength="6">
+            <label for="confirmPharmacyPassword">Confirmer le mot de passe</label>
+            <input id="confirmPharmacyPassword" type="password" autocomplete="new-password" placeholder="Confirmer le mot de passe" minlength="6">
+            <button class="primary-btn" type="submit">Enregistrer mon mot de passe</button>
+          </form>
+          <p id="pharmacyLoginMessage" class="status-message" role="status"></p>
+        </div>
+      </section>
+
+      <div id="pharmacySessionBar" class="pharmacy-session-bar" hidden>
+        <strong id="currentPharmacyName"></strong>
+        <button id="logoutPharmacyBtn" class="ghost-btn" type="button">Changer de pharmacie</button>
+      </div>
+
+      <div class="hero-actions-row" hidden>
+        <div class="hero-band">
+          <div class="hero-copy">
+            <h1 id="formTitle">Commande, précommande, confirmation</h1>
+          </div>
+        </div>
+        <div class="hero-menu" role="navigation">
+          <button id="viewPrecommandes" class="hero-menu-btn" type="button">
+            <span class="hero-menu-label">Précommandes en cours</span>
+          </button>
+          <button id="viewSondages" class="hero-menu-btn" type="button">
+            <span class="hero-menu-label">Sondages en cours</span>
+          </button>
+          <button id="viewArchives" class="hero-menu-btn" type="button">
+            <span class="hero-menu-label">Archivés</span>
+          </button>
+        </div>
+      </div>
+      <section id="precommandandesListPage" class="form-shell campaign-list-page" hidden>
+        <button id="backToPrecomandesMenuBtn" class="back-strong-btn" type="button">← Retour au menu</button>
+        <div class="section-head">
+          <div>
+            <h2>Précommandes en cours</h2>
+            <p>Retrouvez les précommandes disponibles, triées du plus récent.</p>
+          </div>
+        </div>
+        <div id="precommandandesListRows" class="campaign-list-container" aria-live="polite"></div>
+        <p id="precommandandesEmpty" class="empty-campaigns" hidden>Aucune précommande disponible pour le moment.</p>
+      </section>
+
+      <section id="satisfactionListPage" class="form-shell campaign-list-page" hidden>
+        <button id="backToSatisfactionListMenuBtn" class="back-strong-btn" type="button">← Retour au menu</button>
+        <div class="section-head">
+          <div>
+            <h2>Enquête de satisfaction Soguasphar</h2>
+            <p id="satisfactionListIntro">Cette enquête a pour objectif de recueillir votre avis sur la centrale SOGUASPHAR afin d'identifier les points à améliorer et de mieux répondre aux besoins des pharmacies. Merci pour votre participation !</p>
+          </div>
+        </div>
+        <div id="satisfactionCard" class="satisfaction-card-wrapper"></div>
+      </section>
+
+      <section id="sondagesListPage" class="form-shell campaign-list-page" hidden>
+        <button id="backToSondagesMenuBtn" class="back-strong-btn" type="button">← Retour au menu</button>
+        <div class="section-head">
+          <div>
+            <h2>Sondages en cours</h2>
+            <p>Retrouvez les sondages disponibles, triés du plus récent.</p>
+          </div>
+        </div>
+        <div id="sondagesListRows" class="campaign-list-container" aria-live="polite"></div>
+        <p id="sondagesEmpty" class="empty-campaigns" hidden>Aucun sondage disponible pour le moment.</p>
+      </section>
+
+      <section id="publicPollResultsPage" class="form-shell public-poll-results-page" hidden>
+        <div class="section-head">
+          <div>
+            <h2 id="publicPollResultsTitle">Résultats du sondage</h2>
+            <p id="publicPollResultsMeta"></p>
+          </div>
+        </div>
+        <div id="publicPollResultsCharts" class="poll-charts"></div>
+        <p id="publicPollResultsEmpty" class="empty-campaigns" hidden>Aucune réponse pour le moment.</p>
+        <p class="public-poll-refresh-note">Cette page se met à jour automatiquement dès qu'il y a une nouvelle réponse.</p>
+      </section>
+
+      <section id="archivedOrdersPanel" class="form-shell archived-orders-page" hidden>
+        <button id="backToArchivedOrdersMenuBtn" class="back-strong-btn" type="button">← Retour au menu</button>
+        <div class="section-head">
+          <div>
+            <h2>Archivés</h2>
+            <p>Retrouvez vos réponses sur les campagnes clôturées. Vous pouvez supprimer une opération de cette liste une fois la commande reçue et vérifiée.</p>
+          </div>
+          <button id="downloadArchivedOrdersPdfBtn" class="primary-btn" type="button">Télécharger PDF</button>
+        </div>
+        <div class="archived-orders-search">
+          <input id="archivedOrdersSearch" type="search" placeholder="Rechercher une opération archivée..." aria-label="Rechercher une opération archivée">
+        </div>
+        <div id="archivedOrdersRows" class="campaign-list-container" aria-live="polite"></div>
+        <p id="archivedOrdersEmpty" class="empty-campaigns" hidden>Aucune précommande archivée pour votre pharmacie pour le moment.</p>
+        <p id="archivedOrdersNoMatch" class="empty-campaigns" hidden>Aucune opération archivée ne correspond à votre recherche.</p>
+      </section>
+
+      <section id="satisfactionPage" class="form-shell satisfaction-page" hidden>
+        <button id="backToSatisfactionMenuBtn" class="back-strong-btn" type="button">← Retour au menu</button>
+        <p id="satisfactionDirectLink" class="campaign-direct-link" hidden></p>
+        <section class="question-block profile-intro-block">
+          <span class="poll-kicker">Questionnaire de satisfaction</span>
+          <h2 id="satisfactionPageTitle">Questionnaire de satisfaction</h2>
+          <p id="satisfactionPageIntro">Merci de répondre à chaque question ci-dessous.</p>
+        </section>
+        <form id="satisfactionForm" data-inline-poll-form="">
+          <input type="hidden" name="inlinePollPharmacy" value="">
+          <div id="satisfactionQuestions"></div>
+          <div id="satisfactionFreeTextBlock" class="question-block" hidden>
+            <label id="satisfactionFreeTextLabel" for="satisfactionFreeText">Commentaire</label>
+            <textarea id="satisfactionFreeText" name="inlinePollFreeText" rows="3"></textarea>
+          </div>
+          <div id="satisfactionSubmitRow" class="form-actions">
+            <button class="primary-btn" type="submit">Envoyer mes réponses</button>
+          </div>
+          <p id="satisfactionFormMessage" class="status-message inline-poll-message" role="status"></p>
+        </form>
+      </section>
+
+      <section id="campaignPicker" class="campaign-picker" aria-labelledby="campaignPickerTitle" hidden>
+        <div class="picker-head">
+          <h2 id="campaignPickerTitle">Choisissez une commande à remplir</h2>
+          <p>Sélectionnez la commande ou précommande concernée, puis indiquez vos quantités souhaitées. Si vous ne souhaitez pas participer, vous pouvez simplement répondre pas intéressé dans le formulaire merci.</p>
+        </div>
+        <div id="campaignCards" class="campaign-grid" aria-live="polite"></div>
+        <div class="campaign-sidebar">
+          <div class="poll-picker-block survey-picker-block">
+            <h2>Sondages disponibles</h2>
+            <p>Répondez en un clic aux questions proposées par SOGUASPHAR.</p>
+            <div id="pollCards" class="campaign-grid" aria-live="polite"></div>
+          </div>
+          <div id="batPickerBlock" class="poll-picker-block bat-picker-block" hidden>
+            <h2>Validation de précommande</h2>
+            <p>Vérifiez et validez le document lié à votre précommande.</p>
+            <div id="batCards" class="campaign-grid validation-grid" aria-live="polite"></div>
+          </div>
+          <div class="poll-picker-block info-picker-block">
+            <h2>Mise à jour des informations pharmacie</h2>
+            <p>Complétez ou corrigez les coordonnées, horaires, réseaux sociaux et services proposés par votre pharmacie.</p>
+            <div id="infoCards" class="campaign-grid" aria-live="polite"></div>
+          </div>
+        </div>
+      </section>
+
+      <form id="requestForm" class="form-shell" hidden>
+        <button id="backToCampaignsBtn" class="back-strong-btn" type="button">← Retour au menu</button>
+        <p id="campaignDirectLink" class="campaign-direct-link" hidden></p>
+        <section id="campaignNotice" class="campaign-notice" hidden></section>
+        <section id="campaignImageBlock" class="campaign-image-block" hidden>
+          <a id="campaignImageLink" href="#" data-preview-image>
+            <img id="campaignImage" alt="">
+          </a>
+        </section>
+        <section id="campaignImageBlock2" class="campaign-image-block" hidden>
+          <a id="campaignImageLink2" href="#" data-preview-image>
+            <img id="campaignImage2" alt="">
+          </a>
+        </section>
+        <section class="question-block">
+          <label for="pharmacyName">Nom de la pharmacie <span aria-hidden="true">*</span></label>
+          <input id="pharmacyName" name="pharmacyName" type="text" autocomplete="organization" required placeholder="Ex. Pharmacie du Centre">
+        </section>
+
+        <section class="question-block">
+          <span class="field-title">Votre réponse <span aria-hidden="true">*</span></span>
+          <div class="radio-list">
+            <label>
+              <input type="radio" name="interest" value="Interessé" required>
+              <span>Intéressé, je souhaite indiquer des quantités</span>
+            </label>
+            <label>
+              <input type="radio" name="interest" value="Pas intéressé" required>
+              <span>Pas intéressé</span>
+            </label>
+          </div>
+        </section>
+
+        <section id="quantitySection" class="question-block">
+          <div class="section-head">
+            <div>
+              <span class="field-title">Bon de commande</span>
+              <p>Renseignez uniquement les quantités souhaitées.</p>
+              <p><strong>Merci d'indiquer les quantités souhaitées, et non le nombre de colisages (exemple : si vous souhaitez 2 cartons de 6, notez 12 et non 2).</strong></p>
+            </div>
+            <span id="lineCount" class="line-count">0 ligne</span>
+          </div>
+          <div id="orderMessage" class="inline-message">Aucun bon de commande chargé pour le moment.</div>
+          <div class="order-wrap">
+            <table class="order-table">
+              <thead>
+                <tr id="orderTableHeadRow"></tr>
+              </thead>
+              <tbody id="productRows"></tbody>
+            </table>
+          </div>
+          <div id="mixedDiscountSummary" class="mixed-discount-summary" hidden></div>
+        </section>
+
+        <section class="question-block">
+          <label for="notes">Commentaire ou demande particulière</label>
+          <textarea id="notes" name="notes" rows="4" placeholder="Précision de livraison, préférence, contrainte, autre demande..."></textarea>
+        </section>
+
+        <div class="form-actions">
+          <button class="primary-btn" type="submit">Envoyer la réponse</button>
+          <button class="text-btn" type="reset">Réinitialiser</button>
+        </div>
+        <p id="formMessage" class="status-message" role="status"></p>
+      </form>
+
+      <form id="batValidationForm" class="form-shell bat-validation-shell" hidden>
+        <button id="backToBatListBtn" class="back-strong-btn" type="button">← Retour au menu</button>
+        <section class="question-block profile-intro-block">
+          <span class="poll-kicker">Validation</span>
+          <h2 id="batFormTitle">Validation en attente</h2>
+          <p id="batFormIntro">Validation et contrôle.</p>
+        </section>
+        <section class="question-block bat-pdf-block">
+          <div class="section-head">
+            <div>
+              <span class="field-title" id="batPdfTitle">Votre document</span>
+              <p>Ce document est rattaché à votre pharmacie.</p>
+            </div>
+            <a id="batPdfOpenLink" class="ghost-btn" href="#" rel="noopener">Télécharger le document</a>
+          </div>
+          <div id="batDocumentPreviewPanel" class="document-preview-link">
+            <img id="batDocumentPreview" alt="Aperçu du document à valider">
+            <object id="batDocumentPdfPreview" type="application/pdf" hidden>
+              <p>Prévisualisation PDF indisponible. Utilisez le bouton Télécharger le document.</p>
+            </object>
+          </div>
+        </section>
+        <section class="question-block">
+          <label for="batPharmacyName">Nom de la pharmacie <span aria-hidden="true">*</span></label>
+          <input id="batPharmacyName" type="text" autocomplete="organization" required>
+        </section>
+        <section id="batOrderSummaryBlock" class="question-block bat-order-summary" hidden>
+          <span class="field-title">Votre précommande</span>
+          <div id="batOrderSummaryContent" class="bat-order-summary-content"></div>
+        </section>
+        <section class="question-block">
+          <span class="field-title">Votre validation <span aria-hidden="true">*</span></span>
+          <div class="radio-list">
+            <label>
+              <input type="radio" name="batStatus" value="Validé" required>
+              <span>Validé</span>
+            </label>
+            <label>
+              <input type="radio" name="batStatus" value="Correction demandée" required>
+              <span>Correction demandée</span>
+            </label>
+          </div>
+        </section>
+        <section class="question-block">
+          <label for="batComment">Commentaire ou correction à apporter</label>
+          <textarea id="batComment" rows="4" placeholder="Indiquez précisément la correction demandée si besoin"></textarea>
+        </section>
+        <div class="form-actions">
+          <button class="primary-btn" type="submit">Envoyer la validation</button>
+        </div>
+        <p id="batMessage" class="status-message" role="status"></p>
+      </form>
+
+      <form id="pollForm" class="form-shell poll-shell" hidden>
+        <button id="backToPollsBtn" class="back-strong-btn" type="button">← Retour au menu</button>
+        <section class="question-block poll-identity-block">
+          <label for="pollPharmacyName">Nom de la pharmacie <span aria-hidden="true">*</span></label>
+          <input id="pollPharmacyName" name="pollPharmacyName" type="text" autocomplete="organization" required placeholder="Ex. Pharmacie du Centre">
+        </section>
+        <section class="question-block poll-question-block">
+          <div class="poll-message-head">
+            <span class="poll-kicker">Sondage SOGUASPHAR</span>
+            <span class="poll-choice-hint">1 choix possible</span>
+          </div>
+          <span id="pollQuestionTitle" class="field-title poll-question-title">Question</span>
+          <div id="pollOptions" class="radio-list poll-choice-list"></div>
+        </section>
+        <section id="pollFreeTextBlock" class="question-block poll-free-block" hidden>
+          <label id="pollFreeTextLabel" for="pollFreeText">Commentaire</label>
+          <textarea id="pollFreeText" name="pollFreeText" rows="3"></textarea>
+        </section>
+        <div class="form-actions poll-actions">
+          <button class="primary-btn poll-submit-btn" type="submit">Valider mon choix</button>
+        </div>
+        <p id="pollMessage" class="status-message" role="status"></p>
+      </form>
+
+      <form id="profileUpdateForm" class="form-shell profile-update-shell" hidden>
+        <button id="backToInfoFormsBtn" class="back-strong-btn" type="button">← Retour au menu</button>
+        <section class="question-block profile-intro-block">
+          <span class="poll-kicker">Fiche pharmacie SOGUASPHAR</span>
+          <h2 id="profileFormTitle">Mise à jour du site internet SOGUASPHAR : informations pharmacies</h2>
+          <p id="profileFormIntro">Merci de noter vos coordonnées, réseaux sociaux, horaires et services proposés.</p>
+        </section>
+        <section class="question-block">
+          <label for="profilePharmacyName">Nom de la pharmacie <span aria-hidden="true">*</span></label>
+          <input id="profilePharmacyName" type="text" autocomplete="organization" required placeholder="Ex. Pharmacie du Centre">
+        </section>
+        <section class="profile-grid-fields">
+          <label class="wide-field">Adresse
+            <input id="profileAddress" type="text" autocomplete="street-address" placeholder="Numéro et voie">
+          </label>
+          <label>Code postal
+            <input id="profilePostalCode" type="text" inputmode="numeric" autocomplete="postal-code" placeholder="97100">
+          </label>
+          <label>Ville
+            <input id="profileCity" type="text" autocomplete="address-level2" placeholder="Ville">
+          </label>
+          <label>Numéro de téléphone
+            <input id="profilePhone" type="tel" autocomplete="tel" placeholder="Ex. 0590 00 00 00">
+          </label>
+          <label>Adresse mail du titulaire
+            <input id="profileOwnerEmail" type="email" autocomplete="email" placeholder="titulaire@pharmacie.fr">
+          </label>
+          <label>Adresse mail de l'équipe
+            <input id="profileTeamEmail" type="email" placeholder="equipe@pharmacie.fr">
+          </label>
+          <label>Lien Facebook
+            <input id="profileFacebook" type="text" placeholder="Copier-coller le lien Facebook">
+          </label>
+          <label>Lien Instagram
+            <input id="profileInstagram" type="text" placeholder="Copier-coller le lien Instagram">
+          </label>
+          <label>Lien LinkedIn
+            <input id="profileLinkedin" type="text" placeholder="Copier-coller le lien LinkedIn">
+          </label>
+          <label>Lien TikTok
+            <input id="profileTiktok" type="text" placeholder="Copier-coller le lien TikTok">
+          </label>
+          <label>Site internet
+            <input id="profileWebsite" type="text" placeholder="Copier-coller le lien du site internet">
+          </label>
+        </section>
+        <section class="question-block">
+          <div class="section-head">
+            <div>
+              <span class="field-title">Horaires d'ouverture</span>
+              <p>Indiquez les horaires jour par jour. Cochez "coupure" si la pharmacie ferme entre midi et deux.</p>
+            </div>
+          </div>
+          <div id="profileHoursGrid" class="hours-grid"></div>
+        </section>
+        <section class="question-block">
+          <div class="section-head">
+            <div>
+              <span class="field-title">Services proposés dans la pharmacie</span>
+              <p>Cochez uniquement les services réellement disponibles.</p>
+            </div>
+          </div>
+          <div id="profileServicesGrid" class="services-grid"></div>
+          <label class="other-services-label" for="profileOtherServices">Autres services proposés dans la pharmacie</label>
+          <textarea id="profileOtherServices" rows="3" placeholder="Ajoutez les services non présents dans la liste"></textarea>
+        </section>
+        <section class="question-block">
+          <label for="profileNotes">Commentaire complémentaire</label>
+          <textarea id="profileNotes" rows="3" placeholder="Toute précision utile pour SOGUASPHAR"></textarea>
+        </section>
+        <div class="form-actions">
+          <button class="primary-btn" type="submit">Envoyer la mise à jour</button>
+          <button class="text-btn" type="reset">Réinitialiser</button>
+        </div>
+        <p id="profileMessage" class="status-message" role="status"></p>
+      </form>
+
+      <section id="responseSuccess" class="success-screen" hidden>
+        <div class="success-mark">✓</div>
+        <h2>Réponse enregistrée</h2>
+        <p>Merci, votre réponse a bien été transmise.</p>
+        <button id="returnToMenuBtn" class="primary-btn" type="button">Revenir au menu</button>
+      </section>
+    </section>
+
+    <section id="adminView" class="view" aria-labelledby="adminTitle">
+      <div class="admin-layout">
+        <aside class="admin-panel">
+          <p class="eyebrow">Espace administrateur</p>
+          <h1 id="adminTitle">Récapitulatif</h1>
+          <p>Accès réservé aux personnes disposant du code administrateur.</p>
+
+          <form id="adminLogin" class="admin-login">
+            <label for="adminCode">Code administrateur</label>
+            <input id="adminCode" type="password" autocomplete="current-password" placeholder="Saisir le code">
+            <button class="primary-btn" type="submit">Ouvrir le récap</button>
+          </form>
+          <p id="adminMessage" class="status-message" role="status"></p>
+        </aside>
+
+        <section id="adminContent" class="admin-content locked" aria-live="polite" hidden>
+          <section id="adminCampaignPicker" class="campaign-picker admin-campaign-picker" aria-labelledby="adminCampaignTitle">
+            <div class="picker-head">
+              <h2 id="adminCampaignTitle">Choisir une campagne à suivre</h2>
+              <p id="adminSectionIntro">Créez une nouvelle campagne, puis ouvrez-la pour importer le bon de commande.</p>
+            </div>
+            <div id="adminDashboardNav" class="admin-dashboard-nav" aria-label="Menu administrateur">
+              <div id="adminSummaryBar" class="admin-summary-bar" aria-label="Sommaire">
+                <button class="admin-summary-card" type="button" data-admin-section="campaigns">
+                  <span class="admin-summary-label">Précommandes en cours</span>
+                </button>
+                <button class="admin-summary-card" type="button" data-admin-section="polls">
+                  <span class="admin-summary-label">Sondages en cours</span>
+                </button>
+                <button class="admin-summary-card" type="button" data-admin-section="archives">
+                  <span class="admin-summary-label">Archivés</span>
+                </button>
+              </div>
+              <div class="admin-main-nav" aria-label="Rubriques administrateur">
+                <button class="admin-dashboard-btn admin-main-btn active" type="button" data-admin-group="new">Nouveau</button>
+                <button class="admin-dashboard-btn admin-main-btn" type="button" data-admin-group="current">En cours</button>
+                <button class="admin-dashboard-btn admin-main-btn" type="button" data-admin-group="archives">Archivés</button>
+                <button class="admin-dashboard-btn admin-main-btn" type="button" data-admin-group="pharmacies">Pharmacies</button>
+              </div>
+              <div class="admin-sub-nav" data-admin-subnav="new" aria-label="Créer un nouvel élément">
+                <button class="admin-dashboard-btn admin-sub-btn active" type="button" data-admin-section="new-campaign">Campagne précommande</button>
+                <button class="admin-dashboard-btn admin-sub-btn" type="button" data-admin-section="new-poll">Sondage</button>
+                <button class="admin-dashboard-btn admin-sub-btn" type="button" data-admin-section="new-validation">Validation</button>
+              </div>
+              <div class="admin-sub-nav" data-admin-subnav="current" aria-label="Éléments en cours" hidden>
+                <button class="admin-dashboard-btn admin-sub-btn" type="button" data-admin-section="campaigns">Campagnes en cours</button>
+                <button class="admin-dashboard-btn admin-sub-btn" type="button" data-admin-section="polls">Sondages en cours</button>
+                <button class="admin-dashboard-btn admin-sub-btn" type="button" data-admin-section="bat">Validations en attente</button>
+              </div>
+            </div>
+            <div id="adminResetAlert" class="admin-reset-alert" hidden></div>
+            <form id="createCampaignForm" class="create-campaign-form">
+              <label for="newCampaignTitle">Nouvelle précommande</label>
+              <div class="create-campaign-row">
+                <input id="newCampaignTitle" type="text" placeholder="Ex. Précommande solaire, calendrier, herboristerie..." autocomplete="off">
+                <button class="primary-btn" type="submit">Ajouter</button>
+              </div>
+            </form>
+            <form id="createPollForm" class="create-campaign-form">
+              <label for="newPollQuestion">Nouveau sondage</label>
+              <input id="newPollQuestion" type="text" placeholder="Ex. Assemblée générale du ..." autocomplete="off">
+              <div id="pollQuestionBlocks" class="poll-question-blocks"></div>
+              <button id="addPollQuestionBtn" class="ghost-btn" type="button">+ Ajouter une autre question</button>
+              <p class="field-hint">Pour chaque question, indiquez les réponses possibles, une par ligne (ou séparées par une virgule) — au moins deux réponses. Ajoutez plusieurs questions si besoin, par exemple « Présence à l'AG » et « Choix du repas » : la pharmacie répondra aux deux dans le même sondage.</p>
+              <label for="newPollFreeLabel">Champ libre visible par la pharmacie</label>
+              <input id="newPollFreeLabel" type="text" placeholder="Ex. Nom de la ou les personnes présentes">
+              <label class="checkbox-line">
+                <input id="newPollFreeRequired" type="checkbox">
+                <span>Rendre ce champ obligatoire</span>
+              </label>
+              <label class="checkbox-line">
+                <input id="newPollIsSatisfaction" type="checkbox">
+                <span>C'est le questionnaire de satisfaction annuel (affiché à part, dans sa propre page, pas mélangé aux sondages rapides)</span>
+              </label>
+              <label for="newPollImageFile">Image visible sur le sondage (facultatif)</label>
+              <div class="upload-actions">
+                <label class="file-btn" for="newPollImageFile">Choisir une image</label>
+                <input id="newPollImageFile" type="file" accept="image/*">
+                <button id="removeNewPollImageBtn" class="ghost-btn" type="button" hidden>Retirer l'image</button>
+              </div>
+              <div id="newPollImagePreview" class="campaign-image-admin-preview" hidden>
+                <img id="newPollImagePreviewImg" alt="">
+              </div>
+              <p id="newPollImageMessage" class="status-message" role="status"></p>
+              <button class="primary-btn" type="submit">Créer le sondage</button>
+              <p id="createPollMessage" class="status-message" role="status"></p>
+            </form>
+            <form id="createInfoForm" class="create-campaign-form">
+              <label for="newInfoTitle">Nouvelle mise à jour fiche pharmacie</label>
+              <input id="newInfoTitle" type="text" placeholder="Ex. Mise à jour du site internet SOGUASPHAR : informations pharmacies" autocomplete="off">
+              <label for="newInfoIntro">Message visible par la pharmacie</label>
+              <textarea id="newInfoIntro" rows="3" placeholder="Merci de noter vos coordonnées, réseaux sociaux, horaires et services proposés."></textarea>
+              <button class="primary-btn" type="submit">Créer la demande</button>
+            </form>
+            <form id="createValidationForm" class="create-campaign-form">
+              <label for="newValidationTitle">Nouvelle validation</label>
+              <input id="newValidationTitle" type="text" placeholder="Ex. Validation calendrier, contrôle cadeaux, validation affiche..." autocomplete="off">
+              <label for="batAdminMessage">Message visible par la pharmacie</label>
+              <textarea id="batAdminMessage" rows="3" placeholder="Ex. Merci de contrôler votre document et de valider ou demander une correction."></textarea>
+              <label for="validationDocumentInput">Documents à rattacher aux pharmacies</label>
+              <input id="validationDocumentInput" type="file" accept=".pdf,image/*" multiple>
+              <p class="form-help">Le nom de la pharmacie doit apparaître dans le nom du fichier, ex. DU GOSIER.pdf.</p>
+              <p id="validationImportMessage" class="status-message" role="status"></p>
+              <button id="saveBatAdminMessageBtn" class="primary-btn" type="submit">Créer la validation</button>
+            </form>
+            <form id="createPharmacyForm" class="create-campaign-form">
+              <label for="newPharmacyName">Nouvel accès pharmacie</label>
+              <div class="create-campaign-row">
+                <input id="newPharmacyName" type="text" placeholder="Ex. Pharmacie du Centre" autocomplete="off">
+                <button class="primary-btn" type="submit">Créer l'accès</button>
+              </div>
+              <p class="form-help">Un mot de passe est généré automatiquement.</p>
+            </form>
+            <div id="pharmacyAccountsList" class="pharmacy-accounts-list"></div>
+            <div class="closed-campaign-actions">
+              <button id="showClosedCampaignsBtn" class="ghost-btn" type="button">Campagnes clôturées</button>
+            </div>
+            <div id="adminCampaignCards" class="campaign-grid" aria-live="polite"></div>
+            <div class="poll-picker-block" id="adminBatBlock">
+              <h2>Validations en attente</h2>
+              <div id="adminBatCards" class="campaign-grid" aria-live="polite"></div>
+            </div>
+            <div class="poll-picker-block" id="adminPollBlock">
+              <h2>Sondages</h2>
+              <div id="adminPollCards" class="campaign-grid" aria-live="polite"></div>
+            </div>
+            <div class="poll-picker-block info-picker-block" id="adminInfoBlock">
+              <h2>Fiches pharmacies</h2>
+              <div id="adminInfoCards" class="campaign-grid" aria-live="polite"></div>
+            </div>
+          </section>
+
+          <div id="adminDetail" hidden>
+          <button id="backToAdminCampaignsBtn" class="back-strong-btn" type="button">← Retour aux commandes</button>
+          <div class="selected-campaign-title">
+            <p class="eyebrow">Campagne sélectionnée</p>
+            <h2 id="adminSelectedCampaignName">Commande</h2>
+          </div>
+
+          <section class="admin-message-editor">
+            <label for="campaignPharmacyMessage">Message visible par les pharmacies</label>
+            <textarea id="campaignPharmacyMessage" rows="3" placeholder="Ex. Merci de répondre avant vendredi. Livraison prévue semaine prochaine."></textarea>
+            <label for="campaignDeliveryDate">Date de livraison approximative</label>
+            <input id="campaignDeliveryDate" type="date">
+            <button id="saveCampaignMessageBtn" class="primary-btn" type="button">Enregistrer</button>
+          </section>
+
+          <section class="admin-message-editor">
+            <label for="campaignImageFile">Image visible sur la commande</label>
+            <div class="upload-actions">
+              <label class="file-btn" for="campaignImageFile">Choisir une image</label>
+              <input id="campaignImageFile" type="file" accept="image/*">
+              <button id="removeCampaignImageBtn" class="ghost-btn" type="button">Retirer l'image</button>
+            </div>
+            <div id="campaignImageAdminPreview" class="campaign-image-admin-preview" hidden>
+              <a id="campaignImageAdminLink" href="#" data-preview-image>
+                <img id="campaignImageAdmin" alt="">
+              </a>
+            </div>
+            <div class="upload-actions">
+              <label class="file-btn" for="campaignImageFile2">Choisir une deuxième image</label>
+              <input id="campaignImageFile2" type="file" accept="image/*">
+              <button id="removeCampaignImageBtn2" class="ghost-btn" type="button">Retirer la deuxième image</button>
+            </div>
+            <div id="campaignImageAdminPreview2" class="campaign-image-admin-preview" hidden>
+              <a id="campaignImageAdminLink2" href="#" data-preview-image>
+                <img id="campaignImageAdmin2" alt="">
+              </a>
+            </div>
+            <p id="campaignImageMessage" class="status-message" role="status"></p>
+          </section>
+
+          <section class="admin-message-editor" id="campaignPeriodsSection">
+            <label>Périodes de cette opération</label>
+            <p class="form-help">Chaque période a sa date de début (l'opération devient visible pour les pharmacies) et sa date de clôture (elle disparaît automatiquement). Ajouter une nouvelle période remet les commandes à zéro ; les périodes passées restent consultables en archive.</p>
+            <div id="campaignPeriodsList" class="periods-list"></div>
+            <form id="addCampaignPeriodForm" class="add-period-form">
+              <div>
+                <label for="newPeriodStart">Date de début</label>
+                <input id="newPeriodStart" type="date" required>
+              </div>
+              <div>
+                <label for="newPeriodEnd">Date de clôture</label>
+                <input id="newPeriodEnd" type="date" required>
+              </div>
+              <button class="primary-btn" type="submit">Ajouter cette période</button>
+            </form>
+            <p id="campaignPeriodsMessage" class="status-message" role="status"></p>
+          </section>
+
+          <div class="metrics">
+            <div>
+              <span id="totalResponses">0</span>
+              <p>réponses</p>
+            </div>
+            <div>
+              <span id="interestedResponses">0</span>
+              <p>intéressées</p>
+            </div>
+            <div>
+              <span id="notInterestedResponses">0</span>
+              <p>pas intéressées</p>
+            </div>
+            <div>
+              <span id="unansweredResponses">0</span>
+              <p>sans réponse</p>
+            </div>
+          </div>
+
+          <section class="admin-overview">
+            <div>
+              <h2>Vue d'ensemble</h2>
+              <p>Suivi rapide des pharmacies ayant répondu.</p>
+            </div>
+            <div class="overview-grid">
+              <div class="overview-box">
+                <h3>Pharmacies ayant répondu</h3>
+                <ul id="answeredPharmacies">
+                  <li>Aucune réponse pour le moment.</li>
+                </ul>
+              </div>
+              <div class="overview-box">
+                <h3>Pas intéressées</h3>
+                <ul id="notInterestedPharmacies">
+                  <li>Aucune pharmacie pour le moment.</li>
+                </ul>
+              </div>
+              <div class="overview-box alert-box">
+                <h3>N'ont pas répondu</h3>
+                <ul id="unansweredPharmacies">
+                  <li>Aucune pharmacie à relancer.</li>
+                </ul>
+              </div>
+            </div>
+          </section>
+
+          <section class="admin-upload">
+            <div>
+              <h2>Bon de commande</h2>
+              <p>Importer un fichier Excel, CSV ou PDF. Les colonnes de votre fichier sont conservées telles quelles, quel que soit leur nom ou leur ordre. Il vous sera juste demandé de confirmer quelle colonne contient le colisage minimum de commande.</p>
+            </div>
+            <div class="upload-actions">
+              <label class="file-btn" for="orderFile">Importer Excel / PDF</label>
+              <input id="orderFile" type="file" accept=".xlsx,.xls,.csv,.tsv,.txt,.pdf">
+              <button id="downloadTemplateBtn" class="ghost-btn" type="button">Exemple de fichier Excel</button>
+            </div>
+            <p id="orderAdminMessage" class="status-message" role="status"></p>
+            <div id="orderImportConfirm" class="order-import-confirm" hidden>
+              <p>Colonnes détectées dans le fichier : <strong id="orderImportColumnsSummary"></strong></p>
+              <label for="orderImportColisageSelect">Quelle colonne contient le colisage minimum de commande ?</label>
+              <select id="orderImportColisageSelect"></select>
+              <p class="form-help">Choisissez "Aucune" si le fichier n'en comporte pas — aucun contrôle de colisage minimum ne sera alors appliqué.</p>
+              <div class="table-wrap compact">
+                <table>
+                  <thead><tr id="orderImportPreviewHead"></tr></thead>
+                  <tbody id="orderImportPreviewBody"></tbody>
+                </table>
+              </div>
+              <p class="form-help">Aperçu des 5 premières lignes sur <span id="orderImportRowCount">0</span> détectées au total.</p>
+              <div class="upload-actions">
+                <button id="orderImportConfirmBtn" class="primary-btn" type="button">Valider cet import</button>
+                <button id="orderImportCancelBtn" class="ghost-btn" type="button">Annuler</button>
+              </div>
+            </div>
+            <div class="table-wrap compact">
+              <table>
+                <thead>
+                  <tr id="orderTemplateHeadRow"></tr>
+                </thead>
+                <tbody id="orderTemplateTable">
+                  <tr>
+                    <td class="empty-state">Aucun bon de commande chargé.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <div class="table-toolbar">
+            <div>
+              <h2>Détail des commandes</h2>
+              <p>Le détail complet est disponible via l'export Excel.</p>
+              <label for="campaignPeriodFilter" id="campaignPeriodFilterLabel" hidden>Période affichée</label>
+              <select id="campaignPeriodFilter" hidden></select>
+            </div>
+            <div class="toolbar-actions">
+              <button id="exportExcelBtn" class="primary-btn" type="button">Exporter Excel</button>
+              <button id="quantitySummaryBtn" class="ghost-btn" type="button">Récap des quantités</button>
+            </div>
+          </div>
+
+          <section id="quantitySummary" class="quantity-summary" hidden>
+            <div class="section-head">
+              <div>
+                <h2>Récap des quantités commandées</h2>
+                <p>Total cumulé par produit pour la campagne sélectionnée.</p>
+              </div>
+              <button id="exportQuantitySummaryPdfBtn" class="ghost-btn" type="button">Exporter PDF</button>
+              <button id="exportQuantitySummaryExcelBtn" class="ghost-btn" type="button">Exporter Excel</button>
+            </div>
+            <div class="table-wrap compact">
+              <table>
+                <thead>
+                  <tr id="quantitySummaryHeadRow"></tr>
+                </thead>
+                <tbody id="quantitySummaryTable">
+                  <tr>
+                    <td class="empty-state">Aucune quantité commandée pour le moment.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th></th>
+                  <th>Date</th>
+                  <th>Pharmacie</th>
+                  <th>Statut</th>
+                  <th>Produits / quantités</th>
+                  <th>Commentaire</th>
+                </tr>
+              </thead>
+              <tbody id="responsesTable">
+                <tr>
+                  <td colspan="6" class="empty-state">Aucune réponse enregistrée pour le moment.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          </div>
+
+          <div id="adminPollDetail" hidden>
+            <button id="backToAdminPollsBtn" class="back-strong-btn" type="button">← Retour aux sondages</button>
+            <div class="selected-campaign-title">
+              <p class="eyebrow">Sondage sélectionné</p>
+              <h2 id="adminPollTitle">Sondage</h2>
+            </div>
+
+            <section class="admin-message-editor">
+              <label for="pollTitleEdit">Modifier le titre du sondage</label>
+              <input id="pollTitleEdit" type="text" placeholder="Titre du sondage">
+              <button id="savePollTitleBtn" class="primary-btn" type="button">Enregistrer le titre</button>
+              <p id="pollTitleMessage" class="status-message" role="status"></p>
+            </section>
+
+            <section class="admin-message-editor">
+              <label for="pollImageFile">Image visible sur le sondage</label>
+              <div class="upload-actions">
+                <label class="file-btn" for="pollImageFile">Choisir une image</label>
+                <input id="pollImageFile" type="file" accept="image/*">
+                <button id="removePollImageBtn" class="ghost-btn" type="button">Retirer l'image</button>
+              </div>
+              <div id="pollImageAdminPreview" class="campaign-image-admin-preview" hidden>
+                <a id="pollImageAdminLink" href="#" data-preview-image>
+                  <img id="pollImageAdmin" alt="">
+                </a>
+              </div>
+              <p id="pollImageMessage" class="status-message" role="status"></p>
+            </section>
+
+            <div id="pollResultsSummary" class="metrics"></div>
+            <div id="pollChartsContainer" class="poll-charts"></div>
+            <section class="admin-overview poll-overview">
+              <div>
+                <h2>Vue d'ensemble</h2>
+                <p>Suivi rapide des pharmacies pour ce sondage.</p>
+              </div>
+              <div class="overview-grid two-columns">
+                <div class="overview-box">
+                  <h3>Pharmacies ayant répondu</h3>
+                  <ul id="pollAnsweredPharmacies">
+                    <li>Aucune réponse pour le moment.</li>
+                  </ul>
+                </div>
+                <div class="overview-box alert-box">
+                  <h3>N'ont pas répondu</h3>
+                  <ul id="pollUnansweredPharmacies">
+                    <li>Aucune pharmacie à relancer.</li>
+                  </ul>
+                </div>
+              </div>
+            </section>
+            <div class="table-toolbar">
+              <div>
+                <h2>Réponses au sondage</h2>
+                <p>Suivi des pharmacies ayant répondu et export Excel.</p>
+              </div>
+              <button id="exportPollExcelBtn" class="primary-btn" type="button">Exporter Excel</button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Pharmacie</th>
+                    <th>Réponse</th>
+                    <th>Commentaire / précision</th>
+                  </tr>
+                </thead>
+                <tbody id="pollResponsesTable">
+                  <tr>
+                    <td colspan="4" class="empty-state">Aucune réponse enregistrée pour le moment.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div id="adminBatDetail" hidden>
+            <button id="backToAdminBatBtn" class="back-strong-btn" type="button">← Retour validations</button>
+            <div class="selected-campaign-title">
+              <p class="eyebrow">Validation</p>
+              <h2>Validation en attente</h2>
+              <div class="campaign-actions validation-detail-actions">
+                <button class="ghost-btn" type="button" data-toggle-validation-archive>Archiver</button>
+                <button class="delete-campaign-btn" type="button" title="Supprimer la validation" aria-label="Supprimer la validation" data-delete-validation>&#128465;</button>
+              </div>
+            </div>
+            <section class="admin-upload validation-upload">
+              <h2>Importer des documents à valider</h2>
+              <p>Ajoutez les PDF ou images. Le rattachement se fait automatiquement si le nom de la pharmacie apparaît dans le nom du fichier.</p>
+              <div class="upload-actions">
+                <input id="adminValidationDocumentInput" type="file" accept=".pdf,image/*" multiple>
+              </div>
+              <p id="adminValidationImportMessage" class="status-message" role="status"></p>
+            </section>
+            <div id="batResultsSummary" class="metrics"></div>
+            <div class="table-toolbar">
+              <div>
+                <h2>Documents en attente validation</h2>
+                <p>Liste complète des documents liés aux pharmacies.</p>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Pharmacie</th>
+                    <th>Statut</th>
+                    <th>Document</th>
+                  </tr>
+                </thead>
+                <tbody id="batDocumentsTable">
+                  <tr><td colspan="3" class="empty-state">Aucun document disponible.</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <section class="admin-overview poll-overview">
+              <div>
+                <h2>Vue d'ensemble</h2>
+                <p>Suivi des pharmacies ayant contrôlé leur document.</p>
+              </div>
+              <div class="overview-grid three-columns">
+                <div class="overview-box">
+                  <h3>Validations validées</h3>
+                  <ul id="batValidatedPharmacies"><li>Aucune validation pour le moment.</li></ul>
+                </div>
+                <div class="overview-box alert-box">
+                  <h3>Corrections demandées</h3>
+                  <ul id="batCorrectionPharmacies"><li>Aucune correction pour le moment.</li></ul>
+                </div>
+                <div class="overview-box alert-box">
+                  <h3>N'ont pas répondu</h3>
+                  <ul id="batUnansweredPharmacies"><li>Aucune pharmacie à relancer.</li></ul>
+                </div>
+              </div>
+            </section>
+            <div class="table-toolbar">
+              <div>
+                <h2>Détail des validations</h2>
+                <p>Réponses reçues pour chaque document pharmacie.</p>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Pharmacie</th>
+                    <th>Statut</th>
+                    <th>Commentaire</th>
+                    <th>PDF</th>
+                  </tr>
+                </thead>
+                <tbody id="batResponsesTable">
+                  <tr><td colspan="5" class="empty-state">Aucune validation pour le moment.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div id="adminInfoDetail" hidden>
+            <button id="backToAdminInfoBtn" class="back-strong-btn" type="button">← Retour aux fiches pharmacies</button>
+            <div class="selected-campaign-title">
+              <p class="eyebrow">Mise à jour sélectionnée</p>
+              <h2 id="adminInfoTitle">Fiche pharmacie</h2>
+            </div>
+            <div id="infoResultsSummary" class="metrics"></div>
+            <section class="admin-overview poll-overview">
+              <div>
+                <h2>Vue d'ensemble</h2>
+                <p>Suivi des pharmacies ayant transmis leur fiche à jour.</p>
+              </div>
+              <div class="overview-grid two-columns">
+                <div class="overview-box">
+                  <h3>Pharmacies ayant répondu</h3>
+                  <ul id="infoAnsweredPharmacies">
+                    <li>Aucune réponse pour le moment.</li>
+                  </ul>
+                </div>
+                <div class="overview-box alert-box">
+                  <h3>N'ont pas répondu</h3>
+                  <ul id="infoUnansweredPharmacies">
+                    <li>Aucune pharmacie à relancer.</li>
+                  </ul>
+                </div>
+              </div>
+            </section>
+            <div class="table-toolbar">
+              <div>
+                <h2>Données reçues</h2>
+                <p>Coordonnées, réseaux sociaux, horaires et services déclarés.</p>
+              </div>
+              <button id="exportInfoExcelBtn" class="primary-btn" type="button">Exporter Excel</button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Pharmacie</th>
+                    <th>Coordonnées</th>
+                    <th>Réseaux / site</th>
+                    <th>Horaires</th>
+                    <th>Services</th>
+                  </tr>
+                </thead>
+                <tbody id="infoResponsesTable">
+                  <tr>
+                    <td colspan="6" class="empty-state">Aucune fiche reçue pour le moment.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <div id="imagePreviewModal" class="image-preview-modal" role="dialog" aria-modal="true" aria-labelledby="imagePreviewTitle" hidden>
+    <div class="image-preview-backdrop" data-close-image-preview></div>
+    <div class="image-preview-dialog">
+      <div class="image-preview-head">
+        <h2 id="imagePreviewTitle">Prévisualisation</h2>
+        <button id="imagePreviewClose" class="image-preview-close" type="button" aria-label="Fermer la prévisualisation">X</button>
+      </div>
+      <img id="imagePreviewImg" alt="">
+      <button id="imagePreviewCloseBtn" class="primary-btn" type="button">Fermer</button>
+    </div>
+  </div>
+
+  <script src="app.js?v=20261009-revert-securite"></script>
+</body>
+</html>

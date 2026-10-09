@@ -1,0 +1,29 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: soguasphar-preco-test
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      ADMIN_CODE: ${ADMIN_CODE:-SOGUASPHAR2026}
+      SESSION_SECRET: ${SESSION_SECRET}
+    volumes:
+      - ./data:/app/data
+    networks:
+      - web
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=web"
+      - "traefik.http.routers.app-preco-test.rule=Host(`apps.soguasphar.fr`) && PathPrefix(`/preco-test`)"
+      - "traefik.http.routers.app-preco-test.entrypoints=websecure"
+      - "traefik.http.routers.app-preco-test.tls.certresolver=le"
+      - "traefik.http.middlewares.app-preco-test-sp.stripprefix.prefixes=/preco-test"
+      - "traefik.http.routers.app-preco-test.middlewares=app-preco-test-sp"
+      - "traefik.http.services.app-preco-test.loadbalancer.server.port=3000"
+
+networks:
+  web:
+    external: true
