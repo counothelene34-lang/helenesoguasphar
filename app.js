@@ -1721,6 +1721,70 @@ function archivedPeriodsForCampaign(campaign) {
   return periods.filter((period) => period.startDate <= today && period !== active);
 }
 
+// Une opération archivée = une réponse (précommande) de la pharmacie sur une période
+// close d'une campagne. Une carte par opération (avec photo), pas une ligne par produit.
+function archivedOperationsForCurrentPharmacy() {
+  return campaigns
+    .filter((campaign) => !archivedOrdersFilterId || campaign.id === archivedOrdersFilterId)
+    .flatMap((campaign) => archivedPeriodsForCampaign(campaign).flatMap((period) => {
+      const response = pharmacyPeriodResponses[`${campaign.id}|${period.id || ""}`];
+      if (!response) return [];
+      return [{ campaign, period, response }];
+    }));
+}
+
+function archivedOperationCard({ campaign, period, response }) {
+  const imageMarkup = [campaign.imageData, campaign.imageData2]
+    .filter(Boolean)
+    .map((imageData, index) => `<a class="campaign-card-image" href="${imageData}" data-preview-image title="Voir la photo ${index + 1}"><img src="${imageData}" alt="Image ${index + 1} ${escapeHtml(campaign.title)}"></a>`)
+    .join("");
+  const operationLabel = `${response.campaignTitle || campaign.title || "Précommande"}${period.id ? ` — ${periodLabel(period)}` : ""}`;
+  const completedDate = response.updatedAt
+    ? `Modifiée le ${escapeHtml(response.updatedAt)}`
+    : `Réalisée le ${escapeHtml(response.createdAt || "")}`;
+  const summary = campaignResponseSummary(response);
+  return `
+    <article class="campaign-card completed archived-order-card">
+      ${imageMarkup}
+      <div>
+        <div class="campaign-card-top">
+          <span class="campaign-type closed">Archivée</span>
+          <button class="delete-campaign-btn" type="button" title="Supprimer cette archive" aria-label="Supprimer ${escapeHtml(operationLabel)}" data-hide-archived-response="${escapeHtml(response.id)}">&#128465;</button>
+        </div>
+        <h3>${escapeHtml(operationLabel)}</h3>
+        <div class="campaign-done-summary"><strong>Réponse envoyée</strong><span>${escapeHtml(summary)}</span></div>
+      </div>
+      <div class="campaign-foot">
+        <span>${completedDate}</span>
+      </div>
+    </article>
+  `;
+}
+
+// Une pharmacie supprime une opération de SA liste "Archivés" une fois la commande
+// reçue et vérifiée. On ne détruit rien : la réponse reste visible côté admin, elle
+// disparaît seulement de la vue de cette pharmacie (voir route /api/pharmacy-responses/hide).
+async function hideArchivedResponse(responseId) {
+  if (!currentPharmacy) return;
+  try {
+    await requestJson("/api/pharmacy-responses/hide", {
+      method: "POST",
+      body: JSON.stringify({
+        id: responseId,
+        pharmacyId: currentPharmacy.id,
+        pharmacyName: currentPharmacy.name || ""
+      })
+    });
+  } catch {
+    alert("Impossible de supprimer cette archive pour le moment. Réessayez dans un instant.");
+    return;
+  }
+  Object.keys(pharmacyPeriodResponses).forEach((key) => {
+    if (pharmacyPeriodResponses[key]?.id === responseId) delete pharmacyPeriodResponses[key];
+  });
+  renderArchivedOrdersHistory();
+}
+
 function archivedOrderRowsForCurrentPharmacy() {
   return campaigns
     .filter((campaign) => !archivedOrdersFilterId || campaign.id === archivedOrdersFilterId)
@@ -1754,7 +1818,7 @@ function archivedOrderRowsForCurrentPharmacy() {
 function renderArchivedOrdersHistory() {
   if (!archivedOrdersPanel || !archivedOrdersRows || !archivedOrdersEmpty) return;
 
-  const rows = archivedOrderRowsForCurrentPharmacy();
+  const operations = archivedOperationsForCurrentPharmacy();
   if (toggleArchivedOrdersBtn) {
     const archivedOrdersBlock = toggleArchivedOrdersBtn.closest(".archived-orders-block");
     if (archivedOrdersBlock) archivedOrdersBlock.hidden = !currentPharmacy;
@@ -1762,16 +1826,8 @@ function renderArchivedOrdersHistory() {
     toggleArchivedOrdersBtn.setAttribute("aria-expanded", archivedOrdersVisible ? "true" : "false");
   }
   archivedOrdersPanel.hidden = !archivedOrdersVisible || !currentPharmacy;
-  archivedOrdersRows.innerHTML = rows.map((row) => `
-    <tr>
-      <td>${escapeHtml(row.completedAt)}</td>
-      <td><strong>${escapeHtml(row.operation)}</strong></td>
-      <td>${escapeHtml(row.designation)}</td>
-      <td>${escapeHtml(row.quantity)}</td>
-    </tr>
-  `).join("");
-  archivedOrdersEmpty.hidden = Boolean(rows.length);
-  archivedOrdersPanel.querySelector(".archived-orders-table-wrap").hidden = !rows.length;
+  archivedOrdersRows.innerHTML = operations.length ? operations.map((entry) => archivedOperationCard(entry)).join("") : "";
+  archivedOrdersEmpty.hidden = Boolean(operations.length);
 }
 
 function setHeroVisible(visible) {
@@ -5171,6 +5227,15 @@ viewArchivesBtn?.addEventListener("click", () => {
 backToArchivedOrdersMenuBtn?.addEventListener("click", showCampaignPicker);
 backToPrecomandesMenuBtn?.addEventListener("click", showCampaignPicker);
 backToSondagesMenuBtn?.addEventListener("click", showCampaignPicker);
+
+archivedOrdersRows?.addEventListener("click", (event) => {
+  if (event.target.closest("[data-preview-image]")) return;
+  const deleteButton = event.target.closest("[data-hide-archived-response]");
+  if (!deleteButton) return;
+  const confirmed = confirm("Supprimer cette opération de votre liste archivée ? Faites-le une fois la commande reçue et vérifiée.");
+  if (!confirmed) return;
+  hideArchivedResponse(deleteButton.dataset.hideArchivedResponse);
+});
 
 precommandandesListRows?.addEventListener("click", (event) => {
   if (event.target.closest("[data-preview-image], [data-bat-pdf-link]")) return;

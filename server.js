@@ -1042,10 +1042,41 @@ const server = http.createServer(async (request, response) => {
       const pharmacyId = url.searchParams.get("pharmacyId");
       const pharmacyName = normalizeLookup(url.searchParams.get("pharmacyName"));
       const responses = latestResponses(readResponses()).filter((item) => {
+        if (item.hiddenFromArchive) return false;
         if (pharmacyId && item.pharmacyId === pharmacyId) return true;
         return pharmacyName && normalizeLookup(item.pharmacyName) === pharmacyName;
       });
       sendJson(response, 200, responses);
+      return;
+    }
+
+    // Une pharmacie masque une opération de sa page "Archivés" une fois la commande
+    // reçue et vérifiée. On ne supprime jamais la réponse : elle reste visible côté
+    // admin (suivi, exports) — seul l'affichage pharmacie change.
+    if (url.pathname === "/api/pharmacy-responses/hide" && request.method === "POST") {
+      const payload = JSON.parse(await readBody(request));
+      const responseId = String(payload.id || "").trim();
+      const pharmacyId = String(payload.pharmacyId || "").trim();
+      const pharmacyName = normalizeLookup(payload.pharmacyName || "");
+      if (!responseId || (!pharmacyId && !pharmacyName)) {
+        sendJson(response, 400, { error: "Identifiants manquants" });
+        return;
+      }
+      const responses = readResponses();
+      const target = responses.find((item) => item.id === responseId);
+      if (!target) {
+        sendJson(response, 404, { error: "Réponse introuvable" });
+        return;
+      }
+      const isOwner = (pharmacyId && target.pharmacyId === pharmacyId)
+        || (pharmacyName && normalizeLookup(target.pharmacyName) === pharmacyName);
+      if (!isOwner) {
+        sendJson(response, 403, { error: "Cette réponse n'appartient pas à cette pharmacie" });
+        return;
+      }
+      target.hiddenFromArchive = true;
+      writeResponses(responses);
+      sendJson(response, 200, { ok: true });
       return;
     }
 

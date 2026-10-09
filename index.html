@@ -135,23 +135,11 @@
         <div class="section-head">
           <div>
             <h2>Archivés</h2>
-            <p>Retrouvez vos réponses sur les campagnes et sondages clôturés.</p>
+            <p>Retrouvez vos réponses sur les campagnes clôturées. Vous pouvez supprimer une opération de cette liste une fois la commande reçue et vérifiée.</p>
           </div>
           <button id="downloadArchivedOrdersPdfBtn" class="primary-btn" type="button">Télécharger PDF</button>
         </div>
-        <div class="table-wrap archived-orders-table-wrap">
-          <table class="archived-orders-table">
-            <thead>
-              <tr>
-                <th>Date de remplissage</th>
-                <th>Opération</th>
-                <th>Désignation du produit</th>
-                <th>Quantité</th>
-              </tr>
-            </thead>
-            <tbody id="archivedOrdersRows"></tbody>
-          </table>
-        </div>
+        <div id="archivedOrdersRows" class="campaign-list-container" aria-live="polite"></div>
         <p id="archivedOrdersEmpty" class="empty-campaigns" hidden>Aucune précommande archivée pour votre pharmacie pour le moment.</p>
       </section>
 
