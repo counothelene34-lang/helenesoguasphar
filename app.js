@@ -55,6 +55,8 @@ const backToArchivedOrdersMenuBtn = document.querySelector("#backToArchivedOrder
 const downloadArchivedOrdersPdfBtn = document.querySelector("#downloadArchivedOrdersPdfBtn");
 const archivedOrdersRows = document.querySelector("#archivedOrdersRows");
 const archivedOrdersEmpty = document.querySelector("#archivedOrdersEmpty");
+const archivedOrdersSearch = document.querySelector("#archivedOrdersSearch");
+const archivedOrdersNoMatch = document.querySelector("#archivedOrdersNoMatch");
 const precommandandesListPage = document.querySelector("#precommandandesListPage");
 const backToPrecomandesMenuBtn = document.querySelector("#backToPrecomandesMenuBtn");
 const precommandandesListRows = document.querySelector("#precommandandesListRows");
@@ -336,6 +338,7 @@ let pollResponseCounts = {};
 let activeAdminSection = "new-campaign";
 let archivedOrdersVisible = false;
 let archivedOrdersFilterId = "";
+let archivedOrdersSearchTerm = "";
 let requestedOperationId = "";
 let adminValidationRefreshTimer = null;
 let lastValidationResponseSource = "";
@@ -1815,10 +1818,31 @@ function archivedOrderRowsForCurrentPharmacy() {
     }));
 }
 
+// Recherche simple (insensible à la casse et aux accents) sur le nom de l'opération
+// et le contenu de la commande, pour retrouver vite une archive dans une longue liste.
+function normalizeSearchText(value) {
+  return String(value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+function archivedOperationMatchesSearch(entry, term) {
+  if (!term) return true;
+  const haystack = normalizeSearchText([
+    entry.response.campaignTitle,
+    entry.campaign?.title,
+    campaignResponseSummary(entry.response)
+  ].join(" "));
+  return haystack.includes(term);
+}
+
 function renderArchivedOrdersHistory() {
   if (!archivedOrdersPanel || !archivedOrdersRows || !archivedOrdersEmpty) return;
 
-  const operations = archivedOperationsForCurrentPharmacy();
+  const allOperations = archivedOperationsForCurrentPharmacy();
+  const searchTerm = normalizeSearchText(archivedOrdersSearchTerm);
+  const operations = allOperations.filter((entry) => archivedOperationMatchesSearch(entry, searchTerm));
   if (toggleArchivedOrdersBtn) {
     const archivedOrdersBlock = toggleArchivedOrdersBtn.closest(".archived-orders-block");
     if (archivedOrdersBlock) archivedOrdersBlock.hidden = !currentPharmacy;
@@ -1826,8 +1850,10 @@ function renderArchivedOrdersHistory() {
     toggleArchivedOrdersBtn.setAttribute("aria-expanded", archivedOrdersVisible ? "true" : "false");
   }
   archivedOrdersPanel.hidden = !archivedOrdersVisible || !currentPharmacy;
+  if (archivedOrdersSearch) archivedOrdersSearch.closest(".archived-orders-search").hidden = !allOperations.length;
   archivedOrdersRows.innerHTML = operations.length ? operations.map((entry) => archivedOperationCard(entry)).join("") : "";
-  archivedOrdersEmpty.hidden = Boolean(operations.length);
+  archivedOrdersEmpty.hidden = Boolean(allOperations.length);
+  if (archivedOrdersNoMatch) archivedOrdersNoMatch.hidden = !(allOperations.length && !operations.length);
 }
 
 function setHeroVisible(visible) {
@@ -1850,6 +1876,8 @@ function showArchivedOrdersPage(operationId = "") {
   selectedInfoForm = null;
   selectedBatDocument = null;
   archivedOrdersFilterId = operationId || "";
+  archivedOrdersSearchTerm = "";
+  if (archivedOrdersSearch) archivedOrdersSearch.value = "";
   setHeroVisible(false);
   archivedOrdersVisible = true;
   campaignPicker.hidden = true;
@@ -5227,6 +5255,11 @@ viewArchivesBtn?.addEventListener("click", () => {
 backToArchivedOrdersMenuBtn?.addEventListener("click", showCampaignPicker);
 backToPrecomandesMenuBtn?.addEventListener("click", showCampaignPicker);
 backToSondagesMenuBtn?.addEventListener("click", showCampaignPicker);
+
+archivedOrdersSearch?.addEventListener("input", (event) => {
+  archivedOrdersSearchTerm = event.target.value;
+  renderArchivedOrdersHistory();
+});
 
 archivedOrdersRows?.addEventListener("click", (event) => {
   if (event.target.closest("[data-preview-image]")) return;

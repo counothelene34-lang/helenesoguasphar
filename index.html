@@ -139,8 +139,12 @@
           </div>
           <button id="downloadArchivedOrdersPdfBtn" class="primary-btn" type="button">Télécharger PDF</button>
         </div>
+        <div class="archived-orders-search">
+          <input id="archivedOrdersSearch" type="search" placeholder="Rechercher une opération archivée..." aria-label="Rechercher une opération archivée">
+        </div>
         <div id="archivedOrdersRows" class="campaign-list-container" aria-live="polite"></div>
         <p id="archivedOrdersEmpty" class="empty-campaigns" hidden>Aucune précommande archivée pour votre pharmacie pour le moment.</p>
+        <p id="archivedOrdersNoMatch" class="empty-campaigns" hidden>Aucune opération archivée ne correspond à votre recherche.</p>
       </section>
 
       <section id="satisfactionPage" class="form-shell satisfaction-page" hidden>

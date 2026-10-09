@@ -375,6 +375,25 @@ main::before {
   margin-top: 14px;
 }
 
+.archived-orders-search {
+  margin-top: 14px;
+}
+
+.archived-orders-search input {
+  width: 100%;
+  max-width: 420px;
+  padding: 10px 14px;
+  border: 1px solid rgba(0, 140, 69, .25);
+  border-radius: 10px;
+  font-size: 15px;
+  box-sizing: border-box;
+}
+
+.archived-orders-search input:focus {
+  outline: 2px solid rgba(0, 140, 69, .4);
+  outline-offset: 1px;
+}
+
 .campaign-list-page {
   margin-top: 14px;
 }
