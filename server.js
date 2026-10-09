@@ -1,6 +1,7 @@
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const crypto = require("crypto");
 
 const PORT = Number(process.env.PORT || 56651);
 const ADMIN_CODE = process.env.ADMIN_CODE || "SOGUASPHAR2026";
@@ -17,6 +18,10 @@ const PHARMACIES_FILE = path.join(DATA_DIR, "pharmacies.json");
 const VALIDATION_FILE = path.join(DATA_DIR, "validation.json");
 const VALIDATION_RESPONSES_FILE = path.join(DATA_DIR, "validation-responses.json");
 const BAT_DOCUMENTS_DIR = path.join(DATA_DIR, "bat-calendriers-2027");
+const USERS_FILE = path.join(DATA_DIR, "users.json");
+const SESSIONS_FILE = path.join(DATA_DIR, "sessions.json");
+const SESSION_COOKIE_NAME = "preco_session";
+const SESSION_DURATION_MS = 30 * 24 * 60 * 60 * 1000; // 30 jours, glissant
 
 const MIME_TYPES = {
   ".html": "text/html; charset=utf-8",
@@ -39,6 +44,7 @@ function ensureDataFile() {
   if (!fs.existsSync(INFO_FORMS_FILE)) fs.writeFileSync(INFO_FORMS_FILE, "[]", "utf8");
   if (!fs.existsSync(INFO_RESPONSES_FILE)) fs.writeFileSync(INFO_RESPONSES_FILE, "[]", "utf8");
   if (!fs.existsSync(PHARMACIES_FILE)) fs.writeFileSync(PHARMACIES_FILE, "[]", "utf8");
+  if (!fs.existsSync(USERS_FILE)) fs.writeFileSync(USERS_FILE, "[]", "utf8");
 }
 
 function readResponses() {
@@ -168,6 +174,213 @@ function writePharmacies(pharmacies) {
   ensureDataFile();
   fs.writeFileSync(PHARMACIES_FILE, JSON.stringify(pharmacies, null, 2), "utf8");
 }
+
+// --- Comptes individuels (email + mot de passe) -----------------------------
+// Fondations de la connexion par compte nominatif, en plus (pas en remplacement)
+// de l'ancien mot de passe unique par pharmacie (/api/pharmacy-login) et du code
+// admin général (x-admin-code), qui restent fonctionnels pendant la transition.
+
+function readUsers() {
+  ensureDataFile();
+  return JSON.parse(fs.readFileSync(USERS_FILE, "utf8") || "[]");
+}
+
+function writeUsers(users) {
+  ensureDataFile();
+  fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2), "utf8");
+}
+
+function normalizeEmail(email) {
+  return String(email || "").trim().toLowerCase();
+}
+
+function findUserByEmail(email) {
+  const normalized = normalizeEmail(email);
+  if (!normalized) return null;
+  return readUsers().find((user) => normalizeEmail(user.email) === normalized) || null;
+}
+
+// Hachage de mot de passe avec scrypt (module natif "crypto", aucune dépendance
+// externe). Le sel et le hash sont stockés ensemble dans une seule chaîne :
+// "scrypt:<selHex>:<hashHex>".
+function hashPassword(password) {
+  const salt = crypto.randomBytes(16);
+  const derivedKey = crypto.scryptSync(String(password), salt, 64, { N: 16384 });
+  return `scrypt:${salt.toString("hex")}:${derivedKey.toString("hex")}`;
+}
+
+function verifyPassword(password, storedHash) {
+  if (!storedHash || typeof storedHash !== "string") return false;
+  const parts = storedHash.split(":");
+  if (parts.length !== 3 || parts[0] !== "scrypt") return false;
+  try {
+    const salt = Buffer.from(parts[1], "hex");
+    const expected = Buffer.from(parts[2], "hex");
+    const actual = crypto.scryptSync(String(password), salt, expected.length, { N: 16384 });
+    if (actual.length !== expected.length) return false;
+    return crypto.timingSafeEqual(actual, expected);
+  } catch (error) {
+    return false;
+  }
+}
+
+function publicUser(user) {
+  if (!user) return null;
+  const pharmacy = user.pharmacyId
+    ? readPharmacies().find((item) => item.id === user.pharmacyId)
+    : null;
+  return {
+    id: user.id,
+    email: user.email,
+    firstName: user.firstName || "",
+    lastName: user.lastName || "",
+    role: user.role,
+    jobTitle: user.jobTitle || "",
+    pharmacyId: user.pharmacyId || null,
+    pharmacyName: pharmacy ? pharmacy.name : null,
+    mustChangePassword: Boolean(user.mustChangePassword),
+    active: user.active !== false
+  };
+}
+
+// --- Sessions (token opaque, stocké en mémoire + sauvegarde sur disque) -----
+// Pas de JWT externe : un jeton aléatoire fait office de clé vers une session
+// en mémoire, rechargée au démarrage depuis data/sessions.json (survit à un
+// redémarrage du serveur), avec expiration glissante de 30 jours.
+
+const sessions = new Map(); // token -> { userId, expiresAt }
+
+function loadSessions() {
+  try {
+    if (!fs.existsSync(SESSIONS_FILE)) return;
+    const raw = JSON.parse(fs.readFileSync(SESSIONS_FILE, "utf8") || "{}");
+    const now = Date.now();
+    Object.entries(raw).forEach(([token, session]) => {
+      if (session && typeof session.expiresAt === "number" && session.expiresAt > now) {
+        sessions.set(token, session);
+      }
+    });
+  } catch (error) {
+    // Fichier absent ou corrompu : on repart simplement sans session active.
+  }
+}
+
+function persistSessions() {
+  try {
+    if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+    const plain = {};
+    sessions.forEach((session, token) => { plain[token] = session; });
+    fs.writeFileSync(SESSIONS_FILE, JSON.stringify(plain, null, 2), "utf8");
+  } catch (error) {
+    // Non bloquant : la session reste valide en mémoire même si l'écriture échoue.
+  }
+}
+
+function createSession(userId) {
+  const token = crypto.randomBytes(32).toString("hex");
+  sessions.set(token, { userId, expiresAt: Date.now() + SESSION_DURATION_MS });
+  persistSessions();
+  return token;
+}
+
+function getSession(token) {
+  if (!token) return null;
+  const session = sessions.get(token);
+  if (!session) return null;
+  if (session.expiresAt < Date.now()) {
+    sessions.delete(token);
+    persistSessions();
+    return null;
+  }
+  // Expiration glissante : chaque utilisation prolonge la session de 30 jours.
+  session.expiresAt = Date.now() + SESSION_DURATION_MS;
+  return session;
+}
+
+function destroySession(token) {
+  if (sessions.has(token)) {
+    sessions.delete(token);
+    persistSessions();
+  }
+}
+
+function parseCookies(request) {
+  const header = request.headers.cookie;
+  const cookies = {};
+  if (!header) return cookies;
+  header.split(";").forEach((pair) => {
+    const index = pair.indexOf("=");
+    if (index === -1) return;
+    const key = pair.slice(0, index).trim();
+    const value = pair.slice(index + 1).trim();
+    if (key) {
+      try {
+        cookies[key] = decodeURIComponent(value);
+      } catch (error) {
+        cookies[key] = value;
+      }
+    }
+  });
+  return cookies;
+}
+
+function setSessionCookie(response, token) {
+  const isHttps = process.env.FORCE_HTTPS_COOKIE === "1" || process.env.NODE_ENV === "production";
+  const parts = [
+    `${SESSION_COOKIE_NAME}=${token}`,
+    "Path=/",
+    "HttpOnly",
+    "SameSite=Lax",
+    `Max-Age=${Math.floor(SESSION_DURATION_MS / 1000)}`
+  ];
+  if (isHttps) parts.push("Secure");
+  response.setHeader("Set-Cookie", parts.join("; "));
+}
+
+function clearSessionCookie(response) {
+  const isHttps = process.env.FORCE_HTTPS_COOKIE === "1" || process.env.NODE_ENV === "production";
+  const parts = [`${SESSION_COOKIE_NAME}=`, "Path=/", "HttpOnly", "SameSite=Lax", "Max-Age=0"];
+  if (isHttps) parts.push("Secure");
+  response.setHeader("Set-Cookie", parts.join("; "));
+}
+
+// Retrouve l'utilisateur courant à partir du cookie de session, ou null.
+function getAuthenticatedUser(request) {
+  const cookies = parseCookies(request);
+  const token = cookies[SESSION_COOKIE_NAME];
+  const session = getSession(token);
+  if (!session) return null;
+  const user = readUsers().find((item) => item.id === session.userId);
+  if (!user || user.active === false) return null;
+  return user;
+}
+
+// Middleware réutilisable pour les futures routes protégées : vérifie la
+// session et, si `roles` est fourni, que le rôle de l'utilisateur en fait
+// partie. Envoie lui-même la réponse d'erreur (401/403) et renvoie null si
+// l'accès est refusé ; renvoie l'utilisateur (sans mot de passe) sinon.
+function requireAuth(request, response, roles) {
+  const user = getAuthenticatedUser(request);
+  if (!user) {
+    sendJson(response, 401, { error: "Non authentifié" });
+    return null;
+  }
+  if (Array.isArray(roles) && roles.length && !roles.includes(user.role)) {
+    sendJson(response, 403, { error: "Accès refusé" });
+    return null;
+  }
+  return user;
+}
+
+// Vérifie qu'un utilisateur de pharmacie (pharmacy_admin / pharmacy_collaborator)
+// agit uniquement sur sa propre pharmacie. Les soguasphar_admin passent toujours.
+function requireSamePharmacy(user, pharmacyId) {
+  if (!user) return false;
+  if (user.role === "soguasphar_admin") return true;
+  return Boolean(user.pharmacyId) && String(user.pharmacyId) === String(pharmacyId);
+}
+
+loadSessions();
 
 function defaultValidation() {
   return {
@@ -1291,6 +1504,49 @@ const server = http.createServer(async (request, response) => {
       } : item);
       writePharmacies(updatedPharmacies);
       sendJson(response, 200, { id: pharmacy.id, name: pharmacy.name, mustChangePassword: false });
+      return;
+    }
+
+    // --- Comptes individuels (email + mot de passe) ------------------------
+    // Nouvelles routes, en plus de /api/pharmacy-login et x-admin-code qui
+    // restent fonctionnelles pendant la transition (le front sera basculé
+    // dans une tâche suivante).
+
+    if (url.pathname === "/api/auth/login" && request.method === "POST") {
+      const payload = JSON.parse(await readBody(request));
+      const email = normalizeEmail(payload.email);
+      const password = String(payload.password || "");
+      const user = findUserByEmail(email);
+      if (!user || user.active === false || !verifyPassword(password, user.passwordHash)) {
+        sendJson(response, 401, { error: "Email ou mot de passe incorrect" });
+        return;
+      }
+      const token = createSession(user.id);
+      const users = readUsers();
+      const updatedUsers = users.map((item) => item.id === user.id
+        ? { ...item, lastLoginAt: new Date().toISOString() }
+        : item);
+      writeUsers(updatedUsers);
+      setSessionCookie(response, token);
+      sendJson(response, 200, { user: publicUser(user) });
+      return;
+    }
+
+    if (url.pathname === "/api/auth/logout" && request.method === "POST") {
+      const cookies = parseCookies(request);
+      destroySession(cookies[SESSION_COOKIE_NAME]);
+      clearSessionCookie(response);
+      sendJson(response, 200, { ok: true });
+      return;
+    }
+
+    if (url.pathname === "/api/auth/me" && request.method === "GET") {
+      const user = getAuthenticatedUser(request);
+      if (!user) {
+        sendJson(response, 401, { error: "Non authentifié" });
+        return;
+      }
+      sendJson(response, 200, { user: publicUser(user) });
       return;
     }
 
