@@ -3925,6 +3925,18 @@ function isFillableColumn(column) {
   return /à remplir|a remplir/i.test(column || "");
 }
 
+// Une colonne "prix" (Prix unitaire, Tarif, PU...) doit afficher le symbole € après
+// la valeur, sans toucher à la valeur enregistrée (utile pour l'import/export).
+function isPriceColumn(column) {
+  return /prix|tarif|\bpu\b/i.test(column || "");
+}
+
+function displayColumnValue(column, value) {
+  const text = value == null ? "" : String(value);
+  if (!text || !isPriceColumn(column)) return text;
+  return /€/.test(text) ? text : `${text} €`;
+}
+
 // Construit la ligne d'en-tête (<tr>) d'un tableau à colonnes libres : les colonnes
 // du template, puis en dernier une colonne "Quantité" si demandé.
 function orderColumnsHeadRowMarkup(columns, withQuantity) {
@@ -3956,7 +3968,7 @@ function renderOrderTemplate() {
     <tr class="order-row" data-line-id="${escapeHtml(item.id)}">
       ${columns.map((column) => isFillableColumn(column)
         ? `<td><textarea class="product-fillable-info" rows="2" data-id="${escapeHtml(item.id)}" data-column="${escapeHtml(column)}" aria-label="${escapeHtml(column)}">${escapeHtml(item.values?.[column] || "")}</textarea></td>`
-        : `<td>${escapeHtml(item.values?.[column] || "")}</td>`).join("")}
+        : `<td>${escapeHtml(displayColumnValue(column, item.values?.[column]))}</td>`).join("")}
       <td>
         <input
           type="number"
@@ -3975,7 +3987,7 @@ function renderOrderTemplate() {
 
   orderTemplateTable.innerHTML = rows.map((item) => `
     <tr>
-      ${columns.map((column) => `<td>${escapeHtml(item.values?.[column] || "")}</td>`).join("")}
+      ${columns.map((column) => `<td>${escapeHtml(displayColumnValue(column, item.values?.[column]))}</td>`).join("")}
     </tr>
   `).join("");
 
@@ -4230,7 +4242,7 @@ function renderQuantitySummary(responses = []) {
   quantitySummaryTable.innerHTML = rows
     .map((row) => `
       <tr>
-        ${columns.map((column) => `<td>${escapeHtml(row.values[column] || "")}</td>`).join("")}
+        ${columns.map((column) => `<td>${escapeHtml(displayColumnValue(column, row.values[column]))}</td>`).join("")}
         <td><strong>${escapeHtml(row.quantity)}</strong></td>
       </tr>
     `)
@@ -4883,7 +4895,7 @@ async function exportToExcel() {
       <td>${escapeHtml(row.updatedAt)}</td>
       <td>${escapeHtml(row.pharmacie)}</td>
       <td>${escapeHtml(row.statut)}</td>
-      ${productColumns.map((column) => `<td>${escapeHtml(row.values[column] || "")}</td>`).join("")}
+      ${productColumns.map((column) => `<td>${escapeHtml(displayColumnValue(column, row.values[column]))}</td>`).join("")}
       <td>${escapeHtml(row.quantite)}</td>
       <td>${escapeHtml(row.commentaire)}</td>
     </tr>
@@ -6292,7 +6304,7 @@ downloadTemplateBtn.addEventListener("click", () => {
             <tr><th>Désignation</th><th>CIP</th><th>Tarif</th><th>Colisage minimum de commande</th><th>Colisage présentoir</th></tr>
           </thead>
           <tbody>
-            <tr><td>Exemple produit</td><td>3400000000000</td><td>12,50</td><td>6</td><td>4</td></tr>
+            <tr><td>Exemple produit</td><td>3400000000000</td><td>12,50 €</td><td>6</td><td>4</td></tr>
           </tbody>
         </table>
       </body>
