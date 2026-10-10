@@ -42,6 +42,26 @@ const pharmacyLoginMessage = document.querySelector("#pharmacyLoginMessage");
 const pharmacySessionBar = document.querySelector("#pharmacySessionBar");
 const currentPharmacyName = document.querySelector("#currentPharmacyName");
 const logoutPharmacyBtn = document.querySelector("#logoutPharmacyBtn");
+// Nouveau système de connexion (email + mot de passe), en test en parallèle de
+// l'ancienne connexion par mot de passe pharmacie ci-dessus.
+const newAuthGate = document.querySelector("#newAuthGate");
+const newAuthLoginForm = document.querySelector("#newAuthLoginForm");
+const newAuthEmail = document.querySelector("#newAuthEmail");
+const newAuthPassword = document.querySelector("#newAuthPassword");
+const toggleNewAuthPassword = document.querySelector("#toggleNewAuthPassword");
+const forgotNewAuthPasswordBtn = document.querySelector("#forgotNewAuthPasswordBtn");
+const newAuthLoginMessage = document.querySelector("#newAuthLoginMessage");
+const switchToNewAuthBtn = document.querySelector("#switchToNewAuthBtn");
+const switchToOldAuthBtn = document.querySelector("#switchToOldAuthBtn");
+const newAuthAdminStatus = document.querySelector("#newAuthAdminStatus");
+const userMenu = document.querySelector("#userMenu");
+const userMenuBtn = document.querySelector("#userMenuBtn");
+const userMenuPanel = document.querySelector("#userMenuPanel");
+const userMenuName = document.querySelector("#userMenuName");
+const userMenuEmail = document.querySelector("#userMenuEmail");
+const userMenuPharmacy = document.querySelector("#userMenuPharmacy");
+const userMenuTeamBtn = document.querySelector("#userMenuTeamBtn");
+const userMenuLogoutBtn = document.querySelector("#userMenuLogoutBtn");
 const heroActionsRow = document.querySelector(".hero-actions-row");
 const heroBand = document.querySelector(".hero-band");
 const campaignPicker = document.querySelector("#campaignPicker");
@@ -296,6 +316,12 @@ let validationConfigState = {
 };
 let pharmacies = [];
 let currentPharmacy = JSON.parse(localStorage.getItem(PHARMACY_SESSION_KEY) || "null");
+// Nouveau système de connexion (email + mot de passe) : compte individuel courant,
+// retrouvé via le cookie de session (GET /api/auth/me), indépendant de currentPharmacy
+// ci-dessus (ancien système), même si pour les rôles pharmacie on fait pointer
+// currentPharmacy vers la bonne pharmacie pour réutiliser tout le tableau de bord existant.
+let currentUser = null;
+let showingNewAuthScreen = false;
 let pendingPasswordPharmacy = null;
 let pendingInitialPassword = "";
 let pharmacyPollAnswers = {};
@@ -1178,6 +1204,33 @@ async function loginPharmacy(password) {
     method: "POST",
     body: JSON.stringify({ password })
   });
+}
+
+// --- Nouveau système de connexion (email + mot de passe), en test ----------
+
+async function loginWithEmail(email, password) {
+  const result = await requestJson("/api/auth/login", {
+    method: "POST",
+    body: JSON.stringify({ email, password })
+  });
+  return result.user;
+}
+
+async function fetchCurrentUser() {
+  try {
+    const result = await requestJson("/api/auth/me");
+    return result.user || null;
+  } catch {
+    return null;
+  }
+}
+
+async function logoutNewAuth() {
+  try {
+    await requestJson("/api/auth/logout", { method: "POST" });
+  } catch {
+    // Non bloquant : même si la requête échoue, l'écran se réinitialise quand même.
+  }
 }
 
 async function changePharmacyPassword(pharmacyId, oldPassword, newPassword) {
@@ -2348,7 +2401,54 @@ function closeImagePreview() {
   document.body.classList.remove("modal-open");
 }
 
+function renderUserMenu() {
+  if (!userMenu) return;
+  userMenu.hidden = !currentUser;
+  if (!currentUser) {
+    if (userMenuPanel) userMenuPanel.hidden = true;
+    return;
+  }
+  const fullName = [currentUser.firstName, currentUser.lastName].filter(Boolean).join(" ") || currentUser.email;
+  if (userMenuName) userMenuName.textContent = fullName;
+  if (userMenuEmail) userMenuEmail.textContent = currentUser.email;
+  if (userMenuPharmacy) {
+    userMenuPharmacy.textContent = currentUser.role === "soguasphar_admin"
+      ? "Administration SOGUASPHAR"
+      : (currentUser.pharmacyName || "Pharmacie non rattachée");
+  }
+}
+
+// Bascule vers le nouvel écran de connexion (email + mot de passe), en test
+// en parallèle de l'ancienne connexion par mot de passe pharmacie.
+function showNewAuthScreen() {
+  showingNewAuthScreen = true;
+  if (pharmacyGate) pharmacyGate.hidden = true;
+  if (newAuthGate) newAuthGate.hidden = false;
+  if (newAuthLoginMessage) newAuthLoginMessage.textContent = "";
+}
+
+function showOldAuthScreen() {
+  showingNewAuthScreen = false;
+  if (newAuthGate) newAuthGate.hidden = true;
+  if (newAuthAdminStatus) newAuthAdminStatus.hidden = true;
+  renderPharmacyAccess();
+}
+
 function renderPharmacyAccess() {
+  if (showingNewAuthScreen) {
+    // L'écran du nouveau système de connexion gère lui-même sa visibilité ;
+    // on s'assure juste que l'ancien écran reste masqué pendant ce temps.
+    if (pharmacyGate) pharmacyGate.hidden = true;
+    return;
+  }
+  if (currentUser && currentUser.role === "soguasphar_admin") {
+    // Connecté comme administrateur SOGUASPHAR via le nouveau système : pas de
+    // tableau de bord dédié encore (prochaine étape), mais il ne faut pas
+    // redemander l'ancien mot de passe pharmacie par-dessus.
+    if (pharmacyGate) pharmacyGate.hidden = true;
+    if (pharmacySessionBar) pharmacySessionBar.hidden = true;
+    return;
+  }
   const requiresLogin = pharmacyAccessRequired();
   pharmacyGate.hidden = !requiresLogin;
   pharmacySessionBar.hidden = !currentPharmacy;
@@ -5233,6 +5333,108 @@ logoutPharmacyBtn.addEventListener("click", () => {
   showCampaignPicker();
 });
 
+// --- Nouveau système de connexion (email + mot de passe), en test ----------
+
+switchToNewAuthBtn?.addEventListener("click", () => {
+  showNewAuthScreen();
+});
+
+switchToOldAuthBtn?.addEventListener("click", () => {
+  showOldAuthScreen();
+});
+
+toggleNewAuthPassword?.addEventListener("click", () => {
+  const isPassword = newAuthPassword.type === "password";
+  newAuthPassword.type = isPassword ? "text" : "password";
+  toggleNewAuthPassword.textContent = isPassword ? "Masquer" : "Voir";
+  toggleNewAuthPassword.setAttribute("aria-label", isPassword ? "Masquer le mot de passe" : "Afficher le mot de passe");
+});
+
+forgotNewAuthPasswordBtn?.addEventListener("click", () => {
+  newAuthLoginMessage.textContent = "Cette fonctionnalité arrive bientôt. En attendant, contactez SOGUASPHAR pour réinitialiser votre mot de passe.";
+});
+
+newAuthLoginForm?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const email = newAuthEmail.value.trim();
+  const password = newAuthPassword.value;
+  if (!email || !password) {
+    newAuthLoginMessage.textContent = "Indiquez votre e-mail et votre mot de passe.";
+    return;
+  }
+
+  try {
+    currentUser = await loginWithEmail(email, password);
+    newAuthPassword.value = "";
+    newAuthLoginMessage.textContent = "";
+    renderUserMenu();
+    showingNewAuthScreen = false;
+    newAuthGate.hidden = true;
+
+    if (currentUser.role === "pharmacy_admin" || currentUser.role === "pharmacy_collaborator") {
+      currentPharmacy = { id: currentUser.pharmacyId, name: currentUser.pharmacyName, mustChangePassword: false };
+      archivedOrdersVisible = false;
+      localStorage.setItem(PHARMACY_SESSION_KEY, JSON.stringify(currentPharmacy));
+      renderCampaignPickers();
+      showCampaignPicker();
+      renderPharmacyAccess();
+      await refreshPharmacyPollAnswers();
+      await refreshPharmacyCampaignResponses();
+      await refreshPharmacyInfoResponses();
+      await refreshPharmacyValidationResponses();
+      renderCampaignPickers();
+      showRequestedOperationOrMenu();
+      renderPharmacyAccess();
+    } else {
+      // Admin SOGUASPHAR : pas encore de tableau de bord dédié (prochaine étape),
+      // on confirme juste la connexion. Le menu ⚙️ permet de se déconnecter.
+      if (pharmacyGate) pharmacyGate.hidden = true;
+      if (newAuthAdminStatus) newAuthAdminStatus.hidden = false;
+    }
+  } catch (error) {
+    newAuthLoginMessage.textContent = error.message || "E-mail ou mot de passe incorrect.";
+  }
+});
+
+userMenuBtn?.addEventListener("click", (event) => {
+  event.stopPropagation();
+  const isHidden = userMenuPanel.hidden;
+  userMenuPanel.hidden = !isHidden;
+  userMenuBtn.setAttribute("aria-expanded", String(isHidden));
+});
+
+document.addEventListener("click", (event) => {
+  if (!userMenu || !userMenuPanel || userMenuPanel.hidden) return;
+  if (!userMenu.contains(event.target)) {
+    userMenuPanel.hidden = true;
+    userMenuBtn?.setAttribute("aria-expanded", "false");
+  }
+});
+
+userMenuTeamBtn?.addEventListener("click", () => {
+  alert("Gestion de mon équipe : bientôt disponible.");
+});
+
+userMenuLogoutBtn?.addEventListener("click", async () => {
+  const wasPharmacyRole = currentUser && (currentUser.role === "pharmacy_admin" || currentUser.role === "pharmacy_collaborator");
+  await logoutNewAuth();
+  currentUser = null;
+  renderUserMenu();
+  if (newAuthAdminStatus) newAuthAdminStatus.hidden = true;
+  if (wasPharmacyRole) {
+    currentPharmacy = null;
+    pendingPasswordPharmacy = null;
+    pendingInitialPassword = "";
+    pharmacyPollAnswers = {};
+    pharmacyCampaignResponses = {};
+    archivedOrdersVisible = false;
+    localStorage.removeItem(PHARMACY_SESSION_KEY);
+    renderCampaignPickers();
+    showCampaignPicker();
+  }
+  showOldAuthScreen();
+});
+
 campaignCards.addEventListener("click", (event) => {
   if (event.target.closest("[data-preview-image], [data-bat-pdf-link]")) return;
   const batButton = event.target.closest("[data-form-bat]");
@@ -6786,6 +6988,21 @@ async function init() {
   } else {
     pharmacies = new Array(pharmacyInfo.count || 0).fill(null);
   }
+
+  // Nouveau système de connexion : si un cookie de session valide existe déjà
+  // (rechargement de page après une connexion par e-mail), on restaure l'écran
+  // correspondant au lieu de redemander la connexion.
+  currentUser = await fetchCurrentUser();
+  renderUserMenu();
+  if (currentUser && (currentUser.role === "pharmacy_admin" || currentUser.role === "pharmacy_collaborator")) {
+    if (!currentPharmacy || currentPharmacy.id !== currentUser.pharmacyId) {
+      currentPharmacy = { id: currentUser.pharmacyId, name: currentUser.pharmacyName, mustChangePassword: false };
+      localStorage.setItem(PHARMACY_SESSION_KEY, JSON.stringify(currentPharmacy));
+    }
+  } else if (currentUser && currentUser.role === "soguasphar_admin" && newAuthAdminStatus) {
+    newAuthAdminStatus.hidden = false;
+  }
+
   await refreshPharmacyPollAnswers();
   await refreshPharmacyCampaignResponses();
   await refreshPharmacyInfoResponses();

@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20261009-revert-securite">
+  <link rel="stylesheet" href="styles.css?v=20261009-comptes-equipe">
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js" defer></script>
@@ -26,6 +26,18 @@
       <button class="switch-btn active" data-view="formView" type="button">Formulaire</button>
       <button class="switch-btn" data-view="adminView" type="button">Administration</button>
     </nav>
+    <div class="user-menu" id="userMenu" hidden>
+      <button id="userMenuBtn" class="user-menu-btn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Mon compte">
+        <span aria-hidden="true">&#9881;</span>
+      </button>
+      <div id="userMenuPanel" class="user-menu-panel" hidden>
+        <p class="user-menu-name" id="userMenuName"></p>
+        <p class="user-menu-email" id="userMenuEmail"></p>
+        <p class="user-menu-pharmacy" id="userMenuPharmacy"></p>
+        <button id="userMenuTeamBtn" class="ghost-btn small-btn" type="button">Gérer mon équipe</button>
+        <button id="userMenuLogoutBtn" class="primary-btn small-btn" type="button">Déconnexion</button>
+      </div>
+    </div>
   </header>
 
   <main>
@@ -57,8 +69,35 @@
             <button class="primary-btn" type="submit">Enregistrer mon mot de passe</button>
           </form>
           <p id="pharmacyLoginMessage" class="status-message" role="status"></p>
+          <button id="switchToNewAuthBtn" class="link-btn auth-switch-link" type="button">Nouveau système de connexion (test)</button>
         </div>
       </section>
+
+      <section id="newAuthGate" class="pharmacy-gate" hidden>
+        <div class="pharmacy-gate-card">
+          <p class="eyebrow">Connexion (nouveau système – test)</p>
+          <h2>Connexion à votre compte</h2>
+          <p>Connectez-vous avec l'adresse e-mail et le mot de passe de votre compte personnel.</p>
+          <form id="newAuthLoginForm">
+            <label for="newAuthEmail">Adresse e-mail</label>
+            <input id="newAuthEmail" type="email" autocomplete="username" placeholder="prenom.nom@exemple.com">
+            <label for="newAuthPassword">Mot de passe</label>
+            <div class="password-field">
+              <input id="newAuthPassword" type="password" autocomplete="current-password" placeholder="Mot de passe">
+              <button id="toggleNewAuthPassword" class="password-toggle" type="button" aria-label="Afficher le mot de passe">Voir</button>
+            </div>
+            <button class="primary-btn" type="submit">Se connecter</button>
+          </form>
+          <button id="forgotNewAuthPasswordBtn" class="link-btn" type="button">Mot de passe oublié ?</button>
+          <p id="newAuthLoginMessage" class="status-message" role="status"></p>
+          <button id="switchToOldAuthBtn" class="link-btn auth-switch-link" type="button">← Revenir à l'ancienne connexion par pharmacie</button>
+        </div>
+      </section>
+
+      <div id="newAuthAdminStatus" class="pharmacy-session-bar" hidden>
+        <strong>Connecté comme administrateur SOGUASPHAR</strong>
+        <span class="form-help">Le tableau de bord d'administration des comptes arrive dans une prochaine étape. Utilisez le menu &#9881; en haut à droite pour vous déconnecter.</span>
+      </div>
 
       <div id="pharmacySessionBar" class="pharmacy-session-bar" hidden>
         <strong id="currentPharmacyName"></strong>
@@ -988,6 +1027,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=20261009-revert-securite"></script>
+  <script src="app.js?v=20261009-comptes-equipe"></script>
 </body>
 </html>
