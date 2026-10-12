@@ -4,7 +4,14 @@ const path = require("path");
 const crypto = require("crypto");
 
 const PORT = Number(process.env.PORT || 56651);
-const ADMIN_CODE = process.env.ADMIN_CODE || "SOGUASPHAR2026";
+// Le code admin ne doit JAMAIS avoir de valeur par défaut en dur dans le code :
+// il vient uniquement du fichier .env (secret, jamais dans git). Si absent, le
+// serveur refuse de démarrer plutôt que d'utiliser un mot de passe prévisible.
+const ADMIN_CODE = process.env.ADMIN_CODE;
+if (!ADMIN_CODE) {
+  console.error("ADMIN_CODE manquant dans .env : le serveur ne peut pas démarrer sans ce secret.");
+  process.exit(1);
+}
 const ROOT = __dirname;
 const DATA_DIR = path.join(ROOT, "data");
 const DATA_FILE = path.join(DATA_DIR, "responses.json");
@@ -165,14 +172,37 @@ function writeInfoResponses(responses) {
   fs.writeFileSync(INFO_RESPONSES_FILE, JSON.stringify(responses, null, 2), "utf8");
 }
 
+// Lit pharmacies.json et migre à la volée tout mot de passe encore en clair
+// (ancien format) vers un hachage scrypt — comme pour les comptes nominatifs.
+// Auto-réparateur : s'exécute à chaque lecture, sans action manuelle requise.
 function readPharmacies() {
   ensureDataFile();
-  return JSON.parse(fs.readFileSync(PHARMACIES_FILE, "utf8") || "[]");
+  const pharmacies = JSON.parse(fs.readFileSync(PHARMACIES_FILE, "utf8") || "[]");
+  let changed = false;
+  const migrated = pharmacies.map((pharmacy) => {
+    if (pharmacy && typeof pharmacy.password === "string" && pharmacy.password) {
+      changed = true;
+      const { password, ...rest } = pharmacy;
+      return { ...rest, passwordHash: hashPassword(password) };
+    }
+    return pharmacy;
+  });
+  if (changed) {
+    fs.writeFileSync(PHARMACIES_FILE, JSON.stringify(migrated, null, 2), "utf8");
+  }
+  return migrated;
 }
 
 function writePharmacies(pharmacies) {
   ensureDataFile();
   fs.writeFileSync(PHARMACIES_FILE, JSON.stringify(pharmacies, null, 2), "utf8");
+}
+
+// Ne renvoie jamais le hachage du mot de passe au navigateur : il est inutile
+// côté client et ça évite de l'exposer même sous forme hachée.
+function stripPharmacySecret(pharmacy) {
+  const { passwordHash, ...rest } = pharmacy;
+  return rest;
 }
 
 // --- Comptes individuels (email + mot de passe) -----------------------------
@@ -222,6 +252,23 @@ function verifyPassword(password, storedHash) {
   } catch (error) {
     return false;
   }
+}
+
+// Règle de mot de passe commune (pharmacies et comptes nominatifs) : au moins
+// 6 caractères, une majuscule, un symbole. Renvoie un message d'erreur en
+// français si la règle n'est pas respectée, ou "" si tout est bon. Doit rester
+// cohérente avec la même fonction côté client (app.js).
+function passwordRuleError(password) {
+  if (!password || password.length < 6) {
+    return "Le mot de passe doit contenir au moins 6 caractères.";
+  }
+  if (!/[A-Z]/.test(password)) {
+    return "Le mot de passe doit contenir au moins une majuscule.";
+  }
+  if (!/[^A-Za-z0-9]/.test(password)) {
+    return "Le mot de passe doit contenir au moins un symbole (ex : ! ? @ # &).";
+  }
+  return "";
 }
 
 function publicUser(user) {
@@ -381,6 +428,70 @@ function requireSamePharmacy(user, pharmacyId) {
 }
 
 loadSessions();
+
+// --- Protection anti-brute-force -------------------------------------------
+// Compte les échecs par adresse IP (code admin, login pharmacie, login par
+// compte) et bloque temporairement après plusieurs échecs, pour empêcher
+// quelqu'un d'essayer des milliers de mots de passe automatiquement.
+const BRUTE_FORCE_MAX_ATTEMPTS = 5;
+const BRUTE_FORCE_LOCK_MS = 10 * 60 * 1000; // 10 minutes
+const failedAttempts = new Map(); // "clé" (type:ip ou type:ip:identifiant) -> { count, lockUntil }
+
+function getClientIp(request) {
+  const forwarded = request.headers["x-forwarded-for"];
+  if (forwarded) return String(forwarded).split(",")[0].trim();
+  return (request.socket && request.socket.remoteAddress) || "inconnu";
+}
+
+function isLocked(key) {
+  const entry = failedAttempts.get(key);
+  return Boolean(entry && entry.lockUntil && entry.lockUntil > Date.now());
+}
+
+function registerFailure(key) {
+  const entry = failedAttempts.get(key) || { count: 0, lockUntil: 0 };
+  entry.count += 1;
+  if (entry.count >= BRUTE_FORCE_MAX_ATTEMPTS) {
+    entry.lockUntil = Date.now() + BRUTE_FORCE_LOCK_MS;
+    entry.count = 0;
+  }
+  failedAttempts.set(key, entry);
+}
+
+function registerSuccess(key) {
+  failedAttempts.delete(key);
+}
+
+// Vérifie le code admin (header x-admin-code ou paramètre ?code=), avec
+// blocage après plusieurs échecs. N'envoie pas la réponse d'erreur : à
+// utiliser pour les endpoints où le code est optionnel (accès dégradé).
+function isAdminCodeValid(request, providedCode) {
+  const provided = providedCode !== undefined ? providedCode : request.headers["x-admin-code"];
+  if (!provided) return false;
+  const key = `admin:${getClientIp(request)}`;
+  if (isLocked(key)) return false;
+  if (provided !== ADMIN_CODE) {
+    registerFailure(key);
+    return false;
+  }
+  registerSuccess(key);
+  return true;
+}
+
+// Variante stricte : envoie elle-même la réponse 401/429 et renvoie
+// false si l'accès doit être refusé. À utiliser pour les routes admin.
+function requireAdminCode(request, response, providedCode) {
+  const key = `admin:${getClientIp(request)}`;
+  if (isLocked(key)) {
+    sendJson(response, 429, { error: "Trop de tentatives avec un code incorrect. Réessayez dans quelques minutes." });
+    return false;
+  }
+  if (!isAdminCodeValid(request, providedCode)) {
+    sendJson(response, 401, { error: "Code administrateur incorrect" });
+    return false;
+  }
+  return true;
+}
 
 function defaultValidation() {
   return {
@@ -1243,8 +1354,7 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/responses" && request.method === "GET") {
-      if (request.headers["x-admin-code"] !== ADMIN_CODE) {
-        sendJson(response, 401, { error: "Code administrateur incorrect" });
+      if (!requireAdminCode(request, response)) {
         return;
       }
       sendJson(response, 200, latestResponses(readResponses()));
@@ -1373,8 +1483,7 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/validation" && request.method === "PUT") {
-      if (request.headers["x-admin-code"] !== ADMIN_CODE) {
-        sendJson(response, 401, { error: "Code administrateur incorrect" });
+      if (!requireAdminCode(request, response)) {
         return;
       }
 
@@ -1385,8 +1494,7 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/info-forms" && request.method === "PUT") {
-      if (request.headers["x-admin-code"] !== ADMIN_CODE) {
-        sendJson(response, 401, { error: "Code administrateur incorrect" });
+      if (!requireAdminCode(request, response)) {
         return;
       }
 
@@ -1405,8 +1513,8 @@ const server = http.createServer(async (request, response) => {
 
     if (url.pathname === "/api/pharmacies" && request.method === "GET") {
       const pharmacies = readPharmacies();
-      if (request.headers["x-admin-code"] === ADMIN_CODE) {
-        sendJson(response, 200, pharmacies);
+      if (isAdminCodeValid(request)) {
+        sendJson(response, 200, pharmacies.map(stripPharmacySecret));
         return;
       }
       sendJson(response, 200, { count: pharmacies.length });
@@ -1414,23 +1522,33 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/pharmacies" && request.method === "PUT") {
-      if (request.headers["x-admin-code"] !== ADMIN_CODE) {
-        sendJson(response, 401, { error: "Code administrateur incorrect" });
+      if (!requireAdminCode(request, response)) {
         return;
       }
 
       const payload = JSON.parse(await readBody(request));
-      const pharmacies = Array.isArray(payload) ? payload.map((pharmacy) => ({
-        id: String(pharmacy.id || Date.now()),
-        name: String(pharmacy.name || "").trim(),
-        password: String(pharmacy.password || "").trim(),
-        active: pharmacy.active !== false,
-        mustChangePassword: pharmacy.mustChangePassword !== false,
-        passwordResetRequested: Boolean(pharmacy.passwordResetRequested),
-        passwordResetRequestedAt: String(pharmacy.passwordResetRequestedAt || "").trim()
-      })).filter((pharmacy) => pharmacy.name && pharmacy.password) : [];
+      const existingPharmacies = readPharmacies();
+      const pharmacies = Array.isArray(payload) ? payload.map((pharmacy) => {
+        const previous = existingPharmacies.find((item) => item.id === pharmacy.id);
+        const plainPassword = String(pharmacy.password || "").trim();
+        // Un mot de passe en clair n'arrive ici qu'à la création ou à une
+        // réinitialisation : on le hache aussitôt et on ne le garde jamais
+        // tel quel. Sans mot de passe fourni, on conserve le hachage existant
+        // (sinon le simple fait de renvoyer la liste, ex. pour activer/
+        // désactiver une pharmacie, effacerait son mot de passe).
+        const passwordHash = plainPassword ? hashPassword(plainPassword) : (previous ? previous.passwordHash : "");
+        return {
+          id: String(pharmacy.id || Date.now()),
+          name: String(pharmacy.name || "").trim(),
+          passwordHash,
+          active: pharmacy.active !== false,
+          mustChangePassword: pharmacy.mustChangePassword !== false,
+          passwordResetRequested: Boolean(pharmacy.passwordResetRequested),
+          passwordResetRequestedAt: String(pharmacy.passwordResetRequestedAt || "").trim()
+        };
+      }).filter((pharmacy) => pharmacy.name && pharmacy.passwordHash) : [];
       writePharmacies(pharmacies);
-      sendJson(response, 200, pharmacies);
+      sendJson(response, 200, pharmacies.map(stripPharmacySecret));
       return;
     }
 
@@ -1462,13 +1580,20 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/pharmacy-login" && request.method === "POST") {
+      const bruteForceKey = `pharmacy-login:${getClientIp(request)}`;
+      if (isLocked(bruteForceKey)) {
+        sendJson(response, 429, { error: "Trop de tentatives. Réessayez dans quelques minutes." });
+        return;
+      }
       const payload = JSON.parse(await readBody(request));
       const password = String(payload.password || "").trim();
-      const pharmacy = readPharmacies().find((item) => item.active !== false && item.password === password);
+      const pharmacy = readPharmacies().find((item) => item.active !== false && verifyPassword(password, item.passwordHash));
       if (!pharmacy) {
+        registerFailure(bruteForceKey);
         sendJson(response, 401, { error: "Mot de passe pharmacie incorrect" });
         return;
       }
+      registerSuccess(bruteForceKey);
       sendJson(response, 200, {
         id: pharmacy.id,
         name: pharmacy.name,
@@ -1482,22 +1607,30 @@ const server = http.createServer(async (request, response) => {
       const pharmacyId = String(payload.pharmacyId || "").trim();
       const oldPassword = String(payload.oldPassword || "").trim();
       const newPassword = String(payload.newPassword || "").trim();
+      const bruteForceKey = `pharmacy-password:${getClientIp(request)}:${pharmacyId}`;
+      if (isLocked(bruteForceKey)) {
+        sendJson(response, 429, { error: "Trop de tentatives. Réessayez dans quelques minutes." });
+        return;
+      }
       const pharmacies = readPharmacies();
-      const pharmacy = pharmacies.find((item) => item.active !== false && item.id === pharmacyId && item.password === oldPassword);
+      const pharmacy = pharmacies.find((item) => item.active !== false && item.id === pharmacyId && verifyPassword(oldPassword, item.passwordHash));
 
       if (!pharmacy) {
+        registerFailure(bruteForceKey);
         sendJson(response, 401, { error: "Mot de passe actuel incorrect" });
         return;
       }
+      registerSuccess(bruteForceKey);
 
-      if (newPassword.length < 6) {
-        sendJson(response, 400, { error: "Le nouveau mot de passe doit contenir au moins 6 caractères" });
+      const ruleError = passwordRuleError(newPassword);
+      if (ruleError) {
+        sendJson(response, 400, { error: ruleError });
         return;
       }
 
       const updatedPharmacies = pharmacies.map((item) => item.id === pharmacy.id ? {
         ...item,
-        password: newPassword,
+        passwordHash: hashPassword(newPassword),
         mustChangePassword: false,
         passwordResetRequested: false,
         passwordResetRequestedAt: ""
@@ -1516,11 +1649,18 @@ const server = http.createServer(async (request, response) => {
       const payload = JSON.parse(await readBody(request));
       const email = normalizeEmail(payload.email);
       const password = String(payload.password || "");
+      const bruteForceKey = `auth-login:${getClientIp(request)}:${email}`;
+      if (isLocked(bruteForceKey)) {
+        sendJson(response, 429, { error: "Trop de tentatives. Réessayez dans quelques minutes." });
+        return;
+      }
       const user = findUserByEmail(email);
       if (!user || user.active === false || !verifyPassword(password, user.passwordHash)) {
+        registerFailure(bruteForceKey);
         sendJson(response, 401, { error: "Email ou mot de passe incorrect" });
         return;
       }
+      registerSuccess(bruteForceKey);
       const token = createSession(user.id);
       const users = readUsers();
       const updatedUsers = users.map((item) => item.id === user.id
@@ -1551,8 +1691,7 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/orders" && request.method === "PUT") {
-      if (request.headers["x-admin-code"] !== ADMIN_CODE) {
-        sendJson(response, 401, { error: "Code administrateur incorrect" });
+      if (!requireAdminCode(request, response)) {
         return;
       }
 
@@ -1581,8 +1720,7 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/polls" && request.method === "PUT") {
-      if (request.headers["x-admin-code"] !== ADMIN_CODE) {
-        sendJson(response, 401, { error: "Code administrateur incorrect" });
+      if (!requireAdminCode(request, response)) {
         return;
       }
 
@@ -1616,8 +1754,7 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/order-template" && request.method === "PUT") {
-      if (request.headers["x-admin-code"] !== ADMIN_CODE) {
-        sendJson(response, 401, { error: "Code administrateur incorrect" });
+      if (!requireAdminCode(request, response)) {
         return;
       }
 
@@ -1630,8 +1767,7 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/poll-responses" && request.method === "GET") {
-      if (request.headers["x-admin-code"] !== ADMIN_CODE) {
-        sendJson(response, 401, { error: "Code administrateur incorrect" });
+      if (!requireAdminCode(request, response)) {
         return;
       }
       sendJson(response, 200, latestPollResponses(readPollResponses()));
@@ -1639,8 +1775,7 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/info-responses" && request.method === "GET") {
-      if (request.headers["x-admin-code"] !== ADMIN_CODE) {
-        sendJson(response, 401, { error: "Code administrateur incorrect" });
+      if (!requireAdminCode(request, response)) {
         return;
       }
       sendJson(response, 200, latestInfoResponses(readInfoResponses()));
@@ -1648,8 +1783,7 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/validation-responses" && request.method === "GET") {
-      if (request.headers["x-admin-code"] !== ADMIN_CODE) {
-        sendJson(response, 401, { error: "Code administrateur incorrect" });
+      if (!requireAdminCode(request, response)) {
         return;
       }
       sendJson(response, 200, publicValidationResponses(latestValidationResponses(readValidationResponses())));
@@ -1657,8 +1791,7 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/validation-summary" && request.method === "GET") {
-      if (request.headers["x-admin-code"] !== ADMIN_CODE) {
-        sendJson(response, 401, { error: "Code administrateur incorrect" });
+      if (!requireAdminCode(request, response)) {
         return;
       }
       sendJson(response, 200, validationSummary());
@@ -1666,8 +1799,7 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/responses" && request.method === "PUT") {
-      if (request.headers["x-admin-code"] !== ADMIN_CODE) {
-        sendJson(response, 401, { error: "Code administrateur incorrect" });
+      if (!requireAdminCode(request, response)) {
         return;
       }
 
@@ -1699,8 +1831,7 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/poll-responses" && request.method === "PUT") {
-      if (request.headers["x-admin-code"] !== ADMIN_CODE) {
-        sendJson(response, 401, { error: "Code administrateur incorrect" });
+      if (!requireAdminCode(request, response)) {
         return;
       }
 
@@ -1724,8 +1855,7 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/info-responses" && request.method === "PUT") {
-      if (request.headers["x-admin-code"] !== ADMIN_CODE) {
-        sendJson(response, 401, { error: "Code administrateur incorrect" });
+      if (!requireAdminCode(request, response)) {
         return;
       }
 
@@ -1738,8 +1868,7 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/validation-responses" && request.method === "PUT") {
-      if (request.headers["x-admin-code"] !== ADMIN_CODE) {
-        sendJson(response, 401, { error: "Code administrateur incorrect" });
+      if (!requireAdminCode(request, response)) {
         return;
       }
 
@@ -1907,8 +2036,7 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/responses" && request.method === "DELETE") {
-      if (request.headers["x-admin-code"] !== ADMIN_CODE) {
-        sendJson(response, 401, { error: "Code administrateur incorrect" });
+      if (!requireAdminCode(request, response)) {
         return;
       }
       writeResponses([]);
@@ -1917,8 +2045,7 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname.startsWith("/api/responses/") && request.method === "DELETE") {
-      if (request.headers["x-admin-code"] !== ADMIN_CODE) {
-        sendJson(response, 401, { error: "Code administrateur incorrect" });
+      if (!requireAdminCode(request, response)) {
         return;
       }
 
@@ -1930,8 +2057,7 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/export.xls" && request.method === "GET") {
-      if (url.searchParams.get("code") !== ADMIN_CODE) {
-        sendJson(response, 401, { error: "Code administrateur incorrect" });
+      if (!requireAdminCode(request, response, url.searchParams.get("code"))) {
         return;
       }
       const campaignId = url.searchParams.get("campaign");
@@ -1944,8 +2070,7 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/poll-export.xls" && request.method === "GET") {
-      if (url.searchParams.get("code") !== ADMIN_CODE) {
-        sendJson(response, 401, { error: "Code administrateur incorrect" });
+      if (!requireAdminCode(request, response, url.searchParams.get("code"))) {
         return;
       }
       const pollId = url.searchParams.get("poll");
@@ -1958,9 +2083,7 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/info-export.xls" && request.method === "GET") {
-      if (url.searchParams.get("code") !== ADMIN_CODE) {
-        response.writeHead(401);
-        response.end("Code administrateur incorrect");
+      if (!requireAdminCode(request, response, url.searchParams.get("code"))) {
         return;
       }
       const formId = url.searchParams.get("form");

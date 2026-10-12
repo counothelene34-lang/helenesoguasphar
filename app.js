@@ -1301,7 +1301,27 @@ async function refreshPharmacyCampaignResponses() {
 function generatePharmacyPassword(name) {
   const prefix = slugify(name).replace(/-/g, "").slice(0, 4).toUpperCase() || "PHAR";
   const random = Math.random().toString(36).slice(2, 6).toUpperCase();
-  return `${prefix}${random}`;
+  const symbols = "!@#$%&*?";
+  const symbol = symbols[Math.floor(Math.random() * symbols.length)];
+  // Respecte la règle imposée aux pharmacies : au moins 6 caractères,
+  // une majuscule et un symbole.
+  return `${prefix}${random}${symbol}`;
+}
+
+// Règle de mot de passe commune (pharmacies et comptes nominatifs) : au moins
+// 6 caractères, une majuscule, un symbole. Renvoie un message d'erreur en
+// français si la règle n'est pas respectée, ou "" si tout est bon.
+function passwordRuleError(password) {
+  if (!password || password.length < 6) {
+    return "Le mot de passe doit contenir au moins 6 caractères.";
+  }
+  if (!/[A-Z]/.test(password)) {
+    return "Le mot de passe doit contenir au moins une majuscule.";
+  }
+  if (!/[^A-Za-z0-9]/.test(password)) {
+    return "Le mot de passe doit contenir au moins un symbole (ex : ! ? @ # &).";
+  }
+  return "";
 }
 
 function pharmacyAccessRequired() {
@@ -2537,23 +2557,23 @@ function renderPharmacyAccounts() {
     <div class="table-toolbar pharmacy-export-toolbar">
       <div>
         <h2>Accès pharmacies</h2>
-        <p>Exportez la liste des pharmacies avec leurs mots de passe actuels.</p>
+        <p>Les mots de passe ne sont plus stockés en clair : ils ne s'affichent qu'une fois, à la création ou à la réinitialisation.</p>
       </div>
       <button class="primary-btn" type="button" data-export-pharmacy-passwords>Exporter Excel</button>
     </div>
     <div class="table-wrap compact">
       <table>
-        <thead><tr><th>Pharmacie</th><th>Mot de passe actuel</th><th>Statut</th><th>Demande</th><th>Action</th></tr></thead>
+        <thead><tr><th>Pharmacie</th><th>Mot de passe</th><th>Statut</th><th>Demande</th><th>Action</th></tr></thead>
         <tbody>
           ${pharmacies.map((pharmacy) => {
             const resetRequested = Boolean(pharmacy.passwordResetRequested);
             const requestDate = pharmacy.passwordResetRequestedAt ? `<small>${escapeHtml(pharmacy.passwordResetRequestedAt)}</small>` : "";
             const requestLabel = resetRequested ? `<span class="request-badge">Réinitialisation demandée</span>${requestDate}` : "-";
-            const resetButton = resetRequested ? `<button class="ghost-btn small-btn" type="button" data-reset-pharmacy-password="${escapeHtml(pharmacy.id)}">Réinitialiser</button>` : "";
+            const resetButton = `<button class="ghost-btn small-btn" type="button" data-reset-pharmacy-password="${escapeHtml(pharmacy.id)}">Réinitialiser</button>`;
             return `
               <tr class="${resetRequested ? "needs-reset" : ""}">
                 <td><strong>${escapeHtml(pharmacy.name)}</strong></td>
-                <td><code>${escapeHtml(pharmacy.password)}</code></td>
+                <td><em>Masqué</em></td>
                 <td>${pharmacy.mustChangePassword === false ? "Personnalisé" : "À changer"}</td>
                 <td>${requestLabel}</td>
                 <td class="pharmacy-actions">
@@ -4954,11 +4974,10 @@ function exportPharmacyPasswordsToExcel() {
   const sortedPharmacies = pharmacies
     .slice()
     .sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""), "fr"));
-  const headings = ["Pharmacie", "Mot de passe", "Accès actif", "Mot de passe à changer", "Demande de réinitialisation", "Date de demande"];
+  const headings = ["Pharmacie", "Accès actif", "Mot de passe à changer", "Demande de réinitialisation", "Date de demande"];
   const body = sortedPharmacies.map((pharmacy) => `
     <tr>
       <td>${escapeHtml(pharmacy.name || "")}</td>
-      <td>${escapeHtml(pharmacy.password || "")}</td>
       <td>${pharmacy.active === false ? "Non" : "Oui"}</td>
       <td>${pharmacy.mustChangePassword === false ? "Non" : "Oui"}</td>
       <td>${pharmacy.passwordResetRequested ? "Oui" : "Non"}</td>
@@ -5287,8 +5306,9 @@ pharmacyPasswordChangeForm.addEventListener("submit", async (event) => {
   const newPassword = newPharmacyPassword.value.trim();
   const confirmation = confirmPharmacyPassword.value.trim();
 
-  if (newPassword.length < 6) {
-    pharmacyLoginMessage.textContent = "Le nouveau mot de passe doit contenir au moins 6 caractères.";
+  const ruleError = passwordRuleError(newPassword);
+  if (ruleError) {
+    pharmacyLoginMessage.textContent = ruleError;
     return;
   }
 
