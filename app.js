@@ -50,6 +50,9 @@ const newAuthEmail = document.querySelector("#newAuthEmail");
 const newAuthPassword = document.querySelector("#newAuthPassword");
 const toggleNewAuthPassword = document.querySelector("#toggleNewAuthPassword");
 const forgotNewAuthPasswordBtn = document.querySelector("#forgotNewAuthPasswordBtn");
+const newAuthPasswordChangeForm = document.querySelector("#newAuthPasswordChangeForm");
+const newAuthNewPassword = document.querySelector("#newAuthNewPassword");
+const newAuthConfirmPassword = document.querySelector("#newAuthConfirmPassword");
 const newAuthLoginMessage = document.querySelector("#newAuthLoginMessage");
 const switchToNewAuthBtn = document.querySelector("#switchToNewAuthBtn");
 const switchToOldAuthBtn = document.querySelector("#switchToOldAuthBtn");
@@ -62,6 +65,17 @@ const userMenuEmail = document.querySelector("#userMenuEmail");
 const userMenuPharmacy = document.querySelector("#userMenuPharmacy");
 const userMenuTeamBtn = document.querySelector("#userMenuTeamBtn");
 const userMenuLogoutBtn = document.querySelector("#userMenuLogoutBtn");
+// Fenêtre "Mon équipe" : une pharmacie (titulaire) peut créer des comptes
+// pour ses collaborateurs, qui se connectent avec leur propre e-mail.
+const teamModal = document.querySelector("#teamModal");
+const teamModalClose = document.querySelector("#teamModalClose");
+const teamMembersList = document.querySelector("#teamMembersList");
+const teamAddForm = document.querySelector("#teamAddForm");
+const teamNewFirstName = document.querySelector("#teamNewFirstName");
+const teamNewLastName = document.querySelector("#teamNewLastName");
+const teamNewEmail = document.querySelector("#teamNewEmail");
+const teamNewJobTitle = document.querySelector("#teamNewJobTitle");
+const teamModalMessage = document.querySelector("#teamModalMessage");
 const heroActionsRow = document.querySelector(".hero-actions-row");
 const heroBand = document.querySelector(".hero-band");
 const campaignPicker = document.querySelector("#campaignPicker");
@@ -324,6 +338,8 @@ let currentUser = null;
 let showingNewAuthScreen = false;
 let pendingPasswordPharmacy = null;
 let pendingInitialPassword = "";
+let pendingInitialUserPassword = ""; // mot de passe provisoire d'un compte nominatif, avant son changement obligatoire
+let teamMembers = [];
 let pharmacyPollAnswers = {};
 let pharmacyCampaignResponses = {};
 let pharmacyPeriodResponses = {};
@@ -1231,6 +1247,46 @@ async function logoutNewAuth() {
   } catch {
     // Non bloquant : même si la requête échoue, l'écran se réinitialise quand même.
   }
+}
+
+async function changeOwnPassword(oldPassword, newPassword) {
+  const result = await requestJson("/api/auth/password", {
+    method: "PUT",
+    body: JSON.stringify({ oldPassword, newPassword })
+  });
+  return result.user;
+}
+
+// --- Comptes d'équipe (une pharmacie peut créer des comptes collaborateurs) -
+
+async function fetchTeam() {
+  const result = await requestJson("/api/team");
+  return result.members || [];
+}
+
+async function createTeamMember(member) {
+  return requestJson("/api/team", {
+    method: "POST",
+    body: JSON.stringify(member)
+  });
+}
+
+async function resetTeamMemberPassword(memberId) {
+  return requestJson(`/api/team/${encodeURIComponent(memberId)}/reset-password`, {
+    method: "POST"
+  });
+}
+
+async function setTeamMemberActive(memberId, active) {
+  const result = await requestJson(`/api/team/${encodeURIComponent(memberId)}`, {
+    method: "PUT",
+    body: JSON.stringify({ active })
+  });
+  return result.member;
+}
+
+async function deleteTeamMember(memberId) {
+  return requestJson(`/api/team/${encodeURIComponent(memberId)}`, { method: "DELETE" });
 }
 
 async function changePharmacyPassword(pharmacyId, oldPassword, newPassword) {
@@ -2436,7 +2492,132 @@ function renderUserMenu() {
       ? "Administration SOGUASPHAR"
       : (currentUser.pharmacyName || "Pharmacie non rattachée");
   }
+  if (userMenuTeamBtn) {
+    const isPharmacyRole = currentUser.role === "pharmacy_admin" || currentUser.role === "pharmacy_collaborator";
+    userMenuTeamBtn.hidden = !isPharmacyRole;
+    userMenuTeamBtn.textContent = currentUser.role === "pharmacy_admin" ? "Gérer mon équipe" : "Mon équipe";
+  }
 }
+
+// --- Fenêtre "Mon équipe" ---------------------------------------------------
+// Un titulaire (pharmacy_admin) peut créer, réinitialiser le mot de passe de,
+// désactiver ou supprimer des comptes collaborateurs de sa propre pharmacie.
+// Un collaborateur (pharmacy_collaborator) peut seulement consulter la liste.
+
+async function openTeamModal() {
+  if (!teamModal) return;
+  teamModal.hidden = false;
+  document.body.classList.add("modal-open");
+  teamModalMessage.textContent = "Chargement...";
+  await refreshTeamModal();
+}
+
+function closeTeamModal() {
+  if (!teamModal || teamModal.hidden) return;
+  teamModal.hidden = true;
+  document.body.classList.remove("modal-open");
+  if (teamModalMessage) teamModalMessage.textContent = "";
+}
+
+async function refreshTeamModal() {
+  try {
+    teamMembers = await fetchTeam();
+    renderTeamModal();
+  } catch (error) {
+    teamMembersList.innerHTML = "";
+    teamModalMessage.textContent = error.message || "Impossible de charger l'équipe pour le moment.";
+  }
+}
+
+function renderTeamModal() {
+  if (!teamMembersList) return;
+  const isAdmin = currentUser?.role === "pharmacy_admin";
+  if (teamAddForm) teamAddForm.hidden = !isAdmin;
+
+  if (!teamMembers.length) {
+    teamMembersList.innerHTML = '<p class="empty-campaigns">Personne d\'autre n\'a encore de compte pour cette pharmacie.</p>';
+    return;
+  }
+
+  teamMembersList.innerHTML = `
+    <table>
+      <thead><tr><th>Nom</th><th>E-mail</th><th>Fonction</th><th>Rôle</th><th>Statut</th>${isAdmin ? "<th>Action</th>" : ""}</tr></thead>
+      <tbody>
+        ${teamMembers.map((member) => {
+          const fullName = [member.firstName, member.lastName].filter(Boolean).join(" ") || "-";
+          const roleLabel = member.role === "pharmacy_admin" ? "Titulaire" : "Collaborateur";
+          const statusLabel = member.active === false ? "Désactivé" : (member.mustChangePassword ? "Mot de passe provisoire" : "Actif");
+          const isSelf = currentUser && member.id === currentUser.id;
+          const actions = isAdmin && member.role === "pharmacy_collaborator" ? `
+            <button class="ghost-btn small-btn" type="button" data-reset-team-member="${escapeHtml(member.id)}">Réinitialiser le mot de passe</button>
+            <button class="ghost-btn small-btn" type="button" data-toggle-team-member="${escapeHtml(member.id)}" data-next-active="${member.active === false ? "true" : "false"}">${member.active === false ? "Réactiver" : "Désactiver"}</button>
+            <button class="delete-response-btn" type="button" data-delete-team-member="${escapeHtml(member.id)}" aria-label="Supprimer ${escapeHtml(fullName)}">&#128465;</button>
+          ` : (isAdmin && isSelf ? "<em>Vous</em>" : "");
+          return `
+            <tr>
+              <td><strong>${escapeHtml(fullName)}</strong></td>
+              <td>${escapeHtml(member.email)}</td>
+              <td>${escapeHtml(member.jobTitle || "-")}</td>
+              <td>${roleLabel}</td>
+              <td>${statusLabel}</td>
+              ${isAdmin ? `<td class="pharmacy-actions">${actions}</td>` : ""}
+            </tr>
+          `;
+        }).join("")}
+      </tbody>
+    </table>
+  `;
+}
+
+teamMembersList?.addEventListener("click", async (event) => {
+  const resetButton = event.target.closest("[data-reset-team-member]");
+  if (resetButton) {
+    const member = teamMembers.find((item) => item.id === resetButton.dataset.resetTeamMember);
+    if (!member) return;
+    const fullName = [member.firstName, member.lastName].filter(Boolean).join(" ") || member.email;
+    if (!confirm(`Réinitialiser le mot de passe de ${fullName} ?`)) return;
+    try {
+      const result = await resetTeamMemberPassword(member.id);
+      teamModalMessage.textContent = `Mot de passe réinitialisé pour ${fullName} : ${result.temporaryPassword} (à lui transmettre).`;
+      await refreshTeamModal();
+    } catch (error) {
+      teamModalMessage.textContent = error.message || "Impossible de réinitialiser ce mot de passe.";
+    }
+    return;
+  }
+
+  const toggleButton = event.target.closest("[data-toggle-team-member]");
+  if (toggleButton) {
+    const member = teamMembers.find((item) => item.id === toggleButton.dataset.toggleTeamMember);
+    if (!member) return;
+    const nextActive = toggleButton.dataset.nextActive === "true";
+    const fullName = [member.firstName, member.lastName].filter(Boolean).join(" ") || member.email;
+    if (!confirm(`${nextActive ? "Réactiver" : "Désactiver"} l'accès de ${fullName} ?`)) return;
+    try {
+      await setTeamMemberActive(member.id, nextActive);
+      teamModalMessage.textContent = `Accès ${nextActive ? "réactivé" : "désactivé"} pour ${fullName}.`;
+      await refreshTeamModal();
+    } catch (error) {
+      teamModalMessage.textContent = error.message || "Impossible de modifier cet accès.";
+    }
+    return;
+  }
+
+  const deleteButton = event.target.closest("[data-delete-team-member]");
+  if (deleteButton) {
+    const member = teamMembers.find((item) => item.id === deleteButton.dataset.deleteTeamMember);
+    if (!member) return;
+    const fullName = [member.firstName, member.lastName].filter(Boolean).join(" ") || member.email;
+    if (!confirm(`Supprimer l'accès de ${fullName} ? Cette action est définitive.`)) return;
+    try {
+      await deleteTeamMember(member.id);
+      teamModalMessage.textContent = `Accès supprimé pour ${fullName}.`;
+      await refreshTeamModal();
+    } catch (error) {
+      teamModalMessage.textContent = error.message || "Impossible de supprimer cet accès.";
+    }
+  }
+});
 
 // Bascule vers le nouvel écran de connexion (email + mot de passe), en test
 // en parallèle de l'ancienne connexion par mot de passe pharmacie.
@@ -2445,6 +2626,18 @@ function showNewAuthScreen() {
   if (pharmacyGate) pharmacyGate.hidden = true;
   if (newAuthGate) newAuthGate.hidden = false;
   if (newAuthLoginMessage) newAuthLoginMessage.textContent = "";
+  resetNewAuthLoginScreen();
+}
+
+// Remet l'écran de connexion (nouveau système) dans son état normal : le
+// formulaire de connexion visible, celui de changement de mot de passe
+// provisoire masqué. À appeler après une connexion réussie, une déconnexion,
+// ou un retour à cet écran.
+function resetNewAuthLoginScreen() {
+  if (newAuthLoginForm) newAuthLoginForm.hidden = false;
+  if (forgotNewAuthPasswordBtn) forgotNewAuthPasswordBtn.hidden = false;
+  if (newAuthPasswordChangeForm) newAuthPasswordChangeForm.hidden = true;
+  pendingInitialUserPassword = "";
 }
 
 function showOldAuthScreen() {
@@ -5385,8 +5578,21 @@ newAuthLoginForm?.addEventListener("submit", async (event) => {
 
   try {
     currentUser = await loginWithEmail(email, password);
+
+    if (currentUser.mustChangePassword) {
+      pendingInitialUserPassword = password;
+      newAuthPassword.value = "";
+      newAuthLoginMessage.textContent = "";
+      newAuthLoginForm.hidden = true;
+      forgotNewAuthPasswordBtn.hidden = true;
+      newAuthPasswordChangeForm.hidden = false;
+      newAuthNewPassword.focus();
+      return;
+    }
+
     newAuthPassword.value = "";
     newAuthLoginMessage.textContent = "";
+    resetNewAuthLoginScreen();
     renderUserMenu();
     showingNewAuthScreen = false;
     newAuthGate.hidden = true;
@@ -5416,6 +5622,61 @@ newAuthLoginForm?.addEventListener("submit", async (event) => {
   }
 });
 
+newAuthPasswordChangeForm?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (!pendingInitialUserPassword) {
+    newAuthLoginMessage.textContent = "Reconnectez-vous avec le mot de passe transmis.";
+    resetNewAuthLoginScreen();
+    return;
+  }
+
+  const newPassword = newAuthNewPassword.value.trim();
+  const confirmation = newAuthConfirmPassword.value.trim();
+
+  const ruleError = passwordRuleError(newPassword);
+  if (ruleError) {
+    newAuthLoginMessage.textContent = ruleError;
+    return;
+  }
+
+  if (newPassword !== confirmation) {
+    newAuthLoginMessage.textContent = "Les deux mots de passe ne sont pas identiques.";
+    return;
+  }
+
+  try {
+    currentUser = await changeOwnPassword(pendingInitialUserPassword, newPassword);
+    newAuthNewPassword.value = "";
+    newAuthConfirmPassword.value = "";
+    newAuthLoginMessage.textContent = "";
+    resetNewAuthLoginScreen();
+    renderUserMenu();
+    showingNewAuthScreen = false;
+    newAuthGate.hidden = true;
+
+    if (currentUser.role === "pharmacy_admin" || currentUser.role === "pharmacy_collaborator") {
+      currentPharmacy = { id: currentUser.pharmacyId, name: currentUser.pharmacyName, mustChangePassword: false };
+      archivedOrdersVisible = false;
+      localStorage.setItem(PHARMACY_SESSION_KEY, JSON.stringify(currentPharmacy));
+      renderCampaignPickers();
+      showCampaignPicker();
+      renderPharmacyAccess();
+      await refreshPharmacyPollAnswers();
+      await refreshPharmacyCampaignResponses();
+      await refreshPharmacyInfoResponses();
+      await refreshPharmacyValidationResponses();
+      renderCampaignPickers();
+      showRequestedOperationOrMenu();
+      renderPharmacyAccess();
+    } else {
+      if (pharmacyGate) pharmacyGate.hidden = true;
+      if (newAuthAdminStatus) newAuthAdminStatus.hidden = false;
+    }
+  } catch (error) {
+    newAuthLoginMessage.textContent = error.message || "Impossible d'enregistrer ce mot de passe. Réessayez.";
+  }
+});
+
 userMenuBtn?.addEventListener("click", (event) => {
   event.stopPropagation();
   const isHidden = userMenuPanel.hidden;
@@ -5431,8 +5692,43 @@ document.addEventListener("click", (event) => {
   }
 });
 
-userMenuTeamBtn?.addEventListener("click", () => {
-  alert("Gestion de mon équipe : bientôt disponible.");
+userMenuTeamBtn?.addEventListener("click", async () => {
+  userMenuPanel.hidden = true;
+  await openTeamModal();
+});
+
+teamModalClose?.addEventListener("click", closeTeamModal);
+document.addEventListener("click", (event) => {
+  if (teamModal && !teamModal.hidden && event.target.closest("[data-close-team-modal]")) {
+    closeTeamModal();
+  }
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && teamModal && !teamModal.hidden) {
+    closeTeamModal();
+  }
+});
+
+teamAddForm?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const firstName = teamNewFirstName.value.trim();
+  const lastName = teamNewLastName.value.trim();
+  const email = teamNewEmail.value.trim();
+  const jobTitle = teamNewJobTitle.value.trim();
+
+  if (!firstName || !lastName || !email) {
+    teamModalMessage.textContent = "Indiquez le prénom, le nom et l'e-mail de la personne.";
+    return;
+  }
+
+  try {
+    const result = await createTeamMember({ firstName, lastName, email, jobTitle });
+    teamAddForm.reset();
+    teamModalMessage.textContent = `Accès créé pour ${firstName} ${lastName}. Mot de passe provisoire : ${result.temporaryPassword} (à lui transmettre ; il devra le changer à la première connexion).`;
+    await refreshTeamModal();
+  } catch (error) {
+    teamModalMessage.textContent = error.message || "Impossible de créer cet accès. Réessayez.";
+  }
 });
 
 userMenuLogoutBtn?.addEventListener("click", async () => {
@@ -5440,6 +5736,7 @@ userMenuLogoutBtn?.addEventListener("click", async () => {
   await logoutNewAuth();
   currentUser = null;
   renderUserMenu();
+  closeTeamModal();
   if (newAuthAdminStatus) newAuthAdminStatus.hidden = true;
   if (wasPharmacyRole) {
     currentPharmacy = null;

@@ -271,6 +271,16 @@ function passwordRuleError(password) {
   return "";
 }
 
+// Génère un mot de passe provisoire qui respecte toujours la règle commune
+// (6 caractères minimum, une majuscule, un symbole), pour les nouveaux
+// comptes nominatifs (comptes d'équipe) et leurs réinitialisations.
+function generateTempPassword() {
+  const random = crypto.randomBytes(5).toString("hex").toUpperCase();
+  const symbols = "!@#$%&*?";
+  const symbol = symbols[Math.floor(Math.random() * symbols.length)];
+  return `Eq${random}${symbol}`;
+}
+
 function publicUser(user) {
   if (!user) return null;
   const pharmacy = user.pharmacyId
@@ -1687,6 +1697,169 @@ const server = http.createServer(async (request, response) => {
         return;
       }
       sendJson(response, 200, { user: publicUser(user) });
+      return;
+    }
+
+    if (url.pathname === "/api/auth/password" && request.method === "PUT") {
+      const user = requireAuth(request, response);
+      if (!user) return;
+
+      const bruteForceKey = `auth-password:${getClientIp(request)}:${user.id}`;
+      if (isLocked(bruteForceKey)) {
+        sendJson(response, 429, { error: "Trop de tentatives. Réessayez dans quelques minutes." });
+        return;
+      }
+
+      const payload = JSON.parse(await readBody(request));
+      const oldPassword = String(payload.oldPassword || "");
+      const newPassword = String(payload.newPassword || "");
+
+      if (!verifyPassword(oldPassword, user.passwordHash)) {
+        registerFailure(bruteForceKey);
+        sendJson(response, 401, { error: "Mot de passe actuel incorrect" });
+        return;
+      }
+      registerSuccess(bruteForceKey);
+
+      const ruleError = passwordRuleError(newPassword);
+      if (ruleError) {
+        sendJson(response, 400, { error: ruleError });
+        return;
+      }
+
+      const users = readUsers();
+      const updatedUsers = users.map((item) => item.id === user.id ? {
+        ...item,
+        passwordHash: hashPassword(newPassword),
+        mustChangePassword: false
+      } : item);
+      writeUsers(updatedUsers);
+      const updatedUser = updatedUsers.find((item) => item.id === user.id);
+      sendJson(response, 200, { user: publicUser(updatedUser) });
+      return;
+    }
+
+    // --- Comptes d'équipe --------------------------------------------------
+    // Un titulaire (pharmacy_admin) peut créer, réinitialiser le mot de passe
+    // de, désactiver ou supprimer des comptes collaborateurs de sa propre
+    // pharmacie. Un collaborateur peut seulement consulter la liste.
+
+    if (url.pathname === "/api/team" && request.method === "GET") {
+      const user = requireAuth(request, response, ["pharmacy_admin", "pharmacy_collaborator"]);
+      if (!user) return;
+      const members = readUsers()
+        .filter((item) => requireSamePharmacy(user, item.pharmacyId) && item.pharmacyId)
+        .map(publicUser);
+      sendJson(response, 200, { members });
+      return;
+    }
+
+    if (url.pathname === "/api/team" && request.method === "POST") {
+      const user = requireAuth(request, response, ["pharmacy_admin"]);
+      if (!user) return;
+
+      const payload = JSON.parse(await readBody(request));
+      const email = normalizeEmail(payload.email);
+      const firstName = String(payload.firstName || "").trim();
+      const lastName = String(payload.lastName || "").trim();
+      const jobTitle = String(payload.jobTitle || "").trim();
+
+      if (!email || !firstName || !lastName) {
+        sendJson(response, 400, { error: "Indiquez le prénom, le nom et l'e-mail." });
+        return;
+      }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        sendJson(response, 400, { error: "Adresse e-mail invalide." });
+        return;
+      }
+      if (findUserByEmail(email)) {
+        sendJson(response, 409, { error: "Cette adresse e-mail est déjà utilisée par un compte." });
+        return;
+      }
+
+      const temporaryPassword = generateTempPassword();
+      const newUser = {
+        id: `user-${crypto.randomBytes(8).toString("hex")}`,
+        email,
+        passwordHash: hashPassword(temporaryPassword),
+        firstName,
+        lastName,
+        jobTitle,
+        pharmacyId: user.pharmacyId,
+        role: "pharmacy_collaborator",
+        active: true,
+        mustChangePassword: true,
+        createdAt: new Date().toISOString(),
+        lastLoginAt: null,
+        invitedAt: new Date().toISOString(),
+        invitationToken: null
+      };
+      const users = readUsers();
+      users.push(newUser);
+      writeUsers(users);
+      sendJson(response, 201, { member: publicUser(newUser), temporaryPassword });
+      return;
+    }
+
+    if (url.pathname.startsWith("/api/team/") && url.pathname.endsWith("/reset-password") && request.method === "POST") {
+      const user = requireAuth(request, response, ["pharmacy_admin"]);
+      if (!user) return;
+
+      const memberId = decodeURIComponent(url.pathname.replace("/api/team/", "").replace("/reset-password", ""));
+      const users = readUsers();
+      const member = users.find((item) => item.id === memberId);
+      if (!member || member.role !== "pharmacy_collaborator" || !requireSamePharmacy(user, member.pharmacyId)) {
+        sendJson(response, 404, { error: "Personne introuvable." });
+        return;
+      }
+
+      const temporaryPassword = generateTempPassword();
+      const updatedUsers = users.map((item) => item.id === member.id ? {
+        ...item,
+        passwordHash: hashPassword(temporaryPassword),
+        mustChangePassword: true
+      } : item);
+      writeUsers(updatedUsers);
+      sendJson(response, 200, { member: publicUser(updatedUsers.find((item) => item.id === member.id)), temporaryPassword });
+      return;
+    }
+
+    if (url.pathname.startsWith("/api/team/") && request.method === "PUT") {
+      const user = requireAuth(request, response, ["pharmacy_admin"]);
+      if (!user) return;
+
+      const memberId = decodeURIComponent(url.pathname.replace("/api/team/", ""));
+      const payload = JSON.parse(await readBody(request));
+      const users = readUsers();
+      const member = users.find((item) => item.id === memberId);
+      if (!member || member.role !== "pharmacy_collaborator" || !requireSamePharmacy(user, member.pharmacyId)) {
+        sendJson(response, 404, { error: "Personne introuvable." });
+        return;
+      }
+
+      const updatedUsers = users.map((item) => item.id === member.id ? {
+        ...item,
+        active: payload.active !== false
+      } : item);
+      writeUsers(updatedUsers);
+      sendJson(response, 200, { member: publicUser(updatedUsers.find((item) => item.id === member.id)) });
+      return;
+    }
+
+    if (url.pathname.startsWith("/api/team/") && request.method === "DELETE") {
+      const user = requireAuth(request, response, ["pharmacy_admin"]);
+      if (!user) return;
+
+      const memberId = decodeURIComponent(url.pathname.replace("/api/team/", ""));
+      const users = readUsers();
+      const member = users.find((item) => item.id === memberId);
+      if (!member || member.role !== "pharmacy_collaborator" || !requireSamePharmacy(user, member.pharmacyId)) {
+        sendJson(response, 404, { error: "Personne introuvable." });
+        return;
+      }
+
+      writeUsers(users.filter((item) => item.id !== member.id));
+      sendJson(response, 200, { ok: true });
       return;
     }
 

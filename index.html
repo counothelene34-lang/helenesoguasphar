@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20261009-comptes-equipe">
+  <link rel="stylesheet" href="styles.css?v=20261012-comptes-equipe-2">
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js" defer></script>
@@ -89,6 +89,14 @@
             <button class="primary-btn" type="submit">Se connecter</button>
           </form>
           <button id="forgotNewAuthPasswordBtn" class="link-btn" type="button">Mot de passe oublié ?</button>
+          <form id="newAuthPasswordChangeForm" class="pharmacy-password-change" hidden>
+            <p>Ce mot de passe est provisoire : choisissez-en un nouveau pour continuer.</p>
+            <label for="newAuthNewPassword">Nouveau mot de passe</label>
+            <input id="newAuthNewPassword" type="password" autocomplete="new-password" placeholder="Nouveau mot de passe" minlength="6">
+            <label for="newAuthConfirmPassword">Confirmer le mot de passe</label>
+            <input id="newAuthConfirmPassword" type="password" autocomplete="new-password" placeholder="Confirmer le mot de passe" minlength="6">
+            <button class="primary-btn" type="submit">Enregistrer mon mot de passe</button>
+          </form>
           <p id="newAuthLoginMessage" class="status-message" role="status"></p>
           <button id="switchToOldAuthBtn" class="link-btn auth-switch-link" type="button">← Revenir à l'ancienne connexion par pharmacie</button>
         </div>
@@ -1015,6 +1023,31 @@
     </section>
   </main>
 
+  <div id="teamModal" class="image-preview-modal" role="dialog" aria-modal="true" aria-labelledby="teamModalTitle" hidden>
+    <div class="image-preview-backdrop" data-close-team-modal></div>
+    <div class="image-preview-dialog team-modal-dialog">
+      <div class="image-preview-head">
+        <h2 id="teamModalTitle">Mon équipe</h2>
+        <button id="teamModalClose" class="image-preview-close" type="button" aria-label="Fermer">X</button>
+      </div>
+      <p class="form-help">Les personnes de votre équipe se connectent avec leur propre adresse e-mail et leur propre mot de passe, et voient les mêmes commandes et sondages que vous pour votre pharmacie.</p>
+      <div id="teamMembersList" class="table-wrap compact"></div>
+      <form id="teamAddForm" class="team-add-form" hidden>
+        <h3>Ajouter une personne</h3>
+        <label for="teamNewFirstName">Prénom</label>
+        <input id="teamNewFirstName" type="text" autocomplete="given-name" placeholder="Prénom">
+        <label for="teamNewLastName">Nom</label>
+        <input id="teamNewLastName" type="text" autocomplete="family-name" placeholder="Nom">
+        <label for="teamNewEmail">Adresse e-mail</label>
+        <input id="teamNewEmail" type="email" autocomplete="email" placeholder="prenom.nom@exemple.com">
+        <label for="teamNewJobTitle">Fonction (optionnel)</label>
+        <input id="teamNewJobTitle" type="text" placeholder="Ex. Préparateur">
+        <button class="primary-btn" type="submit">Créer l'accès</button>
+      </form>
+      <p id="teamModalMessage" class="status-message" role="status"></p>
+    </div>
+  </div>
+
   <div id="imagePreviewModal" class="image-preview-modal" role="dialog" aria-modal="true" aria-labelledby="imagePreviewTitle" hidden>
     <div class="image-preview-backdrop" data-close-image-preview></div>
     <div class="image-preview-dialog">
@@ -1027,6 +1060,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=20261009-comptes-equipe"></script>
+  <script src="app.js?v=20261012-comptes-equipe-2"></script>
 </body>
 </html>
