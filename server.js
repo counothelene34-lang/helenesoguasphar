@@ -1189,6 +1189,37 @@ const server = http.createServer(async (request, response) => {
       return;
     }
 
+    // Sert l'image réelle d'une précommande (imageData/imageData2, stockées en base64)
+    // sans avoir à renvoyer tout le JSON de la commande. Utilisé par le portail SOGUASPRO.
+    if (url.pathname.startsWith("/api/orders/") && url.pathname.endsWith("/image") && request.method === "GET") {
+      const segments = url.pathname.split("/").filter(Boolean); // ["api", "orders", ":id", "image"]
+      const orderId = decodeURIComponent(segments[2] || "");
+      const slot = url.searchParams.get("slot") === "2" ? "imageData2" : "imageData";
+      const order = readOrders().find((item) => item.id === orderId);
+      const dataUrl = order ? order[slot] : "";
+
+      if (!dataUrl || typeof dataUrl !== "string" || !dataUrl.startsWith("data:")) {
+        response.writeHead(404);
+        response.end("Image introuvable");
+        return;
+      }
+
+      const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+      if (!match) {
+        response.writeHead(404);
+        response.end("Image introuvable");
+        return;
+      }
+
+      const [, contentType, base64] = match;
+      response.writeHead(200, {
+        "Content-Type": contentType,
+        "Cache-Control": "public, max-age=3600",
+      });
+      response.end(Buffer.from(base64, "base64"));
+      return;
+    }
+
     if (url.pathname === "/api/polls" && request.method === "GET") {
       sendJson(response, 200, readPolls());
       return;

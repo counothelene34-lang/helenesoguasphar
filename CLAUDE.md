@@ -88,3 +88,16 @@ Avant de modifier des données à la main : copie datée dans `data-backups/`.
 - Un indicateur « archivé » resté dans le `localStorage` d'un poste peut masquer une
   carte (corrigé le 16/09/2026) : penser au navigateur de la personne quand « ça
   n'apparaît pas chez moi ».
+- **09/10/2026 : toutes les précommandes avaient disparu en ligne.** Cause : un test
+  d'import fait par erreur directement sur `data/orders.json` du site EN LIGNE (pas sur
+  la copie de test), qui l'a remplacé par un contenu vide. Restauré depuis la copie de
+  sécurité automatique `data-backups/...before-test...` (toujours faite avant un test
+  risqué). **Leçon : ne jamais tester une manipulation de données sur `/opt/apps/soguasphar-preco/data/`,
+  toujours sur `/opt/apps/soguasphar-preco-test/data/`.**
+- Le code admin (`ADMIN_CODE`) de la copie de test est indépendant de celui du site en
+  ligne (fichiers `.env` séparés) ; `app.js` contient le code en dur côté client
+  (`const ADMIN_CODE = "..."`) qui doit correspondre au `.env` du même dossier. S'il y a
+  un décalage (ex. après une régénération de `.env`), l'admin de test « semble » accepter
+  le code mais toutes les sauvegardes échouent en silence (401). Après avoir corrigé un
+  `.env`, utiliser `sudo appctl rebuild <app>` (pas juste `restart`) : les variables
+  d'environnement de `docker-compose.yml` ne sont relues qu'à la recréation du conteneur.
