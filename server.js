@@ -1,6 +1,7 @@
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const crypto = require("crypto");
 
 const PORT = Number(process.env.PORT || 56651);
 const ADMIN_CODE = process.env.ADMIN_CODE || "SOGUASPHAR2026";
@@ -17,6 +18,80 @@ const PHARMACIES_FILE = path.join(DATA_DIR, "pharmacies.json");
 const VALIDATION_FILE = path.join(DATA_DIR, "validation.json");
 const VALIDATION_RESPONSES_FILE = path.join(DATA_DIR, "validation-responses.json");
 const BAT_DOCUMENTS_DIR = path.join(DATA_DIR, "bat-calendriers-2027");
+const PHARMACY_SESSIONS_FILE = path.join(DATA_DIR, "pharmacy-sessions.json");
+const PHARMACY_SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 jours
+
+// Jeton de connexion pharmacie (opaque, créé à la connexion) : prouve qu'on est
+// bien la pharmacie qu'on prétend être, sans mettre en place de comptes individuels.
+// Persisté dans un fichier pour survivre à un redémarrage du serveur.
+function loadPharmacySessions() {
+  try {
+    if (!fs.existsSync(PHARMACY_SESSIONS_FILE)) return new Map();
+    const raw = JSON.parse(fs.readFileSync(PHARMACY_SESSIONS_FILE, "utf8") || "{}");
+    const now = Date.now();
+    return new Map(Object.entries(raw).filter(([, session]) => Number(session?.expiresAt) > now));
+  } catch {
+    return new Map();
+  }
+}
+
+function persistPharmacySessions() {
+  try {
+    if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+    fs.writeFileSync(PHARMACY_SESSIONS_FILE, JSON.stringify(Object.fromEntries(pharmacySessions), null, 2), "utf8");
+  } catch {
+    // La persistance est un confort (survit à un redémarrage) : si elle échoue,
+    // les pharmacies connectées devront juste se reconnecter — pas bloquant.
+  }
+}
+
+const pharmacySessions = loadPharmacySessions();
+
+function createPharmacySession(pharmacyId) {
+  const token = crypto.randomBytes(24).toString("hex");
+  pharmacySessions.set(token, { pharmacyId, expiresAt: Date.now() + PHARMACY_SESSION_TTL_MS });
+  persistPharmacySessions();
+  return token;
+}
+
+function getPharmacySession(token) {
+  if (!token) return null;
+  const session = pharmacySessions.get(token);
+  if (!session) return null;
+  if (session.expiresAt < Date.now()) {
+    pharmacySessions.delete(token);
+    persistPharmacySessions();
+    return null;
+  }
+  return session;
+}
+
+// Jetons de téléchargement des PDF BAT (courte durée, en mémoire seulement) : la
+// route /bat-2027/<fichier>.pdf ne peut pas lire un en-tête personnalisé lors d'un
+// téléchargement direct, donc on passe ce jeton en paramètre d'URL ("?t=...").
+const BAT_DOWNLOAD_TOKEN_TTL_MS = 10 * 60 * 1000; // 10 minutes
+const batDownloadTokens = new Map();
+
+function createBatDownloadToken(scopeInfo) {
+  const now = Date.now();
+  for (const [key, value] of batDownloadTokens) {
+    if (value.expiresAt < now) batDownloadTokens.delete(key);
+  }
+  const token = crypto.randomBytes(16).toString("hex");
+  batDownloadTokens.set(token, { ...scopeInfo, expiresAt: now + BAT_DOWNLOAD_TOKEN_TTL_MS });
+  return token;
+}
+
+function verifyBatDownloadToken(token) {
+  if (!token) return null;
+  const entry = batDownloadTokens.get(token);
+  if (!entry) return null;
+  if (entry.expiresAt < Date.now()) {
+    batDownloadTokens.delete(token);
+    return null;
+  }
+  return entry;
+}
 
 const MIME_TYPES = {
   ".html": "text/html; charset=utf-8",
@@ -1017,6 +1092,20 @@ const server = http.createServer(async (request, response) => {
         response.end("Forbidden");
         return;
       }
+      const downloadScope = verifyBatDownloadToken(url.searchParams.get("t"));
+      if (!downloadScope) {
+        response.writeHead(401);
+        response.end("Authentification requise");
+        return;
+      }
+      if (downloadScope.scope !== "admin") {
+        const owningDocument = readValidation().documents.find((document) => path.basename(document.url) === requestedName);
+        if (!owningDocument || owningDocument.pharmacyId !== downloadScope.pharmacyId) {
+          response.writeHead(403);
+          response.end("Forbidden");
+          return;
+        }
+      }
       fs.readFile(filePath, (error, data) => {
         if (error) {
           response.writeHead(404);
@@ -1041,6 +1130,16 @@ const server = http.createServer(async (request, response) => {
     if (url.pathname === "/api/pharmacy-responses" && request.method === "GET") {
       const pharmacyId = url.searchParams.get("pharmacyId");
       const pharmacyName = normalizeLookup(url.searchParams.get("pharmacyName"));
+      const session = getPharmacySession(request.headers["x-pharmacy-token"]);
+      const sessionPharmacy = session ? readPharmacies().find((item) => item.id === session.pharmacyId) : null;
+      const requestMatchesSession = session && (
+        (pharmacyId && pharmacyId === session.pharmacyId)
+        || (!pharmacyId && pharmacyName && normalizeLookup(sessionPharmacy?.name) === pharmacyName)
+      );
+      if (!requestMatchesSession) {
+        sendJson(response, 401, { error: "Authentification pharmacie requise" });
+        return;
+      }
       const responses = latestResponses(readResponses()).filter((item) => {
         if (item.hiddenFromArchive) return false;
         if (pharmacyId && item.pharmacyId === pharmacyId) return true;
@@ -1155,7 +1254,28 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/validation" && request.method === "GET") {
-      sendJson(response, 200, readValidation());
+      const validation = readValidation();
+      if (request.headers["x-admin-code"] === ADMIN_CODE) {
+        const adminToken = createBatDownloadToken({ scope: "admin" });
+        const documents = validation.documents.map((document) => ({ ...document, downloadToken: adminToken }));
+        sendJson(response, 200, { ...validation, documents });
+        return;
+      }
+      const session = getPharmacySession(request.headers["x-pharmacy-token"]);
+      if (!session) {
+        sendJson(response, 401, { error: "Authentification pharmacie requise" });
+        return;
+      }
+      const ownDocument = validation.documents.find((document) => document.pharmacyId === session.pharmacyId);
+      const documents = ownDocument
+        ? [{ ...ownDocument, downloadToken: createBatDownloadToken({ scope: "pharmacy", pharmacyId: session.pharmacyId }) }]
+        : [];
+      sendJson(response, 200, {
+        title: validation.title,
+        description: validation.description,
+        archived: validation.archived,
+        documents
+      });
       return;
     }
 
@@ -1259,7 +1379,8 @@ const server = http.createServer(async (request, response) => {
       sendJson(response, 200, {
         id: pharmacy.id,
         name: pharmacy.name,
-        mustChangePassword: pharmacy.mustChangePassword !== false
+        mustChangePassword: pharmacy.mustChangePassword !== false,
+        token: createPharmacySession(pharmacy.id)
       });
       return;
     }

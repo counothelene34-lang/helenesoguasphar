@@ -22,9 +22,12 @@ const BASE_PREFIX = (() => {
 // Les URL de documents BAT ("/bat-2027/...") stockées côté serveur sont racine-relatives ;
 // il faut les faire pointer sous le sous-dossier de la copie (ex. "/preco-test/") sinon
 // le navigateur les cherche à la racine du domaine et Traefik répond 404.
-function resolveBatDocumentUrl(url) {
+function resolveBatDocumentUrl(document) {
+  const url = document?.url;
   if (!url) return url;
-  return url.startsWith("/") ? `${BASE_PREFIX}${url.slice(1)}` : url;
+  const resolved = url.startsWith("/") ? `${BASE_PREFIX}${url.slice(1)}` : url;
+  if (!document.downloadToken) return resolved;
+  return `${resolved}${resolved.includes("?") ? "&" : "?"}t=${encodeURIComponent(document.downloadToken)}`;
 }
 
 const form = document.querySelector("#requestForm");
@@ -670,7 +673,10 @@ function saveLocalValidationState(state) {
 async function getValidationState() {
   if (API_AVAILABLE) {
     try {
-      const remote = await requestJson("/api/validation");
+      const headers = {};
+      if (adminUnlocked) headers["X-Admin-Code"] = ADMIN_CODE;
+      else if (currentPharmacy?.token) headers["X-Pharmacy-Token"] = currentPharmacy.token;
+      const remote = await requestJson("/api/validation", { headers });
       if (remote && typeof remote === "object") return remote;
     } catch {
       // Fallback for preview servers without validation API.
@@ -756,18 +762,25 @@ async function getValidationSummary() {
   });
 }
 
-async function refreshAdminValidationData() {
-  if (!adminUnlocked) return;
+// Recharge le titre/description/archivage + les documents BAT auxquels on a droit :
+// tous pour l'admin (x-admin-code), uniquement le sien pour une pharmacie connectée
+// (x-pharmacy-token) — voir le filtrage fait côté serveur dans getValidationState().
+async function refreshValidationDocuments() {
   const validationState = await getValidationState();
-  const nextDocuments = Array.isArray(validationState.documents) ? validationState.documents : [];
   validationConfigState = {
     title: validationState.title || "",
     description: validationState.description || "",
     archived: Boolean(validationState.archived)
   };
+  const nextDocuments = Array.isArray(validationState.documents) ? validationState.documents : [];
   if (nextDocuments.length || !batDocuments.length) {
     batDocuments = nextDocuments;
   }
+}
+
+async function refreshAdminValidationData() {
+  if (!adminUnlocked) return;
+  await refreshValidationDocuments();
   batResponses = await getValidationResponses();
 }
 
@@ -1225,7 +1238,9 @@ async function refreshPharmacyCampaignResponses() {
       const params = new URLSearchParams();
       if (currentPharmacy.id) params.set("pharmacyId", currentPharmacy.id);
       if (currentPharmacy.name) params.set("pharmacyName", currentPharmacy.name);
-      responses = await requestJson(`/api/pharmacy-responses?${params.toString()}`);
+      responses = await requestJson(`/api/pharmacy-responses?${params.toString()}`, {
+        headers: currentPharmacy.token ? { "X-Pharmacy-Token": currentPharmacy.token } : {}
+      });
     } else {
       responses = localResponses().filter((response) => response.pharmacyName === currentPharmacy.name);
     }
@@ -3345,6 +3360,7 @@ async function showAdminSectionFresh(section) {
       infoResponses = await getInfoResponses();
     }
     if (nextSection === "bat" || nextSection === "archives") {
+      await refreshValidationDocuments();
       await refreshAdminValidationResponses();
     }
   }
@@ -3657,14 +3673,14 @@ function selectBat(documentId) {
   const isImageDocument = selectedBatDocument.fileType?.startsWith("image/");
   if (batDocumentPreview) {
     batDocumentPreview.hidden = !isImageDocument;
-    batDocumentPreview.src = isImageDocument ? resolveBatDocumentUrl(selectedBatDocument.url) : "";
+    batDocumentPreview.src = isImageDocument ? resolveBatDocumentUrl(selectedBatDocument) : "";
     batDocumentPreview.alt = `Aperçu du document ${selectedBatDocument.pharmacyName}`;
   }
   if (batDocumentPdfPreview) {
     batDocumentPdfPreview.hidden = isImageDocument;
-    batDocumentPdfPreview.data = isImageDocument ? "" : resolveBatDocumentUrl(selectedBatDocument.url);
+    batDocumentPdfPreview.data = isImageDocument ? "" : resolveBatDocumentUrl(selectedBatDocument);
   }
-  batPdfOpenLink.href = resolveBatDocumentUrl(selectedBatDocument.url);
+  batPdfOpenLink.href = resolveBatDocumentUrl(selectedBatDocument);
   batPdfOpenLink.download = validationDocumentDownloadName(selectedBatDocument);
   batPdfOpenLink.textContent = "Télécharger le document";
   batPdfOpenLink.removeAttribute("target");
@@ -3802,7 +3818,7 @@ function renderBatResults() {
             <td><strong>${escapeHtml(document.pharmacyName)}</strong></td>
             <td>${escapeHtml(status)}</td>
             <td>${escapeHtml(response?.comment || "-")}</td>
-            <td><a class="ghost-btn small-btn" href="${escapeHtml(resolveBatDocumentUrl(document.url))}" download="${escapeHtml(validationDocumentDownloadName(document))}" data-bat-pdf-link>Télécharger</a></td>
+            <td><a class="ghost-btn small-btn" href="${escapeHtml(resolveBatDocumentUrl(document))}" download="${escapeHtml(validationDocumentDownloadName(document))}" data-bat-pdf-link>Télécharger</a></td>
           </tr>
         `;
       }).join("")
@@ -3820,7 +3836,7 @@ function renderBatResults() {
         <td><strong>${escapeHtml(response.pharmacyName || document.pharmacyName)}</strong></td>
         <td>${escapeHtml(normalizeValidationStatus(response.status))}</td>
         <td>${escapeHtml(response.comment || "-")}</td>
-        <td><a class="ghost-btn small-btn" href="${escapeHtml(resolveBatDocumentUrl(document.url))}" download="${escapeHtml(validationDocumentDownloadName(document))}" data-bat-pdf-link>Télécharger</a></td>
+        <td><a class="ghost-btn small-btn" href="${escapeHtml(resolveBatDocumentUrl(document))}" download="${escapeHtml(validationDocumentDownloadName(document))}" data-bat-pdf-link>Télécharger</a></td>
       </tr>
     `).join("")
     : '<tr><td colspan="5" class="empty-state">Aucune validation pour le moment.</td></tr>';
@@ -5162,6 +5178,7 @@ pharmacyLoginForm.addEventListener("submit", async (event) => {
     renderCampaignPickers();
     showCampaignPicker();
     renderPharmacyAccess();
+    await refreshValidationDocuments();
     await refreshPharmacyPollAnswers();
     await refreshPharmacyCampaignResponses();
     await refreshPharmacyInfoResponses();
@@ -5198,7 +5215,10 @@ pharmacyPasswordChangeForm.addEventListener("submit", async (event) => {
   }
 
   try {
-    currentPharmacy = await changePharmacyPassword(pendingPasswordPharmacy.id, pendingInitialPassword, newPassword);
+    const updatedPharmacy = await changePharmacyPassword(pendingPasswordPharmacy.id, pendingInitialPassword, newPassword);
+    // Le jeton de session a été reçu à la connexion initiale (/api/pharmacy-login) ;
+    // /api/pharmacy-password ne le renvoie pas, on le conserve donc tel quel.
+    currentPharmacy = { ...updatedPharmacy, token: pendingPasswordPharmacy.token };
     archivedOrdersVisible = false;
     localStorage.setItem(PHARMACY_SESSION_KEY, JSON.stringify(currentPharmacy));
     pendingPasswordPharmacy = null;
@@ -5209,6 +5229,7 @@ pharmacyPasswordChangeForm.addEventListener("submit", async (event) => {
     renderCampaignPickers();
     showCampaignPicker();
     renderPharmacyAccess();
+    await refreshValidationDocuments();
     await refreshPharmacyPollAnswers();
     await refreshPharmacyCampaignResponses();
     await refreshPharmacyInfoResponses();
@@ -5228,6 +5249,7 @@ logoutPharmacyBtn.addEventListener("click", () => {
   pharmacyPollAnswers = {};
   pharmacyCampaignResponses = {};
   archivedOrdersVisible = false;
+  batDocuments = [];
   localStorage.removeItem(PHARMACY_SESSION_KEY);
   renderCampaignPickers();
   showCampaignPicker();
