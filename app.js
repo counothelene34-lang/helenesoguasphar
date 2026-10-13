@@ -2904,7 +2904,8 @@ function renderPharmacyAccess() {
   // pharmacie le voit (même sélecteur/connexion que pour une vraie
   // pharmacie) — on ne le masque donc plus pour lui.
   const requiresLogin = pharmacyAccessRequired();
-  pharmacyGate.hidden = !requiresLogin;
+  const isSoguasphar = Boolean(currentUser) && currentUser.role === "soguasphar_admin";
+  pharmacyGate.hidden = !requiresLogin && !isSoguasphar;
 
   // Une vraie pharmacie connectée (nouveau système, compte nominatif) voit
   // son nom complet, sans bouton "Changer de pharmacie" (elle n'a qu'une
