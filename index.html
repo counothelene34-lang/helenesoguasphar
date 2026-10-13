@@ -737,6 +737,14 @@
                   </span>
                   <span class="settings-create-card-arrow" aria-hidden="true">›</span>
                 </button>
+                <button class="settings-create-card" type="button" data-open-create-team>
+                  <span class="settings-create-card-icon" aria-hidden="true">🧑‍🤝‍🧑</span>
+                  <span class="settings-create-card-text">
+                    <strong>Rajouter un compte équipe</strong>
+                    <span>Créer un compte collaborateur rattaché à une pharmacie du réseau.</span>
+                  </span>
+                  <span class="settings-create-card-arrow" aria-hidden="true">›</span>
+                </button>
               </div>
 
               <form id="createPharmacyAccessForm" class="create-campaign-form settings-create-form" hidden>
@@ -765,6 +773,21 @@
                 <button class="primary-btn" type="submit">Créer l'accès</button>
                 <p class="form-help">Un e-mail est envoyé à cette adresse pour créer le mot de passe (lien valable 7 jours).</p>
                 <p id="createAdminAccountMessage" class="status-message" role="status"></p>
+              </form>
+
+              <form id="createTeamAccessForm" class="create-campaign-form settings-create-form" hidden>
+                <label for="teamAccessPharmacySelect">Nouveau compte équipe, rattaché à une pharmacie</label>
+                <select id="teamAccessPharmacySelect">
+                  <option value="">— Choisir une pharmacie —</option>
+                </select>
+                <div class="create-campaign-row">
+                  <input id="teamAccessFirstName" type="text" placeholder="Prénom du responsable" autocomplete="off">
+                  <input id="teamAccessLastName" type="text" placeholder="Nom du responsable" autocomplete="off">
+                </div>
+                <input id="teamAccessEmail" type="email" placeholder="E-mail de la pharmacie (doit contenir le nom de la pharmacie)" autocomplete="off">
+                <button class="primary-btn" type="submit">Créer le compte équipe</button>
+                <p class="form-help">Par sécurité, l'adresse e-mail doit comporter le nom de la pharmacie choisie : une adresse générique (gmail, hotmail…) sans rapport avec la pharmacie est refusée. Un e-mail est envoyé pour créer le mot de passe (lien valable 7 jours).</p>
+                <p id="createTeamAccessMessage" class="status-message" role="status"></p>
               </form>
             </section>
 

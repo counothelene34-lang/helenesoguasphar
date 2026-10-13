@@ -317,6 +317,37 @@ function findUserByEmail(email) {
   return readUsers().find((user) => normalizeEmail(user.email) === normalized) || null;
 }
 
+// Réduit une chaîne à des lettres/chiffres minuscules sans accents, pour
+// comparer "BAMBOU VERT" et "bambouvert@gmail.com" malgré espace/accents/casse.
+function normalizeForMatch(value) {
+  return String(value || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]/g, "");
+}
+
+// Sécurité "compte équipe" : l'adresse e-mail doit contenir au moins un mot
+// significatif du nom de la pharmacie (ex: pour "BAMBOU VERT", l'e-mail doit
+// contenir "bambou" ou "vert" - gmail/hotmail génériques sans rapport avec la
+// pharmacie sont refusés). Les mots trop génériques ("pharmacie", "sarl"...)
+// ou trop courts ne comptent pas comme preuve suffisante.
+const PHARMACY_NAME_STOPWORDS = new Set([
+  "pharmacie", "pharma", "sarl", "sas", "eurl", "sci", "du", "de", "la", "le",
+  "les", "des", "et", "saint", "sainte", "grande", "petite", "nouvelle"
+]);
+function emailMatchesPharmacyName(email, pharmacyName) {
+  const normalizedEmail = normalizeForMatch(String(email || "").split("@")[0]) + normalizeForMatch(String(email || "").split("@")[1] || "");
+  const words = String(pharmacyName || "")
+    .split(/[^a-zA-Z0-9À-ÿ]+/)
+    .map((word) => normalizeForMatch(word))
+    .filter(Boolean);
+  let significant = words.filter((word) => word.length >= 3 && !PHARMACY_NAME_STOPWORDS.has(word));
+  if (!significant.length) significant = words.filter((word) => word.length >= 2);
+  if (!significant.length) return true; // nom de pharmacie sans mot exploitable : ne pas bloquer
+  return significant.some((word) => normalizedEmail.includes(word));
+}
+
 // Hachage de mot de passe avec scrypt (module natif "crypto", aucune dépendance
 // externe). Le sel et le hash sont stockés ensemble dans une seule chaîne :
 // "scrypt:<selHex>:<hashHex>".
@@ -2638,6 +2669,76 @@ const server = http.createServer(async (request, response) => {
       writeUsers(users);
       const invitedUser = issueAccountPasswordLink(newUser, { isNewAccount: true });
       sendJson(response, 201, { member: publicUser(invitedUser) });
+      return;
+    }
+
+    // Une administratrice SOGUASPHAR peut créer un compte équipe (collaborateur)
+    // pour N'IMPORTE QUELLE pharmacie du réseau, sans avoir besoin d'être
+    // connectée en tant que titulaire de cette pharmacie (contrairement à
+    // POST /api/team ci-dessus, réservé au titulaire pour sa propre pharmacie).
+    // Sécurité renforcée demandée par Hélène le 13/10/2026 : l'adresse e-mail
+    // doit obligatoirement comporter un mot du nom de la pharmacie (ex. pour
+    // "BAMBOU VERT" : contenir "bambou" ou "vert"), pour empêcher la création
+    // d'un compte avec une adresse générique (gmail/hotmail...) sans lien
+    // visible avec la pharmacie.
+    if (url.pathname === "/api/pharmacy-team" && request.method === "POST") {
+      const admin = requireAuth(request, response, ["soguasphar_admin"]);
+      if (!admin) return;
+
+      const payload = JSON.parse(await readBody(request));
+      const email = normalizeEmail(payload.email);
+      const firstName = String(payload.firstName || "").trim();
+      const lastName = String(payload.lastName || "").trim();
+      const pharmacyId = String(payload.pharmacyId || "").trim();
+
+      if (!pharmacyId || !email || !firstName || !lastName) {
+        sendJson(response, 400, { error: "Choisissez la pharmacie et indiquez le prénom, le nom et l'e-mail." });
+        return;
+      }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        sendJson(response, 400, { error: "Adresse e-mail invalide." });
+        return;
+      }
+
+      const pharmacy = readPharmacies().find((item) => item.id === pharmacyId);
+      if (!pharmacy) {
+        sendJson(response, 404, { error: "Pharmacie introuvable." });
+        return;
+      }
+
+      if (!emailMatchesPharmacyName(email, pharmacy.name)) {
+        sendJson(response, 400, {
+          error: `Par sécurité, l'adresse e-mail d'un compte équipe doit comporter le nom de la pharmacie (${pharmacy.name}). Une adresse générique (gmail, hotmail…) sans rapport avec "${pharmacy.name}" n'est pas acceptée.`
+        });
+        return;
+      }
+
+      if (findUserByEmail(email)) {
+        sendJson(response, 409, { error: "Cette adresse e-mail est déjà utilisée par un compte." });
+        return;
+      }
+
+      const newUser = {
+        id: `user-${crypto.randomBytes(8).toString("hex")}`,
+        email,
+        passwordHash: hashPassword(crypto.randomBytes(24).toString("hex")), // remplacé tout de suite par le lien envoyé par e-mail
+        firstName,
+        lastName,
+        jobTitle: "",
+        pharmacyId,
+        role: "pharmacy_collaborator",
+        active: true,
+        mustChangePassword: true,
+        createdAt: new Date().toISOString(),
+        lastLoginAt: null,
+        invitedAt: new Date().toISOString(),
+        invitationToken: null
+      };
+      const users = readUsers();
+      users.push(newUser);
+      writeUsers(users);
+      const invitedUser = issueAccountPasswordLink(newUser, { isNewAccount: true });
+      sendJson(response, 201, { pharmacy, member: publicUser(invitedUser) });
       return;
     }
 

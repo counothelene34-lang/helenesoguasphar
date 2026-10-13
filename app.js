@@ -285,6 +285,12 @@ const pharmacyAccessPharmacySelect = document.querySelector("#pharmacyAccessPhar
 const pharmacyAccessNewName = document.querySelector("#pharmacyAccessNewName");
 const pharmacyAccessEmail = document.querySelector("#pharmacyAccessEmail");
 const createPharmacyAccessMessage = document.querySelector("#createPharmacyAccessMessage");
+const createTeamAccessForm = document.querySelector("#createTeamAccessForm");
+const teamAccessPharmacySelect = document.querySelector("#teamAccessPharmacySelect");
+const teamAccessFirstName = document.querySelector("#teamAccessFirstName");
+const teamAccessLastName = document.querySelector("#teamAccessLastName");
+const teamAccessEmail = document.querySelector("#teamAccessEmail");
+const createTeamAccessMessage = document.querySelector("#createTeamAccessMessage");
 const settingsCreateSection = document.querySelector("#settingsCreateSection");
 const pharmacyOverviewSection = document.querySelector("#pharmacyOverviewSection");
 const adminAccountsSection = document.querySelector("#adminAccountsSection");
@@ -1472,6 +1478,13 @@ async function createPharmacyAccess({ pharmacyId, newPharmacyName, email }) {
   return requestJson("/api/pharmacy-overview", {
     method: "POST",
     body: JSON.stringify({ pharmacyId, newPharmacyName, email })
+  });
+}
+
+async function createPharmacyTeamAccess({ pharmacyId, firstName, lastName, email }) {
+  return requestJson("/api/pharmacy-team", {
+    method: "POST",
+    body: JSON.stringify({ pharmacyId, firstName, lastName, email })
   });
 }
 
@@ -3718,6 +3731,7 @@ async function refreshPharmacyOverview() {
   }
   renderPharmacyOverviewTable();
   renderPharmacyAccessSelect();
+  renderTeamAccessPharmacySelect();
 }
 
 function renderPharmacyAccessSelect() {
@@ -3729,6 +3743,17 @@ function renderPharmacyAccessSelect() {
     ${sorted.map((pharmacy) => `<option value="${escapeHtml(pharmacy.id)}">${escapeHtml(pharmacy.name)}${pharmacy.primaryEmail ? " (a déjà un accès)" : ""}</option>`).join("")}
   `;
   if (current && sorted.some((pharmacy) => pharmacy.id === current)) pharmacyAccessPharmacySelect.value = current;
+}
+
+function renderTeamAccessPharmacySelect() {
+  if (!teamAccessPharmacySelect) return;
+  const current = teamAccessPharmacySelect.value;
+  const sorted = [...pharmacyOverview].sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""), "fr"));
+  teamAccessPharmacySelect.innerHTML = `
+    <option value="">— Choisir une pharmacie —</option>
+    ${sorted.map((pharmacy) => `<option value="${escapeHtml(pharmacy.id)}">${escapeHtml(pharmacy.name)}</option>`).join("")}
+  `;
+  if (current && sorted.some((pharmacy) => pharmacy.id === current)) teamAccessPharmacySelect.value = current;
 }
 
 function sortedFilteredPharmacyOverview() {
@@ -3923,12 +3948,41 @@ settingsCreateChoice?.addEventListener("click", (event) => {
   if (pharmacyCard) {
     createPharmacyAccessForm.hidden = !createPharmacyAccessForm.hidden;
     if (createAdminAccountForm) createAdminAccountForm.hidden = true;
+    if (createTeamAccessForm) createTeamAccessForm.hidden = true;
     return;
   }
   const adminCard = event.target.closest("[data-open-create-admin]");
   if (adminCard && createAdminAccountForm) {
     createAdminAccountForm.hidden = !createAdminAccountForm.hidden;
     createPharmacyAccessForm.hidden = true;
+    if (createTeamAccessForm) createTeamAccessForm.hidden = true;
+    return;
+  }
+  const teamCard = event.target.closest("[data-open-create-team]");
+  if (teamCard && createTeamAccessForm) {
+    createTeamAccessForm.hidden = !createTeamAccessForm.hidden;
+    createPharmacyAccessForm.hidden = true;
+    if (createAdminAccountForm) createAdminAccountForm.hidden = true;
+  }
+});
+
+createTeamAccessForm?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const pharmacyId = teamAccessPharmacySelect ? teamAccessPharmacySelect.value : "";
+  const firstName = teamAccessFirstName ? teamAccessFirstName.value.trim() : "";
+  const lastName = teamAccessLastName ? teamAccessLastName.value.trim() : "";
+  const email = teamAccessEmail ? teamAccessEmail.value.trim() : "";
+  if (!pharmacyId || !firstName || !lastName || !email) {
+    createTeamAccessMessage.textContent = "Choisissez la pharmacie et indiquez le prénom, le nom et l'e-mail.";
+    return;
+  }
+  try {
+    const result = await createPharmacyTeamAccess({ pharmacyId, firstName, lastName, email });
+    createTeamAccessMessage.textContent = `Compte équipe créé pour ${result.pharmacy.name} : un e-mail a été envoyé à ${email} pour créer le mot de passe.`;
+    createTeamAccessForm.reset();
+    await refreshPharmacyOverview();
+  } catch (error) {
+    createTeamAccessMessage.textContent = error.message || "Impossible de créer ce compte équipe.";
   }
 });
 
@@ -4884,6 +4938,7 @@ function showAdminSection(section) {
   if (settingsCreateChoice) settingsCreateChoice.hidden = !showPharmacies;
   if (createPharmacyAccessForm) createPharmacyAccessForm.hidden = true;
   if (createAdminAccountForm) createAdminAccountForm.hidden = true;
+  if (createTeamAccessForm) createTeamAccessForm.hidden = true;
   if (pharmacyOverviewSection) pharmacyOverviewSection.hidden = !showPharmacies;
   if (adminAccountsSection) adminAccountsSection.hidden = !showPharmacies;
   closePharmacyOverviewDetail();
