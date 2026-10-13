@@ -250,7 +250,26 @@ const newAdminFirstName = document.querySelector("#newAdminFirstName");
 const newAdminLastName = document.querySelector("#newAdminLastName");
 const newAdminEmail = document.querySelector("#newAdminEmail");
 const createAdminAccountMessage = document.querySelector("#createAdminAccountMessage");
+const newAdminJobTitle = document.querySelector("#newAdminJobTitle");
 const adminAccountsList = document.querySelector("#adminAccountsList");
+const settingsCreateChoice = document.querySelector("#settingsCreateChoice");
+const settingsCreatePharmacyCard = document.querySelector("#settingsCreatePharmacyCard");
+const settingsCreateAdminCard = document.querySelector("#settingsCreateAdminCard");
+const createPharmacyAccessForm = document.querySelector("#createPharmacyAccessForm");
+const pharmacyAccessPharmacySelect = document.querySelector("#pharmacyAccessPharmacySelect");
+const pharmacyAccessNewName = document.querySelector("#pharmacyAccessNewName");
+const pharmacyAccessEmail = document.querySelector("#pharmacyAccessEmail");
+const createPharmacyAccessMessage = document.querySelector("#createPharmacyAccessMessage");
+const pharmacyOverviewSection = document.querySelector("#pharmacyOverviewSection");
+const adminAccountsSection = document.querySelector("#adminAccountsSection");
+const pharmacyOverviewCount = document.querySelector("#pharmacyOverviewCount");
+const pharmacyOverviewSearch = document.querySelector("#pharmacyOverviewSearch");
+const pharmacyOverviewExportBtn = document.querySelector("#pharmacyOverviewExportBtn");
+const pharmacyOverviewTable = document.querySelector("#pharmacyOverviewTable");
+const pharmacyOverviewRows = document.querySelector("#pharmacyOverviewRows");
+const pharmacyOverviewDetail = document.querySelector("#pharmacyOverviewDetail");
+const pharmacyOverviewDetailBody = document.querySelector("#pharmacyOverviewDetailBody");
+const pharmacyOverviewDetailClose = document.querySelector("#pharmacyOverviewDetailClose");
 const showClosedCampaignsBtn = document.querySelector("#showClosedCampaignsBtn");
 const adminPollCards = document.querySelector("#adminPollCards");
 const adminPollBlock = document.querySelector("#adminPollBlock");
@@ -1381,6 +1400,44 @@ async function createAdminTeamMember(member) {
     method: "POST",
     body: JSON.stringify(member)
   });
+}
+
+// --- Rubrique "Paramètres" : vue d'ensemble des accès pharmacies -----------
+
+async function fetchPharmacyOverview() {
+  const result = await requestJson("/api/pharmacy-overview");
+  return result.pharmacies || [];
+}
+
+async function createPharmacyAccess({ pharmacyId, newPharmacyName, email }) {
+  return requestJson("/api/pharmacy-overview", {
+    method: "POST",
+    body: JSON.stringify({ pharmacyId, newPharmacyName, email })
+  });
+}
+
+async function resendUserInvite(userId) {
+  const result = await requestJson(`/api/users/${encodeURIComponent(userId)}/resend-invite`, { method: "POST" });
+  return result.user;
+}
+
+async function updateUserAccount(userId, payload) {
+  const result = await requestJson(`/api/users/${encodeURIComponent(userId)}`, {
+    method: "PUT",
+    body: JSON.stringify(payload)
+  });
+  return result.user;
+}
+
+// Date/heure de dernière connexion au fuseau Guadeloupe (UTC-4 toute l'année,
+// pas d'heure d'été) ; "Jamais connecté" si le compte n'a jamais été utilisé.
+function formatLastLogin(iso) {
+  if (!iso) return "Jamais connecté";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "Jamais connecté";
+  const datePart = date.toLocaleDateString("fr-FR", { timeZone: "America/Guadeloupe" });
+  const timePart = date.toLocaleTimeString("fr-FR", { timeZone: "America/Guadeloupe", hour: "2-digit", minute: "2-digit" });
+  return `${datePart} à ${timePart}`;
 }
 
 async function setTeamMemberActive(memberId, active) {
@@ -3112,13 +3169,20 @@ function renderAdminAccounts() {
   adminAccountsList.innerHTML = `
     <div class="table-wrap compact">
       <table>
-        <thead><tr><th>Nom</th><th>E-mail</th><th>Statut</th></tr></thead>
+        <thead><tr><th>Nom</th><th>E-mail</th><th>Rôle</th><th>Dernière connexion</th><th>Action</th></tr></thead>
         <tbody>
           ${adminAccounts.map((account) => `
-            <tr>
+            <tr class="${account.active === false ? "account-inactive" : ""}">
               <td><strong>${escapeHtml(formatUserFullName(account))}</strong></td>
               <td>${escapeHtml(account.email)}</td>
-              <td>${account.mustChangePassword === false ? "Actif" : "Invitation envoyée, en attente"}</td>
+              <td>${escapeHtml(account.jobTitle || "Administrateur")}</td>
+              <td>${escapeHtml(formatLastLogin(account.lastLoginAt))}</td>
+              <td class="pharmacy-actions">
+                ${account.active === false ? "<span class=\"request-badge\">Désactivé</span>" : ""}
+                <button class="ghost-btn small-btn" type="button" data-resend-admin="${escapeHtml(account.id)}">Renvoyer le lien</button>
+                <button class="ghost-btn small-btn" type="button" data-edit-admin-role="${escapeHtml(account.id)}">Modifier le rôle</button>
+                <button class="ghost-btn small-btn" type="button" data-toggle-admin-active="${escapeHtml(account.id)}">${account.active === false ? "Réactiver" : "Désactiver"}</button>
+              </td>
             </tr>
           `).join("")}
         </tbody>
@@ -3132,17 +3196,320 @@ createAdminAccountForm?.addEventListener("submit", async (event) => {
   const firstName = newAdminFirstName.value.trim();
   const lastName = newAdminLastName.value.trim();
   const email = newAdminEmail.value.trim();
+  const jobTitle = newAdminJobTitle ? newAdminJobTitle.value.trim() : "";
   if (!firstName || !lastName || !email) {
     createAdminAccountMessage.textContent = "Indiquez le prénom, le nom et l'e-mail.";
     return;
   }
   try {
-    await createAdminTeamMember({ firstName, lastName, email });
+    await createAdminTeamMember({ firstName, lastName, email, jobTitle });
     createAdminAccountMessage.textContent = `Accès créé : un e-mail a été envoyé à ${email} pour créer son mot de passe.`;
     createAdminAccountForm.reset();
     await refreshAdminAccounts();
   } catch (error) {
     createAdminAccountMessage.textContent = error.message || "Impossible de créer ce compte.";
+  }
+});
+
+adminAccountsList?.addEventListener("click", async (event) => {
+  const resendBtn = event.target.closest("[data-resend-admin]");
+  if (resendBtn) {
+    try {
+      await resendUserInvite(resendBtn.dataset.resendAdmin);
+      createAdminAccountMessage.textContent = "Lien renvoyé par e-mail.";
+      await refreshAdminAccounts();
+    } catch (error) {
+      createAdminAccountMessage.textContent = error.message || "Impossible de renvoyer le lien.";
+    }
+    return;
+  }
+
+  const editBtn = event.target.closest("[data-edit-admin-role]");
+  if (editBtn) {
+    const account = adminAccounts.find((item) => item.id === editBtn.dataset.editAdminRole);
+    if (!account) return;
+    const nextRole = prompt(`Profil / niveau d'autorisation pour ${formatUserFullName(account)} :`, account.jobTitle || "");
+    if (nextRole === null) return;
+    try {
+      await updateUserAccount(account.id, { jobTitle: nextRole.trim() });
+      await refreshAdminAccounts();
+    } catch (error) {
+      createAdminAccountMessage.textContent = error.message || "Impossible de modifier le rôle.";
+    }
+    return;
+  }
+
+  const toggleBtn = event.target.closest("[data-toggle-admin-active]");
+  if (toggleBtn) {
+    const account = adminAccounts.find((item) => item.id === toggleBtn.dataset.toggleAdminActive);
+    if (!account) return;
+    const nextActive = account.active === false;
+    const confirmed = confirm(nextActive
+      ? `Réactiver le compte de ${formatUserFullName(account)} ?`
+      : `Désactiver le compte de ${formatUserFullName(account)} ? Cette personne ne pourra plus se connecter.`);
+    if (!confirmed) return;
+    try {
+      await updateUserAccount(account.id, { active: nextActive });
+      await refreshAdminAccounts();
+    } catch (error) {
+      createAdminAccountMessage.textContent = error.message || "Impossible de modifier ce compte.";
+    }
+  }
+});
+
+// --- Rubrique "Paramètres" : tableau "Utilisateurs - Pharmacies" -----------
+
+let pharmacyOverview = [];
+let pharmacyOverviewSearchTerm = "";
+let pharmacyOverviewSort = { key: "name", direction: "asc" };
+let pharmacyOverviewDetailId = null;
+
+async function refreshPharmacyOverview() {
+  if (!pharmacyOverviewRows) return;
+  try {
+    pharmacyOverview = await fetchPharmacyOverview();
+  } catch (error) {
+    pharmacyOverview = [];
+  }
+  renderPharmacyOverviewTable();
+  renderPharmacyAccessSelect();
+}
+
+function renderPharmacyAccessSelect() {
+  if (!pharmacyAccessPharmacySelect) return;
+  const current = pharmacyAccessPharmacySelect.value;
+  const sorted = [...pharmacyOverview].sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""), "fr"));
+  pharmacyAccessPharmacySelect.innerHTML = `
+    <option value="">— Nouvelle pharmacie —</option>
+    ${sorted.map((pharmacy) => `<option value="${escapeHtml(pharmacy.id)}">${escapeHtml(pharmacy.name)}${pharmacy.primaryEmail ? " (a déjà un accès)" : ""}</option>`).join("")}
+  `;
+  if (current && sorted.some((pharmacy) => pharmacy.id === current)) pharmacyAccessPharmacySelect.value = current;
+}
+
+function sortedFilteredPharmacyOverview() {
+  const term = normalizeSearchText(pharmacyOverviewSearchTerm);
+  const filtered = pharmacyOverview.filter((pharmacy) => {
+    if (!term) return true;
+    const haystack = normalizeSearchText(`${pharmacy.name || ""} ${pharmacy.primaryEmail || ""}`);
+    return haystack.includes(term);
+  });
+  const { key, direction } = pharmacyOverviewSort;
+  const factor = direction === "desc" ? -1 : 1;
+  return filtered.sort((a, b) => {
+    if (key === "email") return factor * String(a.primaryEmail || "").localeCompare(String(b.primaryEmail || ""), "fr");
+    if (key === "lastLoginAt") return factor * String(a.lastLoginAt || "").localeCompare(String(b.lastLoginAt || ""), "fr");
+    return factor * String(a.name || "").localeCompare(String(b.name || ""), "fr");
+  });
+}
+
+function renderPharmacyOverviewTable() {
+  if (!pharmacyOverviewRows) return;
+  if (pharmacyOverviewCount) pharmacyOverviewCount.textContent = String(pharmacyOverview.length);
+  const rows = sortedFilteredPharmacyOverview();
+  if (!rows.length) {
+    pharmacyOverviewRows.innerHTML = `<tr><td colspan="3" class="empty-campaigns">${pharmacyOverview.length ? "Aucune pharmacie ne correspond à la recherche." : "Aucune pharmacie enregistrée."}</td></tr>`;
+    return;
+  }
+  pharmacyOverviewRows.innerHTML = rows.map((pharmacy) => `
+    <tr data-pharmacy-row="${escapeHtml(pharmacy.id)}" tabindex="0">
+      <td><strong>${escapeHtml(pharmacy.name)}</strong>${pharmacy.accounts.length > 1 ? ` <span class="pharmacy-accounts-count">(${pharmacy.accounts.length} comptes)</span>` : ""}</td>
+      <td>${pharmacy.primaryEmail ? escapeHtml(pharmacy.primaryEmail) : "<em>Aucun accès créé</em>"}</td>
+      <td>${pharmacy.primaryEmail ? escapeHtml(formatLastLogin(pharmacy.lastLoginAt)) : "-"}</td>
+    </tr>
+  `).join("");
+}
+
+pharmacyOverviewSearch?.addEventListener("input", () => {
+  pharmacyOverviewSearchTerm = pharmacyOverviewSearch.value;
+  renderPharmacyOverviewTable();
+});
+
+pharmacyOverviewTable?.addEventListener("click", (event) => {
+  const sortHeader = event.target.closest("[data-sort-key]");
+  if (sortHeader) {
+    const key = sortHeader.dataset.sortKey;
+    pharmacyOverviewSort = {
+      key,
+      direction: pharmacyOverviewSort.key === key && pharmacyOverviewSort.direction === "asc" ? "desc" : "asc"
+    };
+    renderPharmacyOverviewTable();
+    return;
+  }
+  const row = event.target.closest("[data-pharmacy-row]");
+  if (row) openPharmacyOverviewDetail(row.dataset.pharmacyRow);
+});
+
+pharmacyOverviewExportBtn?.addEventListener("click", () => {
+  const rows = sortedFilteredPharmacyOverview();
+  if (!rows.length) return;
+  const headings = ["Pharmacie", "E-mail (identifiant)", "Dernière connexion"];
+  const body = rows.map((pharmacy) => `
+    <tr>
+      <td>${escapeHtml(pharmacy.name || "")}</td>
+      <td>${escapeHtml(pharmacy.primaryEmail || "")}</td>
+      <td>${pharmacy.primaryEmail ? escapeHtml(formatLastLogin(pharmacy.lastLoginAt)) : ""}</td>
+    </tr>
+  `).join("");
+  const workbook = `
+    <html>
+      <head><meta charset="utf-8"></head>
+      <body>
+        <table border="1">
+          <thead><tr>${headings.map((heading) => `<th>${heading}</th>`).join("")}</tr></thead>
+          <tbody>${body}</tbody>
+        </table>
+      </body>
+    </html>
+  `;
+  const blob = new Blob([workbook], { type: "application/vnd.ms-excel;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "preco-utilisateurs-pharmacies.xls";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+});
+
+function openPharmacyOverviewDetail(pharmacyId) {
+  pharmacyOverviewDetailId = pharmacyId;
+  renderPharmacyOverviewDetail();
+  if (pharmacyOverviewDetail) pharmacyOverviewDetail.hidden = false;
+}
+
+function closePharmacyOverviewDetail() {
+  pharmacyOverviewDetailId = null;
+  if (pharmacyOverviewDetail) pharmacyOverviewDetail.hidden = true;
+}
+
+function renderPharmacyOverviewDetail() {
+  if (!pharmacyOverviewDetailBody) return;
+  const pharmacy = pharmacyOverview.find((item) => item.id === pharmacyOverviewDetailId);
+  if (!pharmacy) {
+    pharmacyOverviewDetailBody.innerHTML = "";
+    return;
+  }
+  const accountsRows = pharmacy.accounts.length
+    ? pharmacy.accounts.map((account) => `
+        <tr class="${account.active === false ? "account-inactive" : ""}">
+          <td>${escapeHtml(account.email)}</td>
+          <td>${account.role === "pharmacy_admin" ? "Titulaire" : "Collaborateur"}</td>
+          <td>${escapeHtml(formatLastLogin(account.lastLoginAt))}</td>
+          <td class="pharmacy-actions">
+            ${account.active === false ? "<span class=\"request-badge\">Désactivé</span>" : ""}
+            <button class="ghost-btn small-btn" type="button" data-resend-pharmacy-account="${escapeHtml(account.id)}">Renvoyer l'invitation</button>
+            <button class="ghost-btn small-btn" type="button" data-edit-pharmacy-account-email="${escapeHtml(account.id)}">Modifier l'e-mail</button>
+            <button class="ghost-btn small-btn" type="button" data-toggle-pharmacy-account-active="${escapeHtml(account.id)}">${account.active === false ? "Réactiver" : "Désactiver"}</button>
+          </td>
+        </tr>
+      `).join("")
+    : '<tr><td colspan="4" class="empty-campaigns">Aucun compte créé pour cette pharmacie.</td></tr>';
+
+  pharmacyOverviewDetailBody.innerHTML = `
+    <h3>${escapeHtml(pharmacy.name)}</h3>
+    <div class="table-wrap compact">
+      <table>
+        <thead><tr><th>E-mail (identifiant)</th><th>Profil</th><th>Dernière connexion</th><th>Action</th></tr></thead>
+        <tbody>${accountsRows}</tbody>
+      </table>
+    </div>
+    <p id="pharmacyOverviewDetailMessage" class="status-message" role="status"></p>
+  `;
+}
+
+pharmacyOverviewDetailClose?.addEventListener("click", closePharmacyOverviewDetail);
+
+pharmacyOverviewDetailBody?.addEventListener("click", async (event) => {
+  const message = document.querySelector("#pharmacyOverviewDetailMessage");
+
+  const resendBtn = event.target.closest("[data-resend-pharmacy-account]");
+  if (resendBtn) {
+    try {
+      await resendUserInvite(resendBtn.dataset.resendPharmacyAccount);
+      if (message) message.textContent = "Invitation renvoyée par e-mail.";
+      await refreshPharmacyOverview();
+      renderPharmacyOverviewDetail();
+    } catch (error) {
+      if (message) message.textContent = error.message || "Impossible de renvoyer l'invitation.";
+    }
+    return;
+  }
+
+  const editBtn = event.target.closest("[data-edit-pharmacy-account-email]");
+  if (editBtn) {
+    const pharmacy = pharmacyOverview.find((item) => item.id === pharmacyOverviewDetailId);
+    const account = pharmacy?.accounts.find((item) => item.id === editBtn.dataset.editPharmacyAccountEmail);
+    if (!account) return;
+    const nextEmail = prompt(`Nouvelle adresse e-mail pour ce compte :`, account.email);
+    if (!nextEmail || !nextEmail.trim()) return;
+    try {
+      await updateUserAccount(account.id, { email: nextEmail.trim() });
+      await refreshPharmacyOverview();
+      renderPharmacyOverviewDetail();
+    } catch (error) {
+      if (message) message.textContent = error.message || "Impossible de modifier cette adresse.";
+    }
+    return;
+  }
+
+  const toggleBtn = event.target.closest("[data-toggle-pharmacy-account-active]");
+  if (toggleBtn) {
+    const pharmacy = pharmacyOverview.find((item) => item.id === pharmacyOverviewDetailId);
+    const account = pharmacy?.accounts.find((item) => item.id === toggleBtn.dataset.togglePharmacyAccountActive);
+    if (!account) return;
+    const nextActive = account.active === false;
+    const confirmed = confirm(nextActive ? "Réactiver ce compte ?" : "Désactiver ce compte ? La pharmacie ne pourra plus se connecter avec.");
+    if (!confirmed) return;
+    try {
+      await updateUserAccount(account.id, { active: nextActive });
+      await refreshPharmacyOverview();
+      renderPharmacyOverviewDetail();
+    } catch (error) {
+      if (message) message.textContent = error.message || "Impossible de modifier ce compte.";
+    }
+  }
+});
+
+// --- Rubrique "Paramètres" : cartes "Créer un nouvel accès" ----------------
+
+settingsCreateChoice?.addEventListener("click", (event) => {
+  const pharmacyCard = event.target.closest("[data-open-create-pharmacy]");
+  if (pharmacyCard) {
+    createPharmacyAccessForm.hidden = !createPharmacyAccessForm.hidden;
+    if (createAdminAccountForm) createAdminAccountForm.hidden = true;
+    return;
+  }
+  const adminCard = event.target.closest("[data-open-create-admin]");
+  if (adminCard && createAdminAccountForm) {
+    createAdminAccountForm.hidden = !createAdminAccountForm.hidden;
+    createPharmacyAccessForm.hidden = true;
+  }
+});
+
+pharmacyAccessPharmacySelect?.addEventListener("change", () => {
+  if (!pharmacyAccessNewName) return;
+  pharmacyAccessNewName.hidden = Boolean(pharmacyAccessPharmacySelect.value);
+  if (pharmacyAccessPharmacySelect.value) pharmacyAccessNewName.value = "";
+});
+
+createPharmacyAccessForm?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const pharmacyId = pharmacyAccessPharmacySelect ? pharmacyAccessPharmacySelect.value : "";
+  const newPharmacyName = pharmacyAccessNewName ? pharmacyAccessNewName.value.trim() : "";
+  const email = pharmacyAccessEmail ? pharmacyAccessEmail.value.trim() : "";
+  if (!email || (!pharmacyId && !newPharmacyName)) {
+    createPharmacyAccessMessage.textContent = "Choisissez une pharmacie (ou indiquez-en le nom) et renseignez l'e-mail.";
+    return;
+  }
+  try {
+    const result = await createPharmacyAccess({ pharmacyId, newPharmacyName, email });
+    createPharmacyAccessMessage.textContent = `Accès créé pour ${result.pharmacy.name} : un e-mail a été envoyé à ${email} pour créer le mot de passe.`;
+    createPharmacyAccessForm.reset();
+    if (pharmacyAccessNewName) pharmacyAccessNewName.hidden = true;
+    await refreshPharmacyOverview();
+  } catch (error) {
+    createPharmacyAccessMessage.textContent = error.message || "Impossible de créer cet accès.";
   }
 });
 
@@ -4002,11 +4369,22 @@ function showAdminSection(section) {
   createPollForm.hidden = activeAdminSection !== "poll-new";
   createInfoForm.hidden = activeAdminSection !== "document-new";
   if (createValidationForm) createValidationForm.hidden = activeAdminSection !== "document-new";
-  createPharmacyForm.hidden = !showPharmacies;
-  pharmacyAccountsList.hidden = !showPharmacies;
-  if (createAdminAccountForm) createAdminAccountForm.hidden = !showPharmacies;
-  if (adminAccountsList) adminAccountsList.hidden = !showPharmacies;
-  if (showPharmacies) refreshAdminAccounts();
+  // Ancien système (mot de passe pharmacie direct, sans e-mail) : conservé en
+  // coulisses pour les pharmacies pas encore migrées, mais plus affiché dans
+  // "Paramètres" depuis la refonte du 13/10/2026 (remplacé par le tableau
+  // "Utilisateurs - Pharmacies" ci-dessous, qui liste aussi ces pharmacies).
+  createPharmacyForm.hidden = true;
+  pharmacyAccountsList.hidden = true;
+  if (settingsCreateChoice) settingsCreateChoice.hidden = !showPharmacies;
+  if (createPharmacyAccessForm) createPharmacyAccessForm.hidden = true;
+  if (createAdminAccountForm) createAdminAccountForm.hidden = true;
+  if (pharmacyOverviewSection) pharmacyOverviewSection.hidden = !showPharmacies;
+  if (adminAccountsSection) adminAccountsSection.hidden = !showPharmacies;
+  closePharmacyOverviewDetail();
+  if (showPharmacies) {
+    refreshAdminAccounts();
+    refreshPharmacyOverview();
+  }
   adminCampaignCards.hidden = !showCampaignList;
   if (adminBatBlock) adminBatBlock.hidden = !showBatList;
   adminPollBlock.hidden = !showPollList;
@@ -5864,7 +6242,7 @@ adminResetAlert?.addEventListener("click", async (event) => {
   const button = event.target.closest("[data-open-reset-requests]");
   if (!button) return;
   await showAdminSectionFresh("parametre");
-  pharmacyAccountsList?.scrollIntoView({ behavior: "smooth", block: "start" });
+  pharmacyOverviewTable?.scrollIntoView({ behavior: "smooth", block: "start" });
 });
 
 togglePharmacyPassword?.addEventListener("click", () => {

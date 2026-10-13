@@ -4,6 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>SOGUASPHAR - Commande pharmacies</title>
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -19,8 +22,8 @@
 </head>
 <body>
   <header class="topbar">
-    <div class="brand" aria-label="SOGUASPHAR">
-      <img class="brand-logo" src="logo-soguasphar.png" alt="SOGUASPHAR">
+    <div class="brand" aria-label="PRÉCO">
+      <img class="brand-logo" src="logo-preco.png" alt="PRÉCO">
     </div>
     <nav class="view-switch" aria-label="Changer de vue">
       <button class="switch-btn active" data-view="formView" type="button">Formulaire</button>
@@ -626,27 +629,109 @@
               <p id="validationImportMessage" class="status-message" role="status"></p>
               <button id="saveBatAdminMessageBtn" class="primary-btn" type="submit">Créer la validation</button>
             </form>
-            <form id="createPharmacyForm" class="create-campaign-form">
-              <label for="newPharmacyName">Nouvel accès pharmacie</label>
+            <!-- Ancien système (mot de passe pharmacie direct, sans e-mail) : conservé
+                 pour les pharmacies pas encore migrées (le serveur/les listeners JS en
+                 ont encore besoin), mais retiré de l'affichage depuis la refonte du
+                 13/10/2026 — voir le tableau "Utilisateurs - Pharmacies" plus bas. -->
+            <form id="createPharmacyForm" class="create-campaign-form" hidden>
+              <label for="newPharmacyName">Nouvel accès pharmacie (ancien système)</label>
               <div class="create-campaign-row">
                 <input id="newPharmacyName" type="text" placeholder="Ex. Pharmacie du Centre" autocomplete="off">
                 <button class="primary-btn" type="submit">Créer l'accès</button>
               </div>
               <p class="form-help">Un mot de passe est généré automatiquement.</p>
             </form>
-            <div id="pharmacyAccountsList" class="pharmacy-accounts-list"></div>
-            <form id="createAdminAccountForm" class="create-campaign-form">
-              <label for="newAdminFirstName">Nouveau compte administrateur SOGUASPHAR</label>
-              <div class="create-campaign-row">
-                <input id="newAdminFirstName" type="text" placeholder="Prénom" autocomplete="off">
-                <input id="newAdminLastName" type="text" placeholder="Nom" autocomplete="off">
-                <input id="newAdminEmail" type="email" placeholder="E-mail" autocomplete="off">
-                <button class="primary-btn" type="submit">Créer l'accès</button>
+            <div id="pharmacyAccountsList" class="pharmacy-accounts-list" hidden></div>
+
+            <section class="settings-panel">
+              <div class="settings-panel-header">
+                <h2>Créer un nouvel accès</h2>
+                <p>Choisissez le type de compte à créer.</p>
               </div>
-              <p class="form-help">Un e-mail est envoyé à cette adresse pour créer le mot de passe (lien valable 7 jours).</p>
-              <p id="createAdminAccountMessage" class="status-message" role="status"></p>
-            </form>
-            <div id="adminAccountsList" class="pharmacy-accounts-list"></div>
+              <div id="settingsCreateChoice" class="settings-create-choice">
+                <button class="settings-create-card" type="button" data-open-create-pharmacy>
+                  <span class="settings-create-card-icon" aria-hidden="true">🏠</span>
+                  <span class="settings-create-card-text">
+                    <strong>Créer un accès pharmacie</strong>
+                    <span>Créer un compte pour une pharmacie du réseau.</span>
+                  </span>
+                  <span class="settings-create-card-arrow" aria-hidden="true">›</span>
+                </button>
+                <button class="settings-create-card" type="button" data-open-create-admin>
+                  <span class="settings-create-card-icon" aria-hidden="true">👥</span>
+                  <span class="settings-create-card-text">
+                    <strong>Créer un accès administrateur</strong>
+                    <span>Créer un compte administrateur SOGUASPHAR (ex : équipe, préparateur).</span>
+                  </span>
+                  <span class="settings-create-card-arrow" aria-hidden="true">›</span>
+                </button>
+              </div>
+
+              <form id="createPharmacyAccessForm" class="create-campaign-form settings-create-form" hidden>
+                <label for="pharmacyAccessPharmacySelect">Pharmacie</label>
+                <select id="pharmacyAccessPharmacySelect">
+                  <option value="">— Nouvelle pharmacie —</option>
+                </select>
+                <input id="pharmacyAccessNewName" type="text" placeholder="Nom de la nouvelle pharmacie" autocomplete="off">
+                <label for="pharmacyAccessEmail">Adresse e-mail (identifiant de connexion)</label>
+                <input id="pharmacyAccessEmail" type="email" placeholder="pharmacie@exemple.fr" autocomplete="off">
+                <button class="primary-btn" type="submit">Créer l'accès et envoyer l'invitation</button>
+                <p class="form-help">Un e-mail est envoyé à cette adresse pour créer le mot de passe (lien valable 7 jours).</p>
+                <p id="createPharmacyAccessMessage" class="status-message" role="status"></p>
+              </form>
+
+              <form id="createAdminAccountForm" class="create-campaign-form settings-create-form" hidden>
+                <label for="newAdminFirstName">Nouveau compte administrateur SOGUASPHAR</label>
+                <div class="create-campaign-row">
+                  <input id="newAdminFirstName" type="text" placeholder="Prénom" autocomplete="off">
+                  <input id="newAdminLastName" type="text" placeholder="Nom" autocomplete="off">
+                </div>
+                <div class="create-campaign-row">
+                  <input id="newAdminEmail" type="email" placeholder="E-mail" autocomplete="off">
+                  <input id="newAdminJobTitle" type="text" placeholder="Profil (ex. Administratrice, Collaborateur)" autocomplete="off">
+                </div>
+                <button class="primary-btn" type="submit">Créer l'accès</button>
+                <p class="form-help">Un e-mail est envoyé à cette adresse pour créer le mot de passe (lien valable 7 jours).</p>
+                <p id="createAdminAccountMessage" class="status-message" role="status"></p>
+              </form>
+            </section>
+
+            <section id="pharmacyOverviewSection" class="settings-panel" hidden>
+              <div class="table-toolbar pharmacy-export-toolbar">
+                <div>
+                  <h2>Utilisateurs - Pharmacies <span id="pharmacyOverviewCount" class="settings-count-badge">0</span></h2>
+                </div>
+                <div class="settings-table-actions">
+                  <input id="pharmacyOverviewSearch" type="search" placeholder="Rechercher une pharmacie…">
+                  <button id="pharmacyOverviewExportBtn" class="primary-btn" type="button">⇩ Exporter Excel</button>
+                </div>
+              </div>
+              <div class="table-wrap compact">
+                <table id="pharmacyOverviewTable">
+                  <thead>
+                    <tr>
+                      <th data-sort-key="name">Pharmacie ↕</th>
+                      <th data-sort-key="email">E-mail (identifiant) ↕</th>
+                      <th data-sort-key="lastLoginAt">Dernière connexion ↕</th>
+                    </tr>
+                  </thead>
+                  <tbody id="pharmacyOverviewRows"></tbody>
+                </table>
+              </div>
+              <p class="form-help">Cliquez sur une pharmacie pour voir ses comptes, modifier son e-mail ou renvoyer une invitation.</p>
+            </section>
+
+            <div id="pharmacyOverviewDetail" class="settings-detail" hidden>
+              <div class="settings-detail-card">
+                <button id="pharmacyOverviewDetailClose" class="ghost-btn small-btn" type="button">✕ Fermer</button>
+                <div id="pharmacyOverviewDetailBody"></div>
+              </div>
+            </div>
+
+            <section id="adminAccountsSection" class="settings-panel" hidden>
+              <h2>Utilisateurs administrateurs</h2>
+              <div id="adminAccountsList" class="pharmacy-accounts-list"></div>
+            </section>
             <div class="closed-campaign-actions">
               <button id="showClosedCampaignsBtn" class="ghost-btn" type="button">Campagnes clôturées</button>
             </div>

@@ -421,7 +421,8 @@ function publicUser(user) {
     pharmacyId: user.pharmacyId || null,
     pharmacyName: pharmacy ? pharmacy.name : null,
     mustChangePassword: Boolean(user.mustChangePassword),
-    active: user.active !== false
+    active: user.active !== false,
+    lastLoginAt: user.lastLoginAt || null
   };
 }
 
@@ -2431,6 +2432,12 @@ const server = http.createServer(async (request, response) => {
       const email = normalizeEmail(payload.email);
       const firstName = String(payload.firstName || "").trim();
       const lastName = String(payload.lastName || "").trim();
+      // "Profil / niveau d'autorisation" : pour l'instant une simple étiquette
+      // affichée (ex. "Administratrice", "Collaborateur équipe"), sans effet
+      // sur les droits réels — tous les comptes soguasphar_admin ont les mêmes
+      // droits aujourd'hui. Un vrai système de permissions serait un chantier
+      // à part.
+      const jobTitle = String(payload.jobTitle || "").trim();
 
       if (!email || !firstName || !lastName) {
         sendJson(response, 400, { error: "Indiquez le prénom, le nom et l'e-mail." });
@@ -2451,7 +2458,7 @@ const server = http.createServer(async (request, response) => {
         passwordHash: hashPassword(crypto.randomBytes(24).toString("hex")), // remplacé tout de suite par le lien envoyé par e-mail
         firstName,
         lastName,
-        jobTitle: "",
+        jobTitle,
         pharmacyId: null,
         role: "soguasphar_admin",
         active: true,
@@ -2466,6 +2473,175 @@ const server = http.createServer(async (request, response) => {
       writeUsers(users);
       const invitedUser = issueAccountPasswordLink(newUser, { isNewAccount: true });
       sendJson(response, 201, { member: publicUser(invitedUser) });
+      return;
+    }
+
+    // --- Rubrique "Paramètres" (refonte du 13/10/2026) -----------------------
+    // Vue d'ensemble des accès pharmacies (comptes modernes e-mail/mot de passe,
+    // un par pharmacie possible de plusieurs : pharmacy_admin + collaborateurs),
+    // et actions génériques (renvoyer l'invitation, modifier l'e-mail, activer/
+    // désactiver) réutilisables pour les comptes pharmacie ET administrateur.
+
+    if (url.pathname === "/api/pharmacy-overview" && request.method === "GET") {
+      const user = requireAuth(request, response, ["soguasphar_admin"]);
+      if (!user) return;
+
+      const pharmacies = readPharmacies();
+      const users = readUsers().filter((item) => item.role === "pharmacy_admin" || item.role === "pharmacy_collaborator");
+      const overview = pharmacies.map((pharmacy) => {
+        const accounts = users
+          .filter((item) => String(item.pharmacyId) === String(pharmacy.id))
+          .map(publicUser)
+          .sort((a, b) => (a.role === "pharmacy_admin" ? -1 : 1) - (b.role === "pharmacy_admin" ? -1 : 1));
+        const primaryAccount = accounts.find((item) => item.role === "pharmacy_admin") || accounts[0] || null;
+        const lastLoginAt = accounts.reduce((latest, item) => {
+          if (!item.lastLoginAt) return latest;
+          if (!latest || item.lastLoginAt > latest) return item.lastLoginAt;
+          return latest;
+        }, null);
+        return {
+          id: pharmacy.id,
+          name: pharmacy.name,
+          active: pharmacy.active !== false,
+          hasLegacyAccess: Boolean(pharmacy.passwordHash) || Boolean(pharmacy.mustChangePassword !== undefined),
+          primaryEmail: primaryAccount ? primaryAccount.email : null,
+          lastLoginAt,
+          accounts
+        };
+      });
+      sendJson(response, 200, { pharmacies: overview });
+      return;
+    }
+
+    if (url.pathname === "/api/pharmacy-overview" && request.method === "POST") {
+      const user = requireAuth(request, response, ["soguasphar_admin"]);
+      if (!user) return;
+
+      const payload = JSON.parse(await readBody(request));
+      const email = normalizeEmail(payload.email);
+      const newPharmacyName = String(payload.newPharmacyName || "").trim();
+      let pharmacyId = String(payload.pharmacyId || "").trim();
+
+      if (!email) {
+        sendJson(response, 400, { error: "Indiquez l'adresse e-mail de la pharmacie." });
+        return;
+      }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        sendJson(response, 400, { error: "Adresse e-mail invalide." });
+        return;
+      }
+      if (!pharmacyId && !newPharmacyName) {
+        sendJson(response, 400, { error: "Choisissez une pharmacie existante ou indiquez le nom de la nouvelle pharmacie." });
+        return;
+      }
+      if (findUserByEmail(email)) {
+        sendJson(response, 409, { error: "Cette adresse e-mail est déjà utilisée par un compte." });
+        return;
+      }
+
+      let pharmacies = readPharmacies();
+      let pharmacy = pharmacyId ? pharmacies.find((item) => item.id === pharmacyId) : null;
+      if (!pharmacy) {
+        if (!newPharmacyName) {
+          sendJson(response, 404, { error: "Pharmacie introuvable." });
+          return;
+        }
+        pharmacy = { id: `pharmacy-${Date.now()}-${crypto.randomBytes(4).toString("hex")}`, name: newPharmacyName, active: true };
+        pharmacies = [...pharmacies, pharmacy];
+        writePharmacies(pharmacies);
+      }
+      pharmacyId = pharmacy.id;
+
+      const existingAccount = readUsers().find((item) => item.role === "pharmacy_admin" && String(item.pharmacyId) === String(pharmacyId));
+      if (existingAccount) {
+        sendJson(response, 409, { error: `${pharmacy.name} a déjà un accès (${existingAccount.email}). Utilisez "Renvoyer l'invitation" plutôt que d'en créer un nouveau.` });
+        return;
+      }
+
+      const newUser = {
+        id: `user-${crypto.randomBytes(8).toString("hex")}`,
+        email,
+        passwordHash: hashPassword(crypto.randomBytes(24).toString("hex")),
+        firstName: "",
+        lastName: "",
+        jobTitle: "",
+        pharmacyId,
+        role: "pharmacy_admin",
+        active: true,
+        mustChangePassword: true,
+        createdAt: new Date().toISOString(),
+        lastLoginAt: null,
+        invitedAt: new Date().toISOString(),
+        invitationToken: null
+      };
+      const users = readUsers();
+      users.push(newUser);
+      writeUsers(users);
+      const invitedUser = issueAccountPasswordLink(newUser, { isNewAccount: true });
+      sendJson(response, 201, { pharmacy, account: publicUser(invitedUser) });
+      return;
+    }
+
+    // Renvoyer le lien d'activation/réinitialisation à un compte EXISTANT,
+    // quel que soit son rôle (pharmacie ou administrateur SOGUASPHAR).
+    if (url.pathname.startsWith("/api/users/") && url.pathname.endsWith("/resend-invite") && request.method === "POST") {
+      const admin = requireAuth(request, response, ["soguasphar_admin"]);
+      if (!admin) return;
+
+      const targetId = decodeURIComponent(url.pathname.replace("/api/users/", "").replace("/resend-invite", ""));
+      const users = readUsers();
+      const target = users.find((item) => item.id === targetId);
+      if (!target) {
+        sendJson(response, 404, { error: "Compte introuvable." });
+        return;
+      }
+
+      const updated = issueAccountPasswordLink(target, { isNewAccount: !target.lastLoginAt });
+      sendJson(response, 200, { user: publicUser(updated) });
+      return;
+    }
+
+    // Modifier l'e-mail, le profil (jobTitle) ou activer/désactiver un compte
+    // EXISTANT, quel que soit son rôle. Réservé aux administratrices SOGUASPHAR.
+    if (url.pathname.startsWith("/api/users/") && request.method === "PUT" && !url.pathname.endsWith("/resend-invite")) {
+      const admin = requireAuth(request, response, ["soguasphar_admin"]);
+      if (!admin) return;
+
+      const targetId = decodeURIComponent(url.pathname.replace("/api/users/", ""));
+      const payload = JSON.parse(await readBody(request));
+      const users = readUsers();
+      const target = users.find((item) => item.id === targetId);
+      if (!target) {
+        sendJson(response, 404, { error: "Compte introuvable." });
+        return;
+      }
+      if (payload.active === false && target.id === admin.id) {
+        sendJson(response, 400, { error: "Impossible de désactiver votre propre compte." });
+        return;
+      }
+
+      let nextEmail = target.email;
+      if (payload.email !== undefined) {
+        nextEmail = normalizeEmail(payload.email);
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(nextEmail)) {
+          sendJson(response, 400, { error: "Adresse e-mail invalide." });
+          return;
+        }
+        const conflict = findUserByEmail(nextEmail);
+        if (conflict && conflict.id !== target.id) {
+          sendJson(response, 409, { error: "Cette adresse e-mail est déjà utilisée par un autre compte." });
+          return;
+        }
+      }
+
+      const updatedUsers = users.map((item) => item.id === target.id ? {
+        ...item,
+        email: nextEmail,
+        jobTitle: payload.jobTitle !== undefined ? String(payload.jobTitle || "").trim() : item.jobTitle,
+        active: payload.active !== undefined ? payload.active !== false : item.active
+      } : item);
+      writeUsers(updatedUsers);
+      sendJson(response, 200, { user: publicUser(updatedUsers.find((item) => item.id === target.id)) });
       return;
     }
 
