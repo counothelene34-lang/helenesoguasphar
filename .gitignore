@@ -10,3 +10,8 @@ node_modules/
 # Fichiers système
 Thumbs.db
 .DS_Store
+
+# Jamais sur Git : données réelles, documents, sauvegardes locales
+data/
+data-backups/
+_backup_before_freecolumns/
