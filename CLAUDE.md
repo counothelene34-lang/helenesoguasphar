@@ -137,3 +137,16 @@ Avant de modifier des données à la main : copie datée dans `data-backups/`.
   au 2ᵉ login, le faisait). Corrigé : `/api/auth/reset-password` enregistre maintenant
   aussi `lastLoginAt`. Les 12 comptes déjà activés le 13/10 mais mal marqués ont été
   corrigés à la main dans `data/users.json` (sauvegarde avant dans `data-backups/`).
+  **Suite (même jour) :** même corrigé, le suivi restait incomplet car l'espace admin
+  pouvait aussi s'ouvrir avec l'ancien **code administrateur partagé** ("SOGUASPHAR2026",
+  onglet Admin, formulaire `#adminCode`), qui ne demande pas qui tape le code — donc
+  cette personne n'apparaît jamais dans le suivi. Fermé à la demande d'Hélène : ce
+  formulaire ne compare plus le code et ouvre directement l'écran de connexion
+  personnelle (`showNewAuthScreen()`), seule porte d'entrée désormais pour les
+  administrateurs SOGUASPHAR. Le code `ADMIN_CODE` reste utilisé tel quel comme secret
+  technique entre le navigateur et le serveur (en-tête `X-Admin-Code` envoyé sur de
+  nombreuses routes admin, en plus de la session personnelle) : ce n'est pas un
+  renforcement de sécurité complet (le code reste visible dans `app.js` public), juste
+  la fermeture du raccourci "taper le code → accès anonyme". Si un vrai renforcement est
+  nécessaire un jour, il faudrait remplacer les vérifications `requireAdminCode` côté
+  serveur par `requireAuth(["soguasphar_admin"])` — chantier plus large, pas fait ici.
