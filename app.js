@@ -3893,7 +3893,7 @@ function campaignCard(campaign, target) {
   const isEffectivelyClosed = campaignIsEffectivelyClosed(campaign);
   const statusLabel = isEffectivelyClosed
     ? "Clôturée"
-    : (campaign.draft ? "Brouillon" : (isOpenNow ? (campaign.type || "Commande") : "Bientôt disponible"));
+    : (campaign.draft ? "Brouillon" : (isOpenNow ? (campaign.type || "Commande") : "Précommande à venir"));
   // Une réponse "complétée" n'est en réalité rattachable à MAINTENANT que s'il y a une
   // période active. Si la campagne a des périodes mais qu'aucune n'est en cours (ex :
   // opération relancée, nouvelle période pas encore commencée), la réponse affichée est
