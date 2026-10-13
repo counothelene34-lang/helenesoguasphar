@@ -4,67 +4,7 @@ const path = require("path");
 const crypto = require("crypto");
 
 const PORT = Number(process.env.PORT || 56651);
-// Le code admin ne doit JAMAIS avoir de valeur par défaut en dur dans le code :
-// il vient uniquement du fichier .env (secret, jamais dans git). Si absent, le
-// serveur refuse de démarrer plutôt que d'utiliser un mot de passe prévisible.
-const ADMIN_CODE = process.env.ADMIN_CODE;
-if (!ADMIN_CODE) {
-  console.error("ADMIN_CODE manquant dans .env : le serveur ne peut pas démarrer sans ce secret.");
-  process.exit(1);
-}
-// E-mail de clôture d'une opération : délégué au service COMMUN sogua-mailer
-// (identifiants dans le coffre, copie auto dans « Envoyés »). Si la clé ou les
-// destinataires manquent dans .env, on log une erreur mais on ne bloque jamais
-// la clôture/sauvegarde de la campagne.
-const MAILER_URL = process.env.MAILER_URL || "http://sogua-mailer:8080";
-const MAILER_API_KEY = process.env.MAILER_API_KEY || "";
-// Adresse publique de CE site (copie de test ou site en ligne), utilisée pour
-// construire les liens cliqués dans les e-mails (ex. réinitialisation de mot
-// de passe). À définir dans .env ; valeur par défaut = le site en ligne.
-const PUBLIC_BASE_URL = String(process.env.PUBLIC_BASE_URL || "https://preco.soguasphar.fr").replace(/\/$/, "");
-const ARCHIVE_NOTIFY_EMAILS = String(process.env.ARCHIVE_NOTIFY_EMAILS || "")
-  .split(",")
-  .map((item) => item.trim())
-  .filter(Boolean);
-
-// Verrou de sécurité pour les relances automatiques aux PHARMACIES (voir plus
-// bas, checkReminders) : contrairement au mail de clôture (déclenché par un
-// geste volontaire de l'admin), les relances partent toutes seules en tâche de
-// fond. Sur une copie de test (data de démonstration/essais, dates proches de
-// "aujourd'hui" par hasard), ça enverrait de VRAIS e-mails à de VRAIES
-// pharmacies par erreur — déjà arrivé une fois le 13/10/2026. Donc : désactivé
-// par défaut PARTOUT, à activer explicitement avec ENABLE_AUTO_REMINDERS=true
-// dans le .env UNIQUEMENT du site en ligne, jamais sur une copie de test.
-const AUTO_REMINDERS_ENABLED = String(process.env.ENABLE_AUTO_REMINDERS || "").trim().toLowerCase() === "true";
-
-async function sendMail({ to, subject, text, html, attachments }) {
-  const recipients = to || ARCHIVE_NOTIFY_EMAILS.join(", ");
-  if (!MAILER_API_KEY || !recipients) {
-    console.error("[preco] e-mail non envoyé : MAILER_API_KEY ou destinataire manquant dans .env");
-    return;
-  }
-  const payload = {
-    from: "helene.counot@soguasphar.com",
-    fromName: "Préco SOGUASPHAR",
-    to: recipients,
-    subject,
-    text,
-    html,
-    attachments: (attachments || []).map((attachment) => ({
-      filename: attachment.filename,
-      content: Buffer.from(String(attachment.content || ""), "utf8").toString("base64"),
-      contentType: attachment.contentType || "application/vnd.ms-excel"
-    }))
-  };
-  const result = await fetch(`${MAILER_URL}/send`, {
-    method: "POST",
-    headers: { "content-type": "application/json", "x-api-key": MAILER_API_KEY },
-    body: JSON.stringify(payload)
-  });
-  const data = await result.json().catch(() => ({}));
-  if (!result.ok || !data.ok) throw new Error(data.error || `service e-mail : HTTP ${result.status}`);
-}
-
+const ADMIN_CODE = process.env.ADMIN_CODE || "SOGUASPHAR2026";
 const ROOT = __dirname;
 const DATA_DIR = path.join(ROOT, "data");
 const DATA_FILE = path.join(DATA_DIR, "responses.json");
@@ -78,18 +18,79 @@ const PHARMACIES_FILE = path.join(DATA_DIR, "pharmacies.json");
 const VALIDATION_FILE = path.join(DATA_DIR, "validation.json");
 const VALIDATION_RESPONSES_FILE = path.join(DATA_DIR, "validation-responses.json");
 const BAT_DOCUMENTS_DIR = path.join(DATA_DIR, "bat-calendriers-2027");
-const USERS_FILE = path.join(DATA_DIR, "users.json");
-const SESSIONS_FILE = path.join(DATA_DIR, "sessions.json");
-const SESSION_COOKIE_NAME = "preco_session";
-// Durée glissante des sessions : longue pour les comptes SOGUASPHAR (admin),
-// courte pour les comptes pharmacie (titulaires/préparateurs) — sécurité
-// demandée le 12/10/2026 : une pharmacie doit redemander son mot de passe
-// après une période d'inactivité (le navigateur le propose s'il l'a mémorisé).
-const ADMIN_SESSION_DURATION_MS = 30 * 24 * 60 * 60 * 1000; // 30 jours, glissant
-const PHARMACY_SESSION_DURATION_MS = 60 * 60 * 1000; // 1 heure, glissant
-const PHARMACY_SESSION_ROLES = ["pharmacy_admin", "pharmacy_collaborator", "pharmacy_legacy"];
-function sessionDurationForRole(role) {
-  return PHARMACY_SESSION_ROLES.includes(role) ? PHARMACY_SESSION_DURATION_MS : ADMIN_SESSION_DURATION_MS;
+const PHARMACY_SESSIONS_FILE = path.join(DATA_DIR, "pharmacy-sessions.json");
+const PHARMACY_SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 jours
+
+// Jeton de connexion pharmacie (opaque, créé à la connexion) : prouve qu'on est
+// bien la pharmacie qu'on prétend être, sans mettre en place de comptes individuels.
+// Persisté dans un fichier pour survivre à un redémarrage du serveur.
+function loadPharmacySessions() {
+  try {
+    if (!fs.existsSync(PHARMACY_SESSIONS_FILE)) return new Map();
+    const raw = JSON.parse(fs.readFileSync(PHARMACY_SESSIONS_FILE, "utf8") || "{}");
+    const now = Date.now();
+    return new Map(Object.entries(raw).filter(([, session]) => Number(session?.expiresAt) > now));
+  } catch {
+    return new Map();
+  }
+}
+
+function persistPharmacySessions() {
+  try {
+    if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+    fs.writeFileSync(PHARMACY_SESSIONS_FILE, JSON.stringify(Object.fromEntries(pharmacySessions), null, 2), "utf8");
+  } catch {
+    // La persistance est un confort (survit à un redémarrage) : si elle échoue,
+    // les pharmacies connectées devront juste se reconnecter — pas bloquant.
+  }
+}
+
+const pharmacySessions = loadPharmacySessions();
+
+function createPharmacySession(pharmacyId) {
+  const token = crypto.randomBytes(24).toString("hex");
+  pharmacySessions.set(token, { pharmacyId, expiresAt: Date.now() + PHARMACY_SESSION_TTL_MS });
+  persistPharmacySessions();
+  return token;
+}
+
+function getPharmacySession(token) {
+  if (!token) return null;
+  const session = pharmacySessions.get(token);
+  if (!session) return null;
+  if (session.expiresAt < Date.now()) {
+    pharmacySessions.delete(token);
+    persistPharmacySessions();
+    return null;
+  }
+  return session;
+}
+
+// Jetons de téléchargement des PDF BAT (courte durée, en mémoire seulement) : la
+// route /bat-2027/<fichier>.pdf ne peut pas lire un en-tête personnalisé lors d'un
+// téléchargement direct, donc on passe ce jeton en paramètre d'URL ("?t=...").
+const BAT_DOWNLOAD_TOKEN_TTL_MS = 10 * 60 * 1000; // 10 minutes
+const batDownloadTokens = new Map();
+
+function createBatDownloadToken(scopeInfo) {
+  const now = Date.now();
+  for (const [key, value] of batDownloadTokens) {
+    if (value.expiresAt < now) batDownloadTokens.delete(key);
+  }
+  const token = crypto.randomBytes(16).toString("hex");
+  batDownloadTokens.set(token, { ...scopeInfo, expiresAt: now + BAT_DOWNLOAD_TOKEN_TTL_MS });
+  return token;
+}
+
+function verifyBatDownloadToken(token) {
+  if (!token) return null;
+  const entry = batDownloadTokens.get(token);
+  if (!entry) return null;
+  if (entry.expiresAt < Date.now()) {
+    batDownloadTokens.delete(token);
+    return null;
+  }
+  return entry;
 }
 
 const MIME_TYPES = {
@@ -113,7 +114,6 @@ function ensureDataFile() {
   if (!fs.existsSync(INFO_FORMS_FILE)) fs.writeFileSync(INFO_FORMS_FILE, "[]", "utf8");
   if (!fs.existsSync(INFO_RESPONSES_FILE)) fs.writeFileSync(INFO_RESPONSES_FILE, "[]", "utf8");
   if (!fs.existsSync(PHARMACIES_FILE)) fs.writeFileSync(PHARMACIES_FILE, "[]", "utf8");
-  if (!fs.existsSync(USERS_FILE)) fs.writeFileSync(USERS_FILE, "[]", "utf8");
 }
 
 function readResponses() {
@@ -234,25 +234,9 @@ function writeInfoResponses(responses) {
   fs.writeFileSync(INFO_RESPONSES_FILE, JSON.stringify(responses, null, 2), "utf8");
 }
 
-// Lit pharmacies.json et migre à la volée tout mot de passe encore en clair
-// (ancien format) vers un hachage scrypt — comme pour les comptes nominatifs.
-// Auto-réparateur : s'exécute à chaque lecture, sans action manuelle requise.
 function readPharmacies() {
   ensureDataFile();
-  const pharmacies = JSON.parse(fs.readFileSync(PHARMACIES_FILE, "utf8") || "[]");
-  let changed = false;
-  const migrated = pharmacies.map((pharmacy) => {
-    if (pharmacy && typeof pharmacy.password === "string" && pharmacy.password) {
-      changed = true;
-      const { password, ...rest } = pharmacy;
-      return { ...rest, passwordHash: hashPassword(password) };
-    }
-    return pharmacy;
-  });
-  if (changed) {
-    fs.writeFileSync(PHARMACIES_FILE, JSON.stringify(migrated, null, 2), "utf8");
-  }
-  return migrated;
+  return JSON.parse(fs.readFileSync(PHARMACIES_FILE, "utf8") || "[]");
 }
 
 function writePharmacies(pharmacies) {
@@ -260,413 +244,10 @@ function writePharmacies(pharmacies) {
   fs.writeFileSync(PHARMACIES_FILE, JSON.stringify(pharmacies, null, 2), "utf8");
 }
 
-// Ne renvoie jamais le hachage du mot de passe au navigateur : il est inutile
-// côté client et ça évite de l'exposer même sous forme hachée.
-function stripPharmacySecret(pharmacy) {
-  const { passwordHash, ...rest } = pharmacy;
-  return rest;
-}
-
-// --- Comptes individuels (email + mot de passe) -----------------------------
-// Fondations de la connexion par compte nominatif, en plus (pas en remplacement)
-// de l'ancien mot de passe unique par pharmacie (/api/pharmacy-login) et du code
-// admin général (x-admin-code), qui restent fonctionnels pendant la transition.
-
-function readUsers() {
-  ensureDataFile();
-  return JSON.parse(fs.readFileSync(USERS_FILE, "utf8") || "[]");
-}
-
-function writeUsers(users) {
-  ensureDataFile();
-  fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2), "utf8");
-}
-
-function normalizeEmail(email) {
-  return String(email || "").trim().toLowerCase();
-}
-
-function findUserByEmail(email) {
-  const normalized = normalizeEmail(email);
-  if (!normalized) return null;
-  return readUsers().find((user) => normalizeEmail(user.email) === normalized) || null;
-}
-
-// Hachage de mot de passe avec scrypt (module natif "crypto", aucune dépendance
-// externe). Le sel et le hash sont stockés ensemble dans une seule chaîne :
-// "scrypt:<selHex>:<hashHex>".
-function hashPassword(password) {
-  const salt = crypto.randomBytes(16);
-  const derivedKey = crypto.scryptSync(String(password), salt, 64, { N: 16384 });
-  return `scrypt:${salt.toString("hex")}:${derivedKey.toString("hex")}`;
-}
-
-function verifyPassword(password, storedHash) {
-  if (!storedHash || typeof storedHash !== "string") return false;
-  const parts = storedHash.split(":");
-  if (parts.length !== 3 || parts[0] !== "scrypt") return false;
-  try {
-    const salt = Buffer.from(parts[1], "hex");
-    const expected = Buffer.from(parts[2], "hex");
-    const actual = crypto.scryptSync(String(password), salt, expected.length, { N: 16384 });
-    if (actual.length !== expected.length) return false;
-    return crypto.timingSafeEqual(actual, expected);
-  } catch (error) {
-    return false;
-  }
-}
-
-// Règle de mot de passe commune (pharmacies et comptes nominatifs) : au moins
-// 6 caractères, une majuscule, un chiffre, un symbole. Renvoie un message
-// d'erreur en français si la règle n'est pas respectée, ou "" si tout est
-// bon. Doit rester cohérente avec la même fonction côté client (app.js).
-function passwordRuleError(password) {
-  if (!password || password.length < 6) {
-    return "Le mot de passe doit contenir au moins 6 caractères.";
-  }
-  if (!/[A-Z]/.test(password)) {
-    return "Le mot de passe doit contenir au moins une majuscule.";
-  }
-  if (!/[0-9]/.test(password)) {
-    return "Le mot de passe doit contenir au moins un chiffre.";
-  }
-  if (!/[^A-Za-z0-9]/.test(password)) {
-    return "Le mot de passe doit contenir au moins un symbole (ex : ! ? @ # &).";
-  }
-  return "";
-}
-
-// Génère un mot de passe provisoire qui respecte toujours la règle commune
-// (6 caractères minimum, une majuscule, un symbole), pour les nouveaux
-// comptes nominatifs (comptes d'équipe) et leurs réinitialisations.
-function generateTempPassword() {
-  const random = crypto.randomBytes(5).toString("hex").toUpperCase();
-  const symbols = "!@#$%&*?";
-  const symbol = symbols[Math.floor(Math.random() * symbols.length)];
-  return `Eq${random}${symbol}`;
-}
-
-// --- Jeton de réinitialisation de mot de passe ------------------------------
-// Un jeton aléatoire (envoyé par e-mail, jamais stocké en clair) donne accès
-// 2 heures à la réinitialisation d'UN compte précis. On ne stocke que son
-// empreinte (sha256) dans users.json, comme un mot de passe.
-const RESET_TOKEN_VALIDITY_MS = 2 * 60 * 60 * 1000;
-
-// Même mécanisme, mais pour le tout premier mot de passe d'un compte créé
-// par une titulaire (elle-même ou un membre de son équipe) : la personne n'a
-// encore jamais ouvert Préco, donc le lien reste valable plus longtemps (7
-// jours) qu'une simple réinitialisation.
-const INVITE_TOKEN_VALIDITY_MS = 7 * 24 * 60 * 60 * 1000;
-
-function hashResetToken(token) {
-  return crypto.createHash("sha256").update(String(token)).digest("hex");
-}
-
-function generateResetToken() {
-  return crypto.randomBytes(32).toString("hex");
-}
-
-// Place un nouveau jeton de création/réinitialisation de mot de passe sur un
-// compte et envoie le lien par e-mail. Utilisé à la création d'un compte
-// (titulaire ou membre d'équipe) et quand une titulaire réinitialise le mot
-// de passe d'un membre de son équipe : dans les deux cas, personne ne doit
-// taper ou transmettre un mot de passe à la main.
-function issueAccountPasswordLink(user, { isNewAccount }) {
-  const token = generateResetToken();
-  const users = readUsers();
-  const updatedUsers = users.map((item) => item.id === user.id ? {
-    ...item,
-    passwordHash: hashPassword(crypto.randomBytes(24).toString("hex")), // mot de passe inconnu de tous tant que le lien n'est pas utilisé
-    mustChangePassword: true,
-    resetTokenHash: hashResetToken(token),
-    resetTokenExpiresAt: Date.now() + INVITE_TOKEN_VALIDITY_MS
-  } : item);
-  writeUsers(updatedUsers);
-
-  const resetLink = `${PUBLIC_BASE_URL}/?reset=${token}`;
-  console.error(`[preco][debug] lien de création/réinitialisation pour ${user.email} : ${resetLink}`);
-  const subject = isNewAccount
-    ? "Préco SOGUASPHAR : créez votre mot de passe"
-    : "Préco SOGUASPHAR : réinitialisation de votre mot de passe";
-  const intro = isNewAccount
-    ? "Un accès Préco vient d'être créé pour vous."
-    : "Votre mot de passe Préco vient d'être réinitialisé.";
-  sendMail({
-    to: user.email,
-    subject,
-    text: `Bonjour,\n\n${intro}\n\nCliquez sur ce lien dans les 7 jours pour choisir votre mot de passe :\n${resetLink}\n\nSi vous ne vous attendiez pas à ce message, ignorez-le simplement.\n\n— Préco SOGUASPHAR`,
-    html: `<p>Bonjour,</p><p>${intro}</p><p><a href="${resetLink}">Cliquez ici pour choisir votre mot de passe</a> (lien valable 7 jours).</p><p>Si vous ne vous attendiez pas à ce message, ignorez-le simplement.</p><p>— Préco SOGUASPHAR</p>`
-  }).catch((error) => {
-    console.error(`[preco] échec de l'e-mail de création/réinitialisation pour "${user.email}" :`, error.message);
-  });
-  return updatedUsers.find((item) => item.id === user.id);
-}
-
-function isResetTokenValid(user) {
-  return Boolean(user.resetTokenHash) && Number(user.resetTokenExpiresAt) > Date.now();
-}
-
-function publicUser(user) {
-  if (!user) return null;
-  const pharmacy = user.pharmacyId
-    ? readPharmacies().find((item) => item.id === user.pharmacyId)
-    : null;
-  return {
-    id: user.id,
-    email: user.email,
-    firstName: user.firstName || "",
-    lastName: user.lastName || "",
-    role: user.role,
-    jobTitle: user.jobTitle || "",
-    pharmacyId: user.pharmacyId || null,
-    pharmacyName: pharmacy ? pharmacy.name : null,
-    mustChangePassword: Boolean(user.mustChangePassword),
-    active: user.active !== false
-  };
-}
-
-// --- Sessions (token opaque, stocké en mémoire + sauvegarde sur disque) -----
-// Pas de JWT externe : un jeton aléatoire fait office de clé vers une session
-// en mémoire, rechargée au démarrage depuis data/sessions.json (survit à un
-// redémarrage du serveur), avec expiration glissante de 30 jours.
-
-const sessions = new Map(); // token -> { userId, expiresAt }
-
-function loadSessions() {
-  try {
-    if (!fs.existsSync(SESSIONS_FILE)) return;
-    const raw = JSON.parse(fs.readFileSync(SESSIONS_FILE, "utf8") || "{}");
-    const now = Date.now();
-    Object.entries(raw).forEach(([token, session]) => {
-      if (session && typeof session.expiresAt === "number" && session.expiresAt > now) {
-        sessions.set(token, session);
-      }
-    });
-  } catch (error) {
-    // Fichier absent ou corrompu : on repart simplement sans session active.
-  }
-}
-
-function persistSessions() {
-  try {
-    if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-    const plain = {};
-    sessions.forEach((session, token) => { plain[token] = session; });
-    fs.writeFileSync(SESSIONS_FILE, JSON.stringify(plain, null, 2), "utf8");
-  } catch (error) {
-    // Non bloquant : la session reste valide en mémoire même si l'écriture échoue.
-  }
-}
-
-// `role` détermine la durée de la session (voir sessionDurationForRole). Pour
-// une session pharmacie "ancien système" (mot de passe simple, pas de compte
-// individuel), `userId` est null et `pharmacyId` identifie la pharmacie.
-function createSession(userId, role, pharmacyId) {
-  const token = crypto.randomBytes(32).toString("hex");
-  sessions.set(token, {
-    userId: userId || null,
-    role: role || null,
-    pharmacyId: pharmacyId || null,
-    expiresAt: Date.now() + sessionDurationForRole(role)
-  });
-  persistSessions();
-  return token;
-}
-
-function getSession(token) {
-  if (!token) return null;
-  const session = sessions.get(token);
-  if (!session) return null;
-  if (session.expiresAt < Date.now()) {
-    sessions.delete(token);
-    persistSessions();
-    return null;
-  }
-  // Expiration glissante : chaque utilisation prolonge la session (durée
-  // selon le rôle : longue pour l'admin, courte pour une pharmacie).
-  session.expiresAt = Date.now() + sessionDurationForRole(session.role);
-  return session;
-}
-
-function destroySession(token) {
-  if (sessions.has(token)) {
-    sessions.delete(token);
-    persistSessions();
-  }
-}
-
-function parseCookies(request) {
-  const header = request.headers.cookie;
-  const cookies = {};
-  if (!header) return cookies;
-  header.split(";").forEach((pair) => {
-    const index = pair.indexOf("=");
-    if (index === -1) return;
-    const key = pair.slice(0, index).trim();
-    const value = pair.slice(index + 1).trim();
-    if (key) {
-      try {
-        cookies[key] = decodeURIComponent(value);
-      } catch (error) {
-        cookies[key] = value;
-      }
-    }
-  });
-  return cookies;
-}
-
-function setSessionCookie(response, token, role) {
-  const isHttps = process.env.FORCE_HTTPS_COOKIE === "1" || process.env.NODE_ENV === "production";
-  const parts = [
-    `${SESSION_COOKIE_NAME}=${token}`,
-    "Path=/",
-    "HttpOnly",
-    "SameSite=Lax",
-    `Max-Age=${Math.floor(sessionDurationForRole(role) / 1000)}`
-  ];
-  if (isHttps) parts.push("Secure");
-  response.setHeader("Set-Cookie", parts.join("; "));
-}
-
-function clearSessionCookie(response) {
-  const isHttps = process.env.FORCE_HTTPS_COOKIE === "1" || process.env.NODE_ENV === "production";
-  const parts = [`${SESSION_COOKIE_NAME}=`, "Path=/", "HttpOnly", "SameSite=Lax", "Max-Age=0"];
-  if (isHttps) parts.push("Secure");
-  response.setHeader("Set-Cookie", parts.join("; "));
-}
-
-// Retrouve l'utilisateur courant à partir du cookie de session, ou null.
-function getAuthenticatedUser(request) {
-  const cookies = parseCookies(request);
-  const token = cookies[SESSION_COOKIE_NAME];
-  const session = getSession(token);
-  if (!session) return null;
-  const user = readUsers().find((item) => item.id === session.userId);
-  if (!user || user.active === false) return null;
-  return user;
-}
-
-// Comme getAuthenticatedUser, mais reconnaît aussi une session pharmacie de
-// l'ancien système (mot de passe simple, sans compte individuel). Renvoie un
-// objet "public" prêt à être envoyé au front, quel que soit le système.
-function getAuthenticatedPrincipal(request) {
-  const cookies = parseCookies(request);
-  const token = cookies[SESSION_COOKIE_NAME];
-  const session = getSession(token);
-  if (!session) return null;
-  if (session.role === "pharmacy_legacy") {
-    const pharmacy = readPharmacies().find((item) => item.id === session.pharmacyId);
-    if (!pharmacy || pharmacy.active === false) return null;
-    return {
-      id: `legacy:${pharmacy.id}`,
-      role: "pharmacy_legacy",
-      pharmacyId: pharmacy.id,
-      pharmacyName: pharmacy.name,
-      mustChangePassword: pharmacy.mustChangePassword !== false,
-      active: true
-    };
-  }
-  const user = readUsers().find((item) => item.id === session.userId);
-  if (!user || user.active === false) return null;
-  return publicUser(user);
-}
-
-// Middleware réutilisable pour les futures routes protégées : vérifie la
-// session et, si `roles` est fourni, que le rôle de l'utilisateur en fait
-// partie. Envoie lui-même la réponse d'erreur (401/403) et renvoie null si
-// l'accès est refusé ; renvoie l'utilisateur (sans mot de passe) sinon.
-function requireAuth(request, response, roles) {
-  const user = getAuthenticatedUser(request);
-  if (!user) {
-    sendJson(response, 401, { error: "Non authentifié" });
-    return null;
-  }
-  if (Array.isArray(roles) && roles.length && !roles.includes(user.role)) {
-    sendJson(response, 403, { error: "Accès refusé" });
-    return null;
-  }
-  return user;
-}
-
-// Vérifie qu'un utilisateur de pharmacie (pharmacy_admin / pharmacy_collaborator)
-// agit uniquement sur sa propre pharmacie. Les soguasphar_admin passent toujours.
-function requireSamePharmacy(user, pharmacyId) {
-  if (!user) return false;
-  if (user.role === "soguasphar_admin") return true;
-  return Boolean(user.pharmacyId) && String(user.pharmacyId) === String(pharmacyId);
-}
-
-loadSessions();
-
-// --- Protection anti-brute-force -------------------------------------------
-// Compte les échecs par adresse IP (code admin, login pharmacie, login par
-// compte) et bloque temporairement après plusieurs échecs, pour empêcher
-// quelqu'un d'essayer des milliers de mots de passe automatiquement.
-const BRUTE_FORCE_MAX_ATTEMPTS = 5;
-const BRUTE_FORCE_LOCK_MS = 10 * 60 * 1000; // 10 minutes
-const failedAttempts = new Map(); // "clé" (type:ip ou type:ip:identifiant) -> { count, lockUntil }
-
-function getClientIp(request) {
-  const forwarded = request.headers["x-forwarded-for"];
-  if (forwarded) return String(forwarded).split(",")[0].trim();
-  return (request.socket && request.socket.remoteAddress) || "inconnu";
-}
-
-function isLocked(key) {
-  const entry = failedAttempts.get(key);
-  return Boolean(entry && entry.lockUntil && entry.lockUntil > Date.now());
-}
-
-function registerFailure(key) {
-  const entry = failedAttempts.get(key) || { count: 0, lockUntil: 0 };
-  entry.count += 1;
-  if (entry.count >= BRUTE_FORCE_MAX_ATTEMPTS) {
-    entry.lockUntil = Date.now() + BRUTE_FORCE_LOCK_MS;
-    entry.count = 0;
-  }
-  failedAttempts.set(key, entry);
-}
-
-function registerSuccess(key) {
-  failedAttempts.delete(key);
-}
-
-// Vérifie le code admin (header x-admin-code ou paramètre ?code=), avec
-// blocage après plusieurs échecs. N'envoie pas la réponse d'erreur : à
-// utiliser pour les endpoints où le code est optionnel (accès dégradé).
-function isAdminCodeValid(request, providedCode) {
-  const provided = providedCode !== undefined ? providedCode : request.headers["x-admin-code"];
-  if (!provided) return false;
-  const key = `admin:${getClientIp(request)}`;
-  if (isLocked(key)) return false;
-  if (provided !== ADMIN_CODE) {
-    registerFailure(key);
-    return false;
-  }
-  registerSuccess(key);
-  return true;
-}
-
-// Variante stricte : envoie elle-même la réponse 401/429 et renvoie
-// false si l'accès doit être refusé. À utiliser pour les routes admin.
-function requireAdminCode(request, response, providedCode) {
-  const key = `admin:${getClientIp(request)}`;
-  if (isLocked(key)) {
-    sendJson(response, 429, { error: "Trop de tentatives avec un code incorrect. Réessayez dans quelques minutes." });
-    return false;
-  }
-  if (!isAdminCodeValid(request, providedCode)) {
-    sendJson(response, 401, { error: "Code administrateur incorrect" });
-    return false;
-  }
-  return true;
-}
-
 function defaultValidation() {
   return {
     title: "",
     description: "",
-    draft: false,
     archived: false,
     documents: []
   };
@@ -703,7 +284,6 @@ function writeValidation(validation) {
   const payload = {
     title: String(validation.title || "").trim(),
     description: String(validation.description || "").trim(),
-    draft: Boolean(validation.draft),
     archived: Boolean(validation.archived),
     documents: Array.isArray(validation.documents)
       ? validation.documents.map(normalizeValidationDocument).filter((document) => document.id && document.fileName && document.url)
@@ -1322,9 +902,7 @@ function rowsForExport(responses) {
 
 // Les colonnes produit ne sont plus fixes : on prend l'union des colonnes
 // rencontrées dans les lignes à exporter, dans l'ordre de première apparition.
-// Séparée de sendExcel pour pouvoir aussi générer ce tableau en pièce jointe
-// d'e-mail (clôture d'une opération), sans passer par une réponse HTTP.
-function buildDispatchWorkbookHtml(responses) {
+function sendExcel(response, responses) {
   const rows = rowsForExport(responses);
   const productColumns = [];
   rows.forEach((row) => {
@@ -1346,7 +924,7 @@ function buildDispatchWorkbookHtml(responses) {
     </tr>
   `).join("");
 
-  return `
+  const workbook = `
     <html>
       <head><meta charset="utf-8"></head>
       <body>
@@ -1357,256 +935,12 @@ function buildDispatchWorkbookHtml(responses) {
       </body>
     </html>
   `;
-}
 
-function sendExcel(response, responses) {
-  const workbook = buildDispatchWorkbookHtml(responses);
   response.writeHead(200, {
     "Content-Type": "application/vnd.ms-excel; charset=utf-8",
     "Content-Disposition": `attachment; filename="recap-soguasphar-${new Date().toISOString().slice(0, 10)}.xls"`
   });
   response.end(workbook);
-}
-
-// Récapitulatif des quantités globales (même agrégation que renderQuantitySummary
-// côté admin dans app.js), généré ici côté serveur pour la pièce jointe d'e-mail
-// envoyée à la clôture d'une opération.
-function buildQuantitySummaryWorkbookHtml(campaign, campaignResponses) {
-  const template = normalizeTemplate(campaign.template);
-  const columns = template.columns || [];
-  const rows = rowsForExport(campaignResponses);
-  const totals = new Map();
-  rows.forEach((row) => {
-    const key = columns.map((column) => row.values[column] || "").join("|") || JSON.stringify(row.values);
-    const existing = totals.get(key) || { values: row.values || {}, quantity: 0 };
-    existing.quantity += Number(String(row.quantity || "0").replace(",", ".")) || 0;
-    totals.set(key, existing);
-  });
-  const summaryRows = [...totals.values()].filter((row) => row.quantity > 0);
-
-  const headings = [...columns, "Quantité totale"];
-  const bodyRows = summaryRows.map((row) => `
-    <tr>
-      ${columns.map((column) => `<td>${escapeHtml(row.values[column] || "")}</td>`).join("")}
-      <td>${escapeHtml(String(row.quantity))}</td>
-    </tr>
-  `).join("");
-
-  return `
-    <html>
-      <head><meta charset="utf-8"></head>
-      <body>
-        <table border="1">
-          <thead><tr>${headings.map((heading) => `<th>${escapeHtml(heading)}</th>`).join("")}</tr></thead>
-          <tbody>${bodyRows}</tbody>
-        </table>
-      </body>
-    </html>
-  `;
-}
-
-// Envoi de l'e-mail de clôture (quantités globales + dispatch par pharmacie en
-// pièces jointes) à Hélène, Jean-Garry et l'équipe SOGUASPHAR. Appelé juste après
-// la sauvegarde d'une campagne qui vient de passer à closed:true (voir PUT /api/orders).
-async function notifyCampaignClosed(campaign) {
-  const campaignResponses = latestResponses(readResponses())
-    .filter((item) => responseMatchesCampaign(item, campaign.id));
-  const datePart = new Date().toISOString().slice(0, 10);
-  const summaryHtml = buildQuantitySummaryWorkbookHtml(campaign, campaignResponses);
-  const dispatchHtml = buildDispatchWorkbookHtml(campaignResponses);
-  await sendMail({
-    subject: `Précommande clôturée : ${campaign.title}`,
-    text: `La précommande "${campaign.title}" vient d'être clôturée sur Préco.\n\nVous trouverez en pièces jointes le récapitulatif des quantités globales commandées et le détail des réponses par pharmacie.`,
-    html: `<p>La précommande <strong>${escapeHtml(campaign.title)}</strong> vient d'être clôturée sur Préco.</p><p>Vous trouverez en pièces jointes le récapitulatif des quantités globales commandées et le détail des réponses par pharmacie.</p>`,
-    attachments: [
-      { filename: `quantites-${campaign.id}-${datePart}.xls`, content: summaryHtml },
-      { filename: `dispatch-pharmacies-${campaign.id}-${datePart}.xls`, content: dispatchHtml }
-    ]
-  });
-}
-
-// --- Relances automatiques par e-mail (précommandes et sondages) -----------
-// Chaque jour : si une pharmacie n'a pas répondu à une opération active et que
-// sa clôture approche, on lui envoie un rappel (J-3 à J-2), puis une dernière
-// relance insistante la veille/le jour de la clôture (une seule fois par type,
-// mémorisé dans campaign.remindersSent). Sans adresse e-mail connue pour la
-// pharmacie (comptes nominatifs, data/users.json), on ne peut rien envoyer :
-// on logue simplement la situation, sans jamais marquer la relance "envoyée",
-// pour qu'elle reparte dès qu'une adresse sera renseignée.
-const REMINDER_WINDOW_DAYS = 3;
-const PRECO_BASE_URL = "https://preco.soguasphar.fr";
-
-function reminderSlugify(value) {
-  const slug = String(value || "")
-    .trim()
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
-  return slug || "operation";
-}
-
-// Adresses e-mail d'une pharmacie, pour les relances : l'adresse de contact
-// renseignée directement sur la fiche pharmacie (pharmacies.json, champ
-// "email", ex. adresse du titulaire issue de la liste des adhérents), plus
-// celles des éventuels comptes nominatifs déjà créés (titulaire(s)/équipe,
-// data/users.json). Peut être vide si rien n'est encore renseigné : dans ce
-// cas, pas d'envoi.
-function activePharmacyEmails(pharmacy) {
-  if (!pharmacy || !pharmacy.id) return [];
-  const emails = readUsers()
-    .filter((user) => user && user.pharmacyId === pharmacy.id && user.active !== false && user.email)
-    .map((user) => normalizeEmail(user.email));
-  if (pharmacy.email) emails.push(normalizeEmail(pharmacy.email));
-  return [...new Set(emails.filter(Boolean))];
-}
-
-function closingDateForOrder(order) {
-  const dates = (order.periods || [])
-    .map((period) => period && period.endDate)
-    .filter(Boolean);
-  if (!dates.length) return null;
-  return [...dates].sort().slice(-1)[0];
-}
-
-function closingDateForPoll(poll) {
-  return poll && poll.endDate ? poll.endDate : null;
-}
-
-// Nombre de jours (entiers) entre aujourd'hui et la date de clôture (YYYY-MM-DD).
-// Négatif si déjà passée.
-function daysUntil(dateStr) {
-  if (!dateStr) return null;
-  const todayStr = new Date().toISOString().slice(0, 10);
-  const a = new Date(`${todayStr}T00:00:00Z`);
-  const b = new Date(`${dateStr}T00:00:00Z`);
-  if (Number.isNaN(a.getTime()) || Number.isNaN(b.getTime())) return null;
-  return Math.round((b - a) / (24 * 60 * 60 * 1000));
-}
-
-function pharmacyRespondedToOrder(order, pharmacy, responses) {
-  return responses.some((response) => {
-    if (String(response.campaignId || "") !== String(order.id)) return false;
-    const id = String(response.pharmacyId || "").trim();
-    const name = normalizeLookup(response.pharmacyName);
-    return (id && id === String(pharmacy.id || "").trim())
-      || (name && name === normalizeLookup(pharmacy.name));
-  });
-}
-
-function pharmacyRespondedToPoll(poll, pharmacy, pollResponses) {
-  return pollResponses.some((response) => {
-    if (String(response.pollId || "") !== String(poll.id)) return false;
-    const id = String(response.pharmacyId || "").trim();
-    const name = normalizeLookup(response.pharmacyName);
-    return (id && id === String(pharmacy.id || "").trim())
-      || (name && name === normalizeLookup(pharmacy.name));
-  });
-}
-
-async function sendReminderEmail({ emails, kind, operationType, title, closingDate, link }) {
-  const isLast = kind === "veille";
-  const typeLabel = operationType === "poll" ? "sondage" : "précommande";
-  const closingPart = closingDate ? ` Elle se clôture le ${closingDate.split("-").reverse().join("/")}.` : "";
-  const subject = isLast
-    ? `Dernière relance avant clôture : "${title}"`
-    : `Rappel : réponse attendue pour "${title}"`;
-  const text = isLast
-    ? `Bonjour,\n\nCeci est la dernière relance : vous n'avez pas encore répondu au ${typeLabel} "${title}".${closingPart} Passé ce délai, il ne sera plus possible de répondre.\n\nMerci de répondre dès aujourd'hui : ${link}\n\n— Préco SOGUASPHAR`
-    : `Bonjour,\n\nVous n'avez pas encore répondu au ${typeLabel} "${title}".${closingPart}\n\nRépondre ici : ${link}\n\n— Préco SOGUASPHAR`;
-  await sendMail({ to: emails.join(", "), subject, text });
-}
-
-async function checkReminders() {
-  try {
-    const pharmacies = readPharmacies().filter((pharmacy) => pharmacy && pharmacy.active !== false);
-    const responses = readResponses();
-    const pollResponses = readPollResponses();
-    const skippedNoEmail = new Set();
-
-    const orders = readOrders();
-    let ordersChanged = false;
-    for (const order of orders) {
-      if (!order || order.draft || order.closed) continue;
-      const closingDate = closingDateForOrder(order);
-      const left = daysUntil(closingDate);
-      if (left === null || left < 0) continue;
-      const kind = left <= 1 ? "veille" : (left <= REMINDER_WINDOW_DAYS ? "relance" : null);
-      if (!kind) continue;
-
-      order.remindersSent = order.remindersSent || {};
-      for (const pharmacy of pharmacies) {
-        const sentTypes = order.remindersSent[pharmacy.id] || [];
-        if (sentTypes.includes(kind)) continue;
-        if (pharmacyRespondedToOrder(order, pharmacy, responses)) continue;
-        const emails = activePharmacyEmails(pharmacy);
-        if (!emails.length) {
-          skippedNoEmail.add(`${pharmacy.name} (précommande "${order.title}")`);
-          continue;
-        }
-        try {
-          await sendReminderEmail({
-            emails,
-            kind,
-            operationType: "order",
-            title: order.title,
-            closingDate,
-            link: `${PRECO_BASE_URL}/?operation=${reminderSlugify(order.title)}`
-          });
-          order.remindersSent[pharmacy.id] = [...sentTypes, kind];
-          ordersChanged = true;
-        } catch (error) {
-          console.error(`[preco] relance non envoyée (précommande "${order.title}", pharmacie ${pharmacy.name}) :`, error.message || error);
-        }
-      }
-      if (ordersChanged) writeOrders(orders);
-    }
-
-    const polls = readPolls();
-    let pollsChanged = false;
-    for (const poll of polls) {
-      if (!poll || poll.draft || poll.closed) continue;
-      const closingDate = closingDateForPoll(poll);
-      const left = daysUntil(closingDate);
-      if (left === null || left < 0) continue;
-      const kind = left <= 1 ? "veille" : (left <= REMINDER_WINDOW_DAYS ? "relance" : null);
-      if (!kind) continue;
-
-      poll.remindersSent = poll.remindersSent || {};
-      for (const pharmacy of pharmacies) {
-        const sentTypes = poll.remindersSent[pharmacy.id] || [];
-        if (sentTypes.includes(kind)) continue;
-        if (pharmacyRespondedToPoll(poll, pharmacy, pollResponses)) continue;
-        const emails = activePharmacyEmails(pharmacy);
-        if (!emails.length) {
-          skippedNoEmail.add(`${pharmacy.name} (sondage "${poll.question}")`);
-          continue;
-        }
-        try {
-          await sendReminderEmail({
-            emails,
-            kind,
-            operationType: "poll",
-            title: poll.question,
-            closingDate,
-            link: `${PRECO_BASE_URL}/?operation=${reminderSlugify(poll.question)}`
-          });
-          poll.remindersSent[pharmacy.id] = [...sentTypes, kind];
-          pollsChanged = true;
-        } catch (error) {
-          console.error(`[preco] relance non envoyée (sondage "${poll.question}", pharmacie ${pharmacy.name}) :`, error.message || error);
-        }
-      }
-      if (pollsChanged) writePolls(polls);
-    }
-
-    if (skippedNoEmail.size) {
-      console.log(`[preco] relances non envoyées, aucune adresse e-mail connue pour : ${[...skippedNoEmail].join(" ; ")}`);
-    }
-  } catch (error) {
-    console.error("[preco] erreur pendant la vérification des relances :", error);
-  }
 }
 
 // Une colonne par question du sondage (ex : "Présence" et "Repas" séparées) au lieu
@@ -1758,6 +1092,20 @@ const server = http.createServer(async (request, response) => {
         response.end("Forbidden");
         return;
       }
+      const downloadScope = verifyBatDownloadToken(url.searchParams.get("t"));
+      if (!downloadScope) {
+        response.writeHead(401);
+        response.end("Authentification requise");
+        return;
+      }
+      if (downloadScope.scope !== "admin") {
+        const owningDocument = readValidation().documents.find((document) => path.basename(document.url) === requestedName);
+        if (!owningDocument || owningDocument.pharmacyId !== downloadScope.pharmacyId) {
+          response.writeHead(403);
+          response.end("Forbidden");
+          return;
+        }
+      }
       fs.readFile(filePath, (error, data) => {
         if (error) {
           response.writeHead(404);
@@ -1770,29 +1118,9 @@ const server = http.createServer(async (request, response) => {
       return;
     }
 
-    if (url.pathname.startsWith("/captures-demo/") && request.method === "GET") {
-      const requestedName = path.basename(url.pathname.slice("/captures-demo/".length));
-      const capturesDir = path.join(ROOT, "data", "captures");
-      const filePath = path.join(capturesDir, requestedName);
-      if (!filePath.startsWith(capturesDir) || !/^[\w-]+\.png$/.test(requestedName)) {
-        response.writeHead(403);
-        response.end("Forbidden");
-        return;
-      }
-      fs.readFile(filePath, (error, data) => {
-        if (error) {
-          response.writeHead(404);
-          response.end("Not found");
-          return;
-        }
-        response.writeHead(200, { "Content-Type": "image/png" });
-        response.end(data);
-      });
-      return;
-    }
-
     if (url.pathname === "/api/responses" && request.method === "GET") {
-      if (!requireAdminCode(request, response)) {
+      if (request.headers["x-admin-code"] !== ADMIN_CODE) {
+        sendJson(response, 401, { error: "Code administrateur incorrect" });
         return;
       }
       sendJson(response, 200, latestResponses(readResponses()));
@@ -1802,6 +1130,16 @@ const server = http.createServer(async (request, response) => {
     if (url.pathname === "/api/pharmacy-responses" && request.method === "GET") {
       const pharmacyId = url.searchParams.get("pharmacyId");
       const pharmacyName = normalizeLookup(url.searchParams.get("pharmacyName"));
+      const session = getPharmacySession(request.headers["x-pharmacy-token"]);
+      const sessionPharmacy = session ? readPharmacies().find((item) => item.id === session.pharmacyId) : null;
+      const requestMatchesSession = session && (
+        (pharmacyId && pharmacyId === session.pharmacyId)
+        || (!pharmacyId && pharmacyName && normalizeLookup(sessionPharmacy?.name) === pharmacyName)
+      );
+      if (!requestMatchesSession) {
+        sendJson(response, 401, { error: "Authentification pharmacie requise" });
+        return;
+      }
       const responses = latestResponses(readResponses()).filter((item) => {
         if (item.hiddenFromArchive) return false;
         if (pharmacyId && item.pharmacyId === pharmacyId) return true;
@@ -1848,6 +1186,37 @@ const server = http.createServer(async (request, response) => {
 
     if (url.pathname === "/api/orders" && request.method === "GET") {
       sendJson(response, 200, readOrders());
+      return;
+    }
+
+    // Sert l'image réelle d'une précommande (imageData/imageData2, stockées en base64)
+    // sans avoir à renvoyer tout le JSON de la commande. Utilisé par le portail SOGUASPRO.
+    if (url.pathname.startsWith("/api/orders/") && url.pathname.endsWith("/image") && request.method === "GET") {
+      const segments = url.pathname.split("/").filter(Boolean); // ["api", "orders", ":id", "image"]
+      const orderId = decodeURIComponent(segments[2] || "");
+      const slot = url.searchParams.get("slot") === "2" ? "imageData2" : "imageData";
+      const order = readOrders().find((item) => item.id === orderId);
+      const dataUrl = order ? order[slot] : "";
+
+      if (!dataUrl || typeof dataUrl !== "string" || !dataUrl.startsWith("data:")) {
+        response.writeHead(404);
+        response.end("Image introuvable");
+        return;
+      }
+
+      const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+      if (!match) {
+        response.writeHead(404);
+        response.end("Image introuvable");
+        return;
+      }
+
+      const [, contentType, base64] = match;
+      response.writeHead(200, {
+        "Content-Type": contentType,
+        "Cache-Control": "public, max-age=3600",
+      });
+      response.end(Buffer.from(base64, "base64"));
       return;
     }
 
@@ -1916,12 +1285,34 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/validation" && request.method === "GET") {
-      sendJson(response, 200, readValidation());
+      const validation = readValidation();
+      if (request.headers["x-admin-code"] === ADMIN_CODE) {
+        const adminToken = createBatDownloadToken({ scope: "admin" });
+        const documents = validation.documents.map((document) => ({ ...document, downloadToken: adminToken }));
+        sendJson(response, 200, { ...validation, documents });
+        return;
+      }
+      const session = getPharmacySession(request.headers["x-pharmacy-token"]);
+      if (!session) {
+        sendJson(response, 401, { error: "Authentification pharmacie requise" });
+        return;
+      }
+      const ownDocument = validation.documents.find((document) => document.pharmacyId === session.pharmacyId);
+      const documents = ownDocument
+        ? [{ ...ownDocument, downloadToken: createBatDownloadToken({ scope: "pharmacy", pharmacyId: session.pharmacyId }) }]
+        : [];
+      sendJson(response, 200, {
+        title: validation.title,
+        description: validation.description,
+        archived: validation.archived,
+        documents
+      });
       return;
     }
 
     if (url.pathname === "/api/validation" && request.method === "PUT") {
-      if (!requireAdminCode(request, response)) {
+      if (request.headers["x-admin-code"] !== ADMIN_CODE) {
+        sendJson(response, 401, { error: "Code administrateur incorrect" });
         return;
       }
 
@@ -1932,7 +1323,8 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/info-forms" && request.method === "PUT") {
-      if (!requireAdminCode(request, response)) {
+      if (request.headers["x-admin-code"] !== ADMIN_CODE) {
+        sendJson(response, 401, { error: "Code administrateur incorrect" });
         return;
       }
 
@@ -1942,7 +1334,6 @@ const server = http.createServer(async (request, response) => {
         title: String(item.title || "").trim(),
         type: String(item.type || "Fiche pharmacie").trim(),
         intro: String(item.intro || "").trim(),
-        draft: Boolean(item.draft),
         closed: Boolean(item.closed)
       })).filter((item) => item.id && item.title) : [];
       writeInfoForms(forms);
@@ -1952,8 +1343,8 @@ const server = http.createServer(async (request, response) => {
 
     if (url.pathname === "/api/pharmacies" && request.method === "GET") {
       const pharmacies = readPharmacies();
-      if (isAdminCodeValid(request)) {
-        sendJson(response, 200, pharmacies.map(stripPharmacySecret));
+      if (request.headers["x-admin-code"] === ADMIN_CODE) {
+        sendJson(response, 200, pharmacies);
         return;
       }
       sendJson(response, 200, { count: pharmacies.length });
@@ -1961,41 +1352,23 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/pharmacies" && request.method === "PUT") {
-      if (!requireAdminCode(request, response)) {
+      if (request.headers["x-admin-code"] !== ADMIN_CODE) {
+        sendJson(response, 401, { error: "Code administrateur incorrect" });
         return;
       }
 
       const payload = JSON.parse(await readBody(request));
-      const existingPharmacies = readPharmacies();
-      const pharmacies = Array.isArray(payload) ? payload.map((pharmacy) => {
-        const previous = existingPharmacies.find((item) => item.id === pharmacy.id);
-        const plainPassword = String(pharmacy.password || "").trim();
-        // Un mot de passe en clair n'arrive ici qu'à la création ou à une
-        // réinitialisation : on le hache aussitôt et on ne le garde jamais
-        // tel quel. Sans mot de passe fourni, on conserve le hachage existant
-        // (sinon le simple fait de renvoyer la liste, ex. pour activer/
-        // désactiver une pharmacie, effacerait son mot de passe).
-        const passwordHash = plainPassword ? hashPassword(plainPassword) : (previous ? previous.passwordHash : "");
-        // L'adresse e-mail (contact titulaire, utilisée pour les relances) n'est
-        // pas forcément renvoyée par tous les écrans qui sauvegardent cette liste :
-        // si absente du payload, on garde celle déjà enregistrée plutôt que de
-        // l'effacer silencieusement.
-        const email = pharmacy.email !== undefined
-          ? String(pharmacy.email || "").trim()
-          : (previous ? String(previous.email || "").trim() : "");
-        return {
-          id: String(pharmacy.id || Date.now()),
-          name: String(pharmacy.name || "").trim(),
-          passwordHash,
-          active: pharmacy.active !== false,
-          mustChangePassword: pharmacy.mustChangePassword !== false,
-          passwordResetRequested: Boolean(pharmacy.passwordResetRequested),
-          passwordResetRequestedAt: String(pharmacy.passwordResetRequestedAt || "").trim(),
-          email
-        };
-      }).filter((pharmacy) => pharmacy.name && pharmacy.passwordHash) : [];
+      const pharmacies = Array.isArray(payload) ? payload.map((pharmacy) => ({
+        id: String(pharmacy.id || Date.now()),
+        name: String(pharmacy.name || "").trim(),
+        password: String(pharmacy.password || "").trim(),
+        active: pharmacy.active !== false,
+        mustChangePassword: pharmacy.mustChangePassword !== false,
+        passwordResetRequested: Boolean(pharmacy.passwordResetRequested),
+        passwordResetRequestedAt: String(pharmacy.passwordResetRequestedAt || "").trim()
+      })).filter((pharmacy) => pharmacy.name && pharmacy.password) : [];
       writePharmacies(pharmacies);
-      sendJson(response, 200, pharmacies.map(stripPharmacySecret));
+      sendJson(response, 200, pharmacies);
       return;
     }
 
@@ -2027,26 +1400,18 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/pharmacy-login" && request.method === "POST") {
-      const bruteForceKey = `pharmacy-login:${getClientIp(request)}`;
-      if (isLocked(bruteForceKey)) {
-        sendJson(response, 429, { error: "Trop de tentatives. Réessayez dans quelques minutes." });
-        return;
-      }
       const payload = JSON.parse(await readBody(request));
       const password = String(payload.password || "").trim();
-      const pharmacy = readPharmacies().find((item) => item.active !== false && verifyPassword(password, item.passwordHash));
+      const pharmacy = readPharmacies().find((item) => item.active !== false && item.password === password);
       if (!pharmacy) {
-        registerFailure(bruteForceKey);
         sendJson(response, 401, { error: "Mot de passe pharmacie incorrect" });
         return;
       }
-      registerSuccess(bruteForceKey);
-      const pharmacyToken = createSession(null, "pharmacy_legacy", pharmacy.id);
-      setSessionCookie(response, pharmacyToken, "pharmacy_legacy");
       sendJson(response, 200, {
         id: pharmacy.id,
         name: pharmacy.name,
-        mustChangePassword: pharmacy.mustChangePassword !== false
+        mustChangePassword: pharmacy.mustChangePassword !== false,
+        token: createPharmacySession(pharmacy.id)
       });
       return;
     }
@@ -2056,344 +1421,37 @@ const server = http.createServer(async (request, response) => {
       const pharmacyId = String(payload.pharmacyId || "").trim();
       const oldPassword = String(payload.oldPassword || "").trim();
       const newPassword = String(payload.newPassword || "").trim();
-      const bruteForceKey = `pharmacy-password:${getClientIp(request)}:${pharmacyId}`;
-      if (isLocked(bruteForceKey)) {
-        sendJson(response, 429, { error: "Trop de tentatives. Réessayez dans quelques minutes." });
-        return;
-      }
       const pharmacies = readPharmacies();
-      const pharmacy = pharmacies.find((item) => item.active !== false && item.id === pharmacyId && verifyPassword(oldPassword, item.passwordHash));
+      const pharmacy = pharmacies.find((item) => item.active !== false && item.id === pharmacyId && item.password === oldPassword);
 
       if (!pharmacy) {
-        registerFailure(bruteForceKey);
         sendJson(response, 401, { error: "Mot de passe actuel incorrect" });
         return;
       }
-      registerSuccess(bruteForceKey);
 
-      const ruleError = passwordRuleError(newPassword);
-      if (ruleError) {
-        sendJson(response, 400, { error: ruleError });
+      if (newPassword.length < 6) {
+        sendJson(response, 400, { error: "Le nouveau mot de passe doit contenir au moins 6 caractères" });
         return;
       }
 
       const updatedPharmacies = pharmacies.map((item) => item.id === pharmacy.id ? {
         ...item,
-        passwordHash: hashPassword(newPassword),
+        password: newPassword,
         mustChangePassword: false,
         passwordResetRequested: false,
         passwordResetRequestedAt: ""
       } : item);
       writePharmacies(updatedPharmacies);
-      const changeToken = createSession(null, "pharmacy_legacy", pharmacy.id);
-      setSessionCookie(response, changeToken, "pharmacy_legacy");
       sendJson(response, 200, { id: pharmacy.id, name: pharmacy.name, mustChangePassword: false });
       return;
     }
 
-    // --- Comptes individuels (email + mot de passe) ------------------------
-    // Nouvelles routes, en plus de /api/pharmacy-login et x-admin-code qui
-    // restent fonctionnelles pendant la transition (le front sera basculé
-    // dans une tâche suivante).
-
-    if (url.pathname === "/api/auth/login" && request.method === "POST") {
-      const payload = JSON.parse(await readBody(request));
-      const email = normalizeEmail(payload.email);
-      const password = String(payload.password || "");
-      const bruteForceKey = `auth-login:${getClientIp(request)}:${email}`;
-      if (isLocked(bruteForceKey)) {
-        sendJson(response, 429, { error: "Trop de tentatives. Réessayez dans quelques minutes." });
-        return;
-      }
-      const user = findUserByEmail(email);
-      if (!user || user.active === false || !verifyPassword(password, user.passwordHash)) {
-        registerFailure(bruteForceKey);
-        sendJson(response, 401, { error: "Email ou mot de passe incorrect" });
-        return;
-      }
-      registerSuccess(bruteForceKey);
-      const token = createSession(user.id, user.role);
-      const users = readUsers();
-      const updatedUsers = users.map((item) => item.id === user.id
-        ? { ...item, lastLoginAt: new Date().toISOString() }
-        : item);
-      writeUsers(updatedUsers);
-      setSessionCookie(response, token, user.role);
-      sendJson(response, 200, { user: publicUser(user) });
-      return;
-    }
-
-    if (url.pathname === "/api/auth/logout" && request.method === "POST") {
-      const cookies = parseCookies(request);
-      destroySession(cookies[SESSION_COOKIE_NAME]);
-      clearSessionCookie(response);
-      sendJson(response, 200, { ok: true });
-      return;
-    }
-
-    if (url.pathname === "/api/auth/me" && request.method === "GET") {
-      const principal = getAuthenticatedPrincipal(request);
-      if (!principal) {
-        sendJson(response, 401, { error: "Non authentifié" });
-        return;
-      }
-      sendJson(response, 200, { user: principal });
-      return;
-    }
-
-    if (url.pathname === "/api/auth/password" && request.method === "PUT") {
-      const user = requireAuth(request, response);
-      if (!user) return;
-
-      const bruteForceKey = `auth-password:${getClientIp(request)}:${user.id}`;
-      if (isLocked(bruteForceKey)) {
-        sendJson(response, 429, { error: "Trop de tentatives. Réessayez dans quelques minutes." });
-        return;
-      }
-
-      const payload = JSON.parse(await readBody(request));
-      const oldPassword = String(payload.oldPassword || "");
-      const newPassword = String(payload.newPassword || "");
-
-      if (!verifyPassword(oldPassword, user.passwordHash)) {
-        registerFailure(bruteForceKey);
-        sendJson(response, 401, { error: "Mot de passe actuel incorrect" });
-        return;
-      }
-      registerSuccess(bruteForceKey);
-
-      const ruleError = passwordRuleError(newPassword);
-      if (ruleError) {
-        sendJson(response, 400, { error: ruleError });
-        return;
-      }
-
-      const users = readUsers();
-      const updatedUsers = users.map((item) => item.id === user.id ? {
-        ...item,
-        passwordHash: hashPassword(newPassword),
-        mustChangePassword: false
-      } : item);
-      writeUsers(updatedUsers);
-      const updatedUser = updatedUsers.find((item) => item.id === user.id);
-      sendJson(response, 200, { user: publicUser(updatedUser) });
-      return;
-    }
-
-    // Mot de passe oublié (nouveau système, comptes nominatifs) : envoie un
-    // e-mail avec un lien de réinitialisation valable 2h. Répond toujours
-    // "ok" côté client, que l'adresse existe ou non, pour ne jamais révéler
-    // si un e-mail est enregistré (sécurité).
-    if (url.pathname === "/api/auth/forgot-password" && request.method === "POST") {
-      const payload = JSON.parse(await readBody(request));
-      const email = normalizeEmail(payload.email);
-      const bruteForceKey = `forgot-password:${getClientIp(request)}`;
-      if (isLocked(bruteForceKey)) {
-        sendJson(response, 429, { error: "Trop de tentatives. Réessayez dans quelques minutes." });
-        return;
-      }
-      registerFailure(bruteForceKey); // compte chaque demande, même valide, pour limiter le flot d'e-mails
-
-      if (email) {
-        const user = findUserByEmail(email);
-        if (user && user.active !== false) {
-          const token = generateResetToken();
-          const users = readUsers();
-          const updatedUsers = users.map((item) => item.id === user.id ? {
-            ...item,
-            resetTokenHash: hashResetToken(token),
-            resetTokenExpiresAt: Date.now() + RESET_TOKEN_VALIDITY_MS
-          } : item);
-          writeUsers(updatedUsers);
-
-          const resetLink = `${PUBLIC_BASE_URL}/?reset=${token}`;
-          console.error(`[preco][debug] lien de réinitialisation pour ${user.email} : ${resetLink}`);
-          sendMail({
-            to: user.email,
-            subject: "Préco SOGUASPHAR : réinitialisation de votre mot de passe",
-            text: `Bonjour,\n\nVous avez demandé à réinitialiser votre mot de passe Préco.\n\nCliquez sur ce lien dans les 2 heures pour choisir un nouveau mot de passe :\n${resetLink}\n\nSi vous n'êtes pas à l'origine de cette demande, ignorez simplement cet e-mail : rien ne change.\n\n— Préco SOGUASPHAR`,
-            html: `<p>Bonjour,</p><p>Vous avez demandé à réinitialiser votre mot de passe Préco.</p><p><a href="${resetLink}">Cliquez ici pour choisir un nouveau mot de passe</a> (lien valable 2 heures).</p><p>Si vous n'êtes pas à l'origine de cette demande, ignorez simplement cet e-mail : rien ne change.</p><p>— Préco SOGUASPHAR</p>`
-          }).catch((error) => {
-            console.error(`[preco] échec de l'e-mail de réinitialisation pour "${user.email}" :`, error.message);
-          });
-        }
-      }
-
-      sendJson(response, 200, { ok: true });
-      return;
-    }
-
-    // Applique le nouveau mot de passe choisi via le lien reçu par e-mail.
-    if (url.pathname === "/api/auth/reset-password" && request.method === "POST") {
-      const payload = JSON.parse(await readBody(request));
-      const token = String(payload.token || "").trim();
-      const newPassword = String(payload.newPassword || "");
-      const bruteForceKey = `reset-password:${getClientIp(request)}`;
-      if (isLocked(bruteForceKey)) {
-        sendJson(response, 429, { error: "Trop de tentatives. Réessayez dans quelques minutes." });
-        return;
-      }
-      if (!token) {
-        sendJson(response, 400, { error: "Lien invalide." });
-        return;
-      }
-
-      const tokenHash = hashResetToken(token);
-      const users = readUsers();
-      const user = users.find((item) => item.resetTokenHash === tokenHash);
-      if (!user || !isResetTokenValid(user)) {
-        registerFailure(bruteForceKey);
-        sendJson(response, 400, { error: "Ce lien n'est plus valable. Refaites une demande de réinitialisation." });
-        return;
-      }
-      registerSuccess(bruteForceKey);
-
-      const ruleError = passwordRuleError(newPassword);
-      if (ruleError) {
-        sendJson(response, 400, { error: ruleError });
-        return;
-      }
-
-      const updatedUsers = users.map((item) => item.id === user.id ? {
-        ...item,
-        passwordHash: hashPassword(newPassword),
-        mustChangePassword: false,
-        resetTokenHash: null,
-        resetTokenExpiresAt: null
-      } : item);
-      writeUsers(updatedUsers);
-      const updatedUser = updatedUsers.find((item) => item.id === user.id);
-
-      const sessionToken = createSession(updatedUser.id, updatedUser.role);
-      setSessionCookie(response, sessionToken, updatedUser.role);
-      sendJson(response, 200, { user: publicUser(updatedUser) });
-      return;
-    }
-
-    // --- Comptes d'équipe --------------------------------------------------
-    // Un titulaire (pharmacy_admin) peut créer, réinitialiser le mot de passe
-    // de, désactiver ou supprimer des comptes collaborateurs de sa propre
-    // pharmacie. Un collaborateur peut seulement consulter la liste.
-
-    if (url.pathname === "/api/team" && request.method === "GET") {
-      const user = requireAuth(request, response, ["pharmacy_admin", "pharmacy_collaborator"]);
-      if (!user) return;
-      const members = readUsers()
-        .filter((item) => requireSamePharmacy(user, item.pharmacyId) && item.pharmacyId)
-        .map(publicUser);
-      sendJson(response, 200, { members });
-      return;
-    }
-
-    if (url.pathname === "/api/team" && request.method === "POST") {
-      const user = requireAuth(request, response, ["pharmacy_admin"]);
-      if (!user) return;
-
-      const payload = JSON.parse(await readBody(request));
-      const email = normalizeEmail(payload.email);
-      const firstName = String(payload.firstName || "").trim();
-      const lastName = String(payload.lastName || "").trim();
-      const jobTitle = String(payload.jobTitle || "").trim();
-
-      if (!email || !firstName || !lastName) {
-        sendJson(response, 400, { error: "Indiquez le prénom, le nom et l'e-mail." });
-        return;
-      }
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        sendJson(response, 400, { error: "Adresse e-mail invalide." });
-        return;
-      }
-      if (findUserByEmail(email)) {
-        sendJson(response, 409, { error: "Cette adresse e-mail est déjà utilisée par un compte." });
-        return;
-      }
-
-      const newUser = {
-        id: `user-${crypto.randomBytes(8).toString("hex")}`,
-        email,
-        passwordHash: hashPassword(crypto.randomBytes(24).toString("hex")), // remplacé tout de suite par le lien envoyé par e-mail
-        firstName,
-        lastName,
-        jobTitle,
-        pharmacyId: user.pharmacyId,
-        role: "pharmacy_collaborator",
-        active: true,
-        mustChangePassword: true,
-        createdAt: new Date().toISOString(),
-        lastLoginAt: null,
-        invitedAt: new Date().toISOString(),
-        invitationToken: null
-      };
-      const users = readUsers();
-      users.push(newUser);
-      writeUsers(users);
-      const invitedUser = issueAccountPasswordLink(newUser, { isNewAccount: true });
-      sendJson(response, 201, { member: publicUser(invitedUser) });
-      return;
-    }
-
-    if (url.pathname.startsWith("/api/team/") && url.pathname.endsWith("/reset-password") && request.method === "POST") {
-      const user = requireAuth(request, response, ["pharmacy_admin"]);
-      if (!user) return;
-
-      const memberId = decodeURIComponent(url.pathname.replace("/api/team/", "").replace("/reset-password", ""));
-      const users = readUsers();
-      const member = users.find((item) => item.id === memberId);
-      if (!member || member.role !== "pharmacy_collaborator" || !requireSamePharmacy(user, member.pharmacyId)) {
-        sendJson(response, 404, { error: "Personne introuvable." });
-        return;
-      }
-
-      const updatedMember = issueAccountPasswordLink(member, { isNewAccount: false });
-      sendJson(response, 200, { member: publicUser(updatedMember) });
-      return;
-    }
-
-    if (url.pathname.startsWith("/api/team/") && request.method === "PUT") {
-      const user = requireAuth(request, response, ["pharmacy_admin"]);
-      if (!user) return;
-
-      const memberId = decodeURIComponent(url.pathname.replace("/api/team/", ""));
-      const payload = JSON.parse(await readBody(request));
-      const users = readUsers();
-      const member = users.find((item) => item.id === memberId);
-      if (!member || member.role !== "pharmacy_collaborator" || !requireSamePharmacy(user, member.pharmacyId)) {
-        sendJson(response, 404, { error: "Personne introuvable." });
-        return;
-      }
-
-      const updatedUsers = users.map((item) => item.id === member.id ? {
-        ...item,
-        active: payload.active !== false
-      } : item);
-      writeUsers(updatedUsers);
-      sendJson(response, 200, { member: publicUser(updatedUsers.find((item) => item.id === member.id)) });
-      return;
-    }
-
-    if (url.pathname.startsWith("/api/team/") && request.method === "DELETE") {
-      const user = requireAuth(request, response, ["pharmacy_admin"]);
-      if (!user) return;
-
-      const memberId = decodeURIComponent(url.pathname.replace("/api/team/", ""));
-      const users = readUsers();
-      const member = users.find((item) => item.id === memberId);
-      if (!member || member.role !== "pharmacy_collaborator" || !requireSamePharmacy(user, member.pharmacyId)) {
-        sendJson(response, 404, { error: "Personne introuvable." });
-        return;
-      }
-
-      writeUsers(users.filter((item) => item.id !== member.id));
-      sendJson(response, 200, { ok: true });
-      return;
-    }
-
     if (url.pathname === "/api/orders" && request.method === "PUT") {
-      if (!requireAdminCode(request, response)) {
+      if (request.headers["x-admin-code"] !== ADMIN_CODE) {
+        sendJson(response, 401, { error: "Code administrateur incorrect" });
         return;
       }
 
-      const previousOrders = readOrders();
       const payload = JSON.parse(await readBody(request));
       const orders = Array.isArray(payload) ? payload.map((order) => ({
         id: String(order.id || Date.now()),
@@ -2415,24 +1473,12 @@ const server = http.createServer(async (request, response) => {
       })) : [];
       writeOrders(orders);
       sendJson(response, 200, orders);
-
-      // Opérations qui viennent tout juste de passer à "clôturée" (pas celles déjà
-      // clôturées avant cet appel) : envoi de l'e-mail récap, en tâche de fond —
-      // ne doit jamais faire échouer la sauvegarde de la campagne.
-      const justClosed = orders.filter((order) => {
-        const previous = previousOrders.find((item) => item.id === order.id);
-        return order.closed && !(previous && previous.closed);
-      });
-      justClosed.forEach((campaign) => {
-        notifyCampaignClosed(campaign).catch((error) => {
-          console.error(`[preco] échec de l'e-mail de clôture pour "${campaign.title}" :`, error.message);
-        });
-      });
       return;
     }
 
     if (url.pathname === "/api/polls" && request.method === "PUT") {
-      if (!requireAdminCode(request, response)) {
+      if (request.headers["x-admin-code"] !== ADMIN_CODE) {
+        sendJson(response, 401, { error: "Code administrateur incorrect" });
         return;
       }
 
@@ -2457,7 +1503,6 @@ const server = http.createServer(async (request, response) => {
           freeTextLabel: String(poll.freeTextLabel || "").trim(),
           freeTextRequired: Boolean(poll.freeTextRequired),
           imageData: String(poll.imageData || ""),
-          draft: Boolean(poll.draft),
           closed: Boolean(poll.closed)
         };
       }).filter((poll) => poll.question && (poll.options.length || poll.questions.length)) : [];
@@ -2467,7 +1512,8 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/order-template" && request.method === "PUT") {
-      if (!requireAdminCode(request, response)) {
+      if (request.headers["x-admin-code"] !== ADMIN_CODE) {
+        sendJson(response, 401, { error: "Code administrateur incorrect" });
         return;
       }
 
@@ -2480,7 +1526,8 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/poll-responses" && request.method === "GET") {
-      if (!requireAdminCode(request, response)) {
+      if (request.headers["x-admin-code"] !== ADMIN_CODE) {
+        sendJson(response, 401, { error: "Code administrateur incorrect" });
         return;
       }
       sendJson(response, 200, latestPollResponses(readPollResponses()));
@@ -2488,7 +1535,8 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/info-responses" && request.method === "GET") {
-      if (!requireAdminCode(request, response)) {
+      if (request.headers["x-admin-code"] !== ADMIN_CODE) {
+        sendJson(response, 401, { error: "Code administrateur incorrect" });
         return;
       }
       sendJson(response, 200, latestInfoResponses(readInfoResponses()));
@@ -2496,7 +1544,8 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/validation-responses" && request.method === "GET") {
-      if (!requireAdminCode(request, response)) {
+      if (request.headers["x-admin-code"] !== ADMIN_CODE) {
+        sendJson(response, 401, { error: "Code administrateur incorrect" });
         return;
       }
       sendJson(response, 200, publicValidationResponses(latestValidationResponses(readValidationResponses())));
@@ -2504,7 +1553,8 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/validation-summary" && request.method === "GET") {
-      if (!requireAdminCode(request, response)) {
+      if (request.headers["x-admin-code"] !== ADMIN_CODE) {
+        sendJson(response, 401, { error: "Code administrateur incorrect" });
         return;
       }
       sendJson(response, 200, validationSummary());
@@ -2512,7 +1562,8 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/responses" && request.method === "PUT") {
-      if (!requireAdminCode(request, response)) {
+      if (request.headers["x-admin-code"] !== ADMIN_CODE) {
+        sendJson(response, 401, { error: "Code administrateur incorrect" });
         return;
       }
 
@@ -2544,7 +1595,8 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/poll-responses" && request.method === "PUT") {
-      if (!requireAdminCode(request, response)) {
+      if (request.headers["x-admin-code"] !== ADMIN_CODE) {
+        sendJson(response, 401, { error: "Code administrateur incorrect" });
         return;
       }
 
@@ -2568,7 +1620,8 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/info-responses" && request.method === "PUT") {
-      if (!requireAdminCode(request, response)) {
+      if (request.headers["x-admin-code"] !== ADMIN_CODE) {
+        sendJson(response, 401, { error: "Code administrateur incorrect" });
         return;
       }
 
@@ -2581,7 +1634,8 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/validation-responses" && request.method === "PUT") {
-      if (!requireAdminCode(request, response)) {
+      if (request.headers["x-admin-code"] !== ADMIN_CODE) {
+        sendJson(response, 401, { error: "Code administrateur incorrect" });
         return;
       }
 
@@ -2749,7 +1803,8 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/responses" && request.method === "DELETE") {
-      if (!requireAdminCode(request, response)) {
+      if (request.headers["x-admin-code"] !== ADMIN_CODE) {
+        sendJson(response, 401, { error: "Code administrateur incorrect" });
         return;
       }
       writeResponses([]);
@@ -2758,7 +1813,8 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname.startsWith("/api/responses/") && request.method === "DELETE") {
-      if (!requireAdminCode(request, response)) {
+      if (request.headers["x-admin-code"] !== ADMIN_CODE) {
+        sendJson(response, 401, { error: "Code administrateur incorrect" });
         return;
       }
 
@@ -2770,7 +1826,8 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/export.xls" && request.method === "GET") {
-      if (!requireAdminCode(request, response, url.searchParams.get("code"))) {
+      if (url.searchParams.get("code") !== ADMIN_CODE) {
+        sendJson(response, 401, { error: "Code administrateur incorrect" });
         return;
       }
       const campaignId = url.searchParams.get("campaign");
@@ -2783,7 +1840,8 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/poll-export.xls" && request.method === "GET") {
-      if (!requireAdminCode(request, response, url.searchParams.get("code"))) {
+      if (url.searchParams.get("code") !== ADMIN_CODE) {
+        sendJson(response, 401, { error: "Code administrateur incorrect" });
         return;
       }
       const pollId = url.searchParams.get("poll");
@@ -2796,7 +1854,9 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/info-export.xls" && request.method === "GET") {
-      if (!requireAdminCode(request, response, url.searchParams.get("code"))) {
+      if (url.searchParams.get("code") !== ADMIN_CODE) {
+        response.writeHead(401);
+        response.end("Code administrateur incorrect");
         return;
       }
       const formId = url.searchParams.get("form");
@@ -2816,15 +1876,3 @@ const server = http.createServer(async (request, response) => {
 server.listen(PORT, () => {
   console.log(`SOGUASPHAR demandes pharmacies: http://localhost:${PORT}`);
 });
-
-// Vérification des relances : une première fois peu après le démarrage, puis
-// une fois par jour — UNIQUEMENT si explicitement activé (voir
-// AUTO_REMINDERS_ENABLED tout en haut du fichier). Par défaut, désactivé :
-// rien ne part tout seul tant qu'on ne l'a pas sciemment allumé en ligne.
-if (AUTO_REMINDERS_ENABLED) {
-  console.log("[preco] relances automatiques ACTIVÉES (ENABLE_AUTO_REMINDERS=true)");
-  setTimeout(() => { checkReminders(); }, 15000);
-  setInterval(() => { checkReminders(); }, 24 * 60 * 60 * 1000);
-} else {
-  console.log("[preco] relances automatiques désactivées (ENABLE_AUTO_REMINDERS absent ou différent de \"true\")");
-}

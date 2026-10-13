@@ -22,9 +22,12 @@ const BASE_PREFIX = (() => {
 // Les URL de documents BAT ("/bat-2027/...") stockées côté serveur sont racine-relatives ;
 // il faut les faire pointer sous le sous-dossier de la copie (ex. "/preco-test/") sinon
 // le navigateur les cherche à la racine du domaine et Traefik répond 404.
-function resolveBatDocumentUrl(url) {
+function resolveBatDocumentUrl(document) {
+  const url = document?.url;
   if (!url) return url;
-  return url.startsWith("/") ? `${BASE_PREFIX}${url.slice(1)}` : url;
+  const resolved = url.startsWith("/") ? `${BASE_PREFIX}${url.slice(1)}` : url;
+  if (!document.downloadToken) return resolved;
+  return `${resolved}${resolved.includes("?") ? "&" : "?"}t=${encodeURIComponent(document.downloadToken)}`;
 }
 
 const form = document.querySelector("#requestForm");
@@ -42,55 +45,12 @@ const pharmacyLoginMessage = document.querySelector("#pharmacyLoginMessage");
 const pharmacySessionBar = document.querySelector("#pharmacySessionBar");
 const currentPharmacyName = document.querySelector("#currentPharmacyName");
 const logoutPharmacyBtn = document.querySelector("#logoutPharmacyBtn");
-// Nouveau système de connexion (email + mot de passe), en test en parallèle de
-// l'ancienne connexion par mot de passe pharmacie ci-dessus.
-const newAuthGate = document.querySelector("#newAuthGate");
-const newAuthLoginForm = document.querySelector("#newAuthLoginForm");
-const newAuthEmail = document.querySelector("#newAuthEmail");
-const newAuthPassword = document.querySelector("#newAuthPassword");
-const toggleNewAuthPassword = document.querySelector("#toggleNewAuthPassword");
-const forgotNewAuthPasswordBtn = document.querySelector("#forgotNewAuthPasswordBtn");
-const forgotNewAuthPasswordForm = document.querySelector("#forgotNewAuthPasswordForm");
-const forgotNewAuthEmail = document.querySelector("#forgotNewAuthEmail");
-const resetPasswordGate = document.querySelector("#resetPasswordGate");
-const resetPasswordForm = document.querySelector("#resetPasswordForm");
-const resetPasswordNew = document.querySelector("#resetPasswordNew");
-const resetPasswordConfirm = document.querySelector("#resetPasswordConfirm");
-const resetPasswordMessage = document.querySelector("#resetPasswordMessage");
-const newAuthPasswordChangeForm = document.querySelector("#newAuthPasswordChangeForm");
-const newAuthNewPassword = document.querySelector("#newAuthNewPassword");
-const newAuthConfirmPassword = document.querySelector("#newAuthConfirmPassword");
-const newAuthLoginMessage = document.querySelector("#newAuthLoginMessage");
-const switchToNewAuthBtn = document.querySelector("#switchToNewAuthBtn");
-const switchToOldAuthBtn = document.querySelector("#switchToOldAuthBtn");
-const newAuthAdminStatus = document.querySelector("#newAuthAdminStatus");
-const userMenu = document.querySelector("#userMenu");
-const userMenuBtn = document.querySelector("#userMenuBtn");
-const userMenuPanel = document.querySelector("#userMenuPanel");
-const userMenuName = document.querySelector("#userMenuName");
-const userMenuEmail = document.querySelector("#userMenuEmail");
-const userMenuPharmacy = document.querySelector("#userMenuPharmacy");
-const userMenuTeamBtn = document.querySelector("#userMenuTeamBtn");
-const userMenuLogoutBtn = document.querySelector("#userMenuLogoutBtn");
-// Fenêtre "Mon équipe" : une pharmacie (titulaire) peut créer des comptes
-// pour ses collaborateurs, qui se connectent avec leur propre e-mail.
-const teamModal = document.querySelector("#teamModal");
-const teamModalClose = document.querySelector("#teamModalClose");
-const teamMembersList = document.querySelector("#teamMembersList");
-const teamAddForm = document.querySelector("#teamAddForm");
-const teamNewFirstName = document.querySelector("#teamNewFirstName");
-const teamNewLastName = document.querySelector("#teamNewLastName");
-const teamNewEmail = document.querySelector("#teamNewEmail");
-const teamNewJobTitle = document.querySelector("#teamNewJobTitle");
-const teamModalMessage = document.querySelector("#teamModalMessage");
 const heroActionsRow = document.querySelector(".hero-actions-row");
 const heroBand = document.querySelector(".hero-band");
 const campaignPicker = document.querySelector("#campaignPicker");
 const campaignCards = document.querySelector("#campaignCards");
 const viewPrecommandesBtn = document.querySelector("#viewPrecommandes");
 const viewSondagesBtn = document.querySelector("#viewSondages");
-const viewPendingDocumentsBtn = document.querySelector("#viewPendingDocuments");
-const viewUpcomingBtn = document.querySelector("#viewUpcoming");
 const viewArchivesBtn = document.querySelector("#viewArchives");
 const toggleArchivedOrdersBtn = document.querySelector("#toggleArchivedOrdersBtn");
 const archivedOrdersPanel = document.querySelector("#archivedOrdersPanel");
@@ -104,7 +64,6 @@ const precommandandesListPage = document.querySelector("#precommandandesListPage
 const backToPrecomandesMenuBtn = document.querySelector("#backToPrecomandesMenuBtn");
 const precommandandesListRows = document.querySelector("#precommandandesListRows");
 const precommandandesEmpty = document.querySelector("#precommandandesEmpty");
-const precommandesCountBadge = document.querySelector("#precommandesCountBadge");
 const satisfactionListPage = document.querySelector("#satisfactionListPage");
 const backToSatisfactionListMenuBtn = document.querySelector("#backToSatisfactionListMenuBtn");
 const satisfactionCard = document.querySelector("#satisfactionCard");
@@ -112,17 +71,6 @@ const sondagesListPage = document.querySelector("#sondagesListPage");
 const backToSondagesMenuBtn = document.querySelector("#backToSondagesMenuBtn");
 const sondagesListRows = document.querySelector("#sondagesListRows");
 const sondagesEmpty = document.querySelector("#sondagesEmpty");
-const sondagesCountBadge = document.querySelector("#sondagesCountBadge");
-const pendingDocumentsListPage = document.querySelector("#pendingDocumentsListPage");
-const backToPendingDocumentsMenuBtn = document.querySelector("#backToPendingDocumentsMenuBtn");
-const pendingDocumentsListRows = document.querySelector("#pendingDocumentsListRows");
-const pendingDocumentsEmpty = document.querySelector("#pendingDocumentsEmpty");
-const pendingDocumentsCountBadge = document.querySelector("#pendingDocumentsCountBadge");
-const upcomingListPage = document.querySelector("#upcomingListPage");
-const backToUpcomingMenuBtn = document.querySelector("#backToUpcomingMenuBtn");
-const upcomingListRows = document.querySelector("#upcomingListRows");
-const upcomingEmpty = document.querySelector("#upcomingEmpty");
-const upcomingCountBadge = document.querySelector("#upcomingCountBadge");
 const batCards = document.querySelector("#batCards");
 const batPickerBlock = document.querySelector("#batPickerBlock");
 const pollCards = document.querySelector("#pollCards");
@@ -226,7 +174,6 @@ const createCampaignForm = document.querySelector("#createCampaignForm");
 const newCampaignTitle = document.querySelector("#newCampaignTitle");
 const createPollForm = document.querySelector("#createPollForm");
 const newPollQuestion = document.querySelector("#newPollQuestion");
-const newPollClosingDate = document.querySelector("#newPollClosingDate");
 const newPollIsSatisfaction = document.querySelector("#newPollIsSatisfaction");
 const pollQuestionBlocks = document.querySelector("#pollQuestionBlocks");
 const addPollQuestionBtn = document.querySelector("#addPollQuestionBtn");
@@ -277,7 +224,6 @@ const pollImageAdminLink = document.querySelector("#pollImageAdminLink");
 const pollImageAdmin = document.querySelector("#pollImageAdmin");
 const pollImageMessage = document.querySelector("#pollImageMessage");
 const pollTitleEdit = document.querySelector("#pollTitleEdit");
-const pollClosingDateEdit = document.querySelector("#pollClosingDateEdit");
 const pollTitleMessage = document.querySelector("#pollTitleMessage");
 const savePollTitleBtn = document.querySelector("#savePollTitleBtn");
 const adminDetail = document.querySelector("#adminDetail");
@@ -349,21 +295,12 @@ let batResponses = [];
 let validationConfigState = {
   title: "",
   description: "",
-  draft: false,
   archived: false
 };
 let pharmacies = [];
 let currentPharmacy = JSON.parse(localStorage.getItem(PHARMACY_SESSION_KEY) || "null");
-// Nouveau système de connexion (email + mot de passe) : compte individuel courant,
-// retrouvé via le cookie de session (GET /api/auth/me), indépendant de currentPharmacy
-// ci-dessus (ancien système), même si pour les rôles pharmacie on fait pointer
-// currentPharmacy vers la bonne pharmacie pour réutiliser tout le tableau de bord existant.
-let currentUser = null;
-let showingNewAuthScreen = false;
 let pendingPasswordPharmacy = null;
 let pendingInitialPassword = "";
-let pendingInitialUserPassword = ""; // mot de passe provisoire d'un compte nominatif, avant son changement obligatoire
-let teamMembers = [];
 let pharmacyPollAnswers = {};
 let pharmacyCampaignResponses = {};
 let pharmacyPeriodResponses = {};
@@ -402,12 +339,7 @@ function productDisplayLabel(values) {
 let currentOrderTemplate = emptyOrderTemplate();
 let adminShowingClosedCampaigns = false;
 let pollResponseCounts = {};
-let activeAdminSection = "campaign-new";
-// La deuxième ligne du menu admin (Nouveau/Brouillon/En cours/Archivé) ne
-// s'affiche qu'après un clic explicite sur une rubrique de la première ligne
-// (Précommandes/Sondages/Documents/Paramètres) — remis à false à chaque
-// ouverture du tableau de bord admin (voir unlockAdminPanel).
-let adminGroupChosen = false;
+let activeAdminSection = "new-campaign";
 let archivedOrdersVisible = false;
 let archivedOrdersFilterId = "";
 let archivedOrdersSearchTerm = "";
@@ -417,82 +349,53 @@ let lastValidationResponseSource = "";
 let lastValidationResponseError = "";
 let validationServerSummary = null;
 
-// Navigation admin : 4 grandes catégories (précommande / sondage / document / paramètre),
-// et à l'intérieur de chacune (sauf paramètre) 4 sous-onglets : nouveau / brouillon / en cours / archivé.
 const ADMIN_SECTIONS = {
-  "campaign-new": {
+  "new-campaign": {
     title: "Créer une précommande",
     intro: "Indiquez le nom de la campagne, puis ouvrez-la pour importer son bon de commande."
   },
-  "campaign-draft": {
-    title: "Précommandes en brouillon",
-    intro: "Campagnes créées mais pas encore publiées aux pharmacies."
+  "new-poll": {
+    title: "Créer un sondage",
+    intro: "Créez un sondage rapide ou une demande de mise à jour de fiche pharmacie."
   },
-  "campaign-current": {
-    title: "Précommandes en cours",
+  "new-validation": {
+    title: "Nouvelle validation",
+    intro: "Creez une validation de document et indiquez le message visible par les pharmacies."
+  },
+  campaigns: {
+    title: "Campagnes en cours",
     intro: "Retrouvez les précommandes actives, leur suivi et leurs exports."
   },
-  "campaign-archived": {
-    title: "Précommandes archivées",
-    intro: "Campagnes clôturées, avec possibilité de les relancer."
+  bat: {
+    title: "Validations en attente",
+    intro: "Suivez les documents a valider et les corrections demandees."
   },
-  "poll-new": {
-    title: "Créer un sondage",
-    intro: "Créez un sondage rapide pour les pharmacies."
-  },
-  "poll-draft": {
-    title: "Sondages en brouillon",
-    intro: "Sondages créés mais pas encore publiés aux pharmacies."
-  },
-  "poll-current": {
+  polls: {
     title: "Sondages en cours",
-    intro: "Consultez les sondages actifs et les réponses reçues."
+    intro: "Consultez les sondages actifs, les fiches pharmacies et les réponses reçues."
   },
-  "poll-archived": {
-    title: "Sondages archivés",
-    intro: "Sondages clôturés, avec possibilité de les rouvrir."
+  pharmacies: {
+    title: "Accès pharmacies",
+    intro: "Créez ou supprimez les accès pharmacies et retrouvez leurs mots de passe."
   },
-  "document-new": {
-    title: "Créer un document",
-    intro: "Créez une validation de document (ex. BAT) ou une demande de mise à jour de fiche pharmacie."
-  },
-  "document-draft": {
-    title: "Documents en brouillon",
-    intro: "Documents créés mais pas encore publiés aux pharmacies."
-  },
-  "document-current": {
-    title: "Documents en cours",
-    intro: "Suivez les documents à valider et les fiches pharmacies en cours."
-  },
-  "document-archived": {
-    title: "Documents archivés",
-    intro: "Validations et fiches pharmacies clôturées, avec possibilité de les rouvrir."
-  },
-  parametre: {
-    title: "Paramètres",
-    intro: "Accès pharmacies et réglages généraux (à configurer)."
+  archives: {
+    title: "Archivés",
+    intro: "Retrouvez les campagnes et sondages clôturés, avec possibilité de les rouvrir."
   }
 };
 
 const ADMIN_GROUP_DEFAULT_SECTION = {
-  campaign: "campaign-new",
-  poll: "poll-new",
-  document: "document-new",
-  parametre: "parametre"
+  new: "new-campaign",
+  current: "campaigns",
+  archives: "archives",
+  pharmacies: "pharmacies"
 };
 
 function adminGroupForSection(section) {
-  if (section === "parametre") return "parametre";
-  if (String(section).startsWith("campaign")) return "campaign";
-  if (String(section).startsWith("poll")) return "poll";
-  if (String(section).startsWith("document")) return "document";
-  return "campaign";
-}
-
-// "campaign-draft" -> "draft", "poll-current" -> "current", etc.
-function adminStateForSection(section) {
-  const parts = String(section).split("-");
-  return parts.length > 1 ? parts[1] : "";
+  if (section === "archives") return "archives";
+  if (section === "pharmacies") return "pharmacies";
+  if (section === "campaigns" || section === "polls" || section === "bat") return "current";
+  return "new";
 }
 
 const BAT_VALIDATION = {
@@ -601,7 +504,6 @@ function currentValidationConfig() {
     title: title || BAT_VALIDATION.title,
     description: description || BAT_VALIDATION.description,
     archived,
-    draft: Boolean(validationConfigState.draft),
     exists: Boolean(title || description || batDocuments.length || batResponses.length)
   };
 }
@@ -771,7 +673,10 @@ function saveLocalValidationState(state) {
 async function getValidationState() {
   if (API_AVAILABLE) {
     try {
-      const remote = await requestJson("/api/validation");
+      const headers = {};
+      if (adminUnlocked) headers["X-Admin-Code"] = ADMIN_CODE;
+      else if (currentPharmacy?.token) headers["X-Pharmacy-Token"] = currentPharmacy.token;
+      const remote = await requestJson("/api/validation", { headers });
       if (remote && typeof remote === "object") return remote;
     } catch {
       // Fallback for preview servers without validation API.
@@ -790,7 +695,6 @@ async function saveValidationState(nextState) {
   const payload = {
     title: nextState.title || "",
     description: nextState.description || "",
-    draft: Boolean(nextState.draft),
     archived: Boolean(nextState.archived),
     documents: Array.isArray(nextState.documents) ? nextState.documents : []
   };
@@ -805,7 +709,6 @@ async function saveValidationState(nextState) {
       validationConfigState = {
         title: saved.title || "",
         description: saved.description || "",
-        draft: Boolean(saved.draft),
         archived: Boolean(saved.archived)
       };
       batDocuments = Array.isArray(saved.documents) ? saved.documents : [];
@@ -820,7 +723,6 @@ async function saveValidationState(nextState) {
   validationConfigState = {
     title: payload.title || "",
     description: payload.description || "",
-    draft: Boolean(payload.draft),
     archived: Boolean(payload.archived)
   };
   batDocuments = payload.documents || [];
@@ -860,19 +762,25 @@ async function getValidationSummary() {
   });
 }
 
-async function refreshAdminValidationData() {
-  if (!adminUnlocked) return;
+// Recharge le titre/description/archivage + les documents BAT auxquels on a droit :
+// tous pour l'admin (x-admin-code), uniquement le sien pour une pharmacie connectée
+// (x-pharmacy-token) — voir le filtrage fait côté serveur dans getValidationState().
+async function refreshValidationDocuments() {
   const validationState = await getValidationState();
-  const nextDocuments = Array.isArray(validationState.documents) ? validationState.documents : [];
   validationConfigState = {
     title: validationState.title || "",
     description: validationState.description || "",
-    draft: Boolean(validationState.draft),
     archived: Boolean(validationState.archived)
   };
+  const nextDocuments = Array.isArray(validationState.documents) ? validationState.documents : [];
   if (nextDocuments.length || !batDocuments.length) {
     batDocuments = nextDocuments;
   }
+}
+
+async function refreshAdminValidationData() {
+  if (!adminUnlocked) return;
+  await refreshValidationDocuments();
   batResponses = await getValidationResponses();
 }
 
@@ -966,13 +874,6 @@ function setValidationArchived(archived) {
     archived: Boolean(archived)
   };
   localStorage.setItem(VALIDATION_ARCHIVED_KEY, archived ? "true" : "false");
-}
-
-function setValidationDraft(draft) {
-  validationConfigState = {
-    ...validationConfigState,
-    draft: Boolean(draft)
-  };
 }
 
 async function getInfoForms() {
@@ -1174,7 +1075,6 @@ async function requestJson(url, options = {}) {
     try {
       const response = await fetch(requestUrl, {
         ...fetchOptions,
-        credentials: "same-origin",
         cache: method === "GET" ? "no-store" : "default",
         headers: {
           "Content-Type": "application/json",
@@ -1293,88 +1193,6 @@ async function loginPharmacy(password) {
   });
 }
 
-// --- Nouveau système de connexion (email + mot de passe), en test ----------
-
-async function loginWithEmail(email, password) {
-  const result = await requestJson("/api/auth/login", {
-    method: "POST",
-    body: JSON.stringify({ email, password })
-  });
-  return result.user;
-}
-
-async function fetchCurrentUser() {
-  try {
-    const result = await requestJson("/api/auth/me");
-    return result.user || null;
-  } catch {
-    return null;
-  }
-}
-
-async function logoutNewAuth() {
-  try {
-    await requestJson("/api/auth/logout", { method: "POST" });
-  } catch {
-    // Non bloquant : même si la requête échoue, l'écran se réinitialise quand même.
-  }
-}
-
-async function changeOwnPassword(oldPassword, newPassword) {
-  const result = await requestJson("/api/auth/password", {
-    method: "PUT",
-    body: JSON.stringify({ oldPassword, newPassword })
-  });
-  return result.user;
-}
-
-async function requestPasswordResetLink(email) {
-  return requestJson("/api/auth/forgot-password", {
-    method: "POST",
-    body: JSON.stringify({ email })
-  });
-}
-
-async function resetPasswordWithToken(token, newPassword) {
-  const result = await requestJson("/api/auth/reset-password", {
-    method: "POST",
-    body: JSON.stringify({ token, newPassword })
-  });
-  return result.user;
-}
-
-// --- Comptes d'équipe (une pharmacie peut créer des comptes collaborateurs) -
-
-async function fetchTeam() {
-  const result = await requestJson("/api/team");
-  return result.members || [];
-}
-
-async function createTeamMember(member) {
-  return requestJson("/api/team", {
-    method: "POST",
-    body: JSON.stringify(member)
-  });
-}
-
-async function resetTeamMemberPassword(memberId) {
-  return requestJson(`/api/team/${encodeURIComponent(memberId)}/reset-password`, {
-    method: "POST"
-  });
-}
-
-async function setTeamMemberActive(memberId, active) {
-  const result = await requestJson(`/api/team/${encodeURIComponent(memberId)}`, {
-    method: "PUT",
-    body: JSON.stringify({ active })
-  });
-  return result.member;
-}
-
-async function deleteTeamMember(memberId) {
-  return requestJson(`/api/team/${encodeURIComponent(memberId)}`, { method: "DELETE" });
-}
-
 async function changePharmacyPassword(pharmacyId, oldPassword, newPassword) {
   return requestJson("/api/pharmacy-password", {
     method: "PUT",
@@ -1420,7 +1238,9 @@ async function refreshPharmacyCampaignResponses() {
       const params = new URLSearchParams();
       if (currentPharmacy.id) params.set("pharmacyId", currentPharmacy.id);
       if (currentPharmacy.name) params.set("pharmacyName", currentPharmacy.name);
-      responses = await requestJson(`/api/pharmacy-responses?${params.toString()}`);
+      responses = await requestJson(`/api/pharmacy-responses?${params.toString()}`, {
+        headers: currentPharmacy.token ? { "X-Pharmacy-Token": currentPharmacy.token } : {}
+      });
     } else {
       responses = localResponses().filter((response) => response.pharmacyName === currentPharmacy.name);
     }
@@ -1443,38 +1263,10 @@ async function refreshPharmacyCampaignResponses() {
 function generatePharmacyPassword(name) {
   const prefix = slugify(name).replace(/-/g, "").slice(0, 4).toUpperCase() || "PHAR";
   const random = Math.random().toString(36).slice(2, 6).toUpperCase();
-  const symbols = "!@#$%&*?";
-  const symbol = symbols[Math.floor(Math.random() * symbols.length)];
-  // Respecte la règle imposée aux pharmacies : au moins 6 caractères,
-  // une majuscule et un symbole.
-  return `${prefix}${random}${symbol}`;
-}
-
-// Règle de mot de passe commune (pharmacies et comptes nominatifs) : au moins
-// 6 caractères, une majuscule, un chiffre, un symbole. Renvoie un message
-// d'erreur en français si la règle n'est pas respectée, ou "" si tout est bon.
-function passwordRuleError(password) {
-  if (!password || password.length < 6) {
-    return "Le mot de passe doit contenir au moins 6 caractères.";
-  }
-  if (!/[A-Z]/.test(password)) {
-    return "Le mot de passe doit contenir au moins une majuscule.";
-  }
-  if (!/[0-9]/.test(password)) {
-    return "Le mot de passe doit contenir au moins un chiffre.";
-  }
-  if (!/[^A-Za-z0-9]/.test(password)) {
-    return "Le mot de passe doit contenir au moins un symbole (ex : ! ? @ # &).";
-  }
-  return "";
+  return `${prefix}${random}`;
 }
 
 function pharmacyAccessRequired() {
-  // Une administratrice SOGUASPHAR déjà connectée ne doit JAMAIS retomber sur
-  // l'écran "Identifiez votre pharmacie" (mot de passe), même en retournant
-  // sur l'onglet "Formulaire" : elle n'a pas de mot de passe pharmacie à
-  // donner, ça n'avait pas de sens de le lui redemander.
-  if (currentUser && currentUser.role === "soguasphar_admin") return false;
   return pharmacies.length > 0 && (!currentPharmacy || pendingPasswordPharmacy);
 }
 
@@ -1815,7 +1607,6 @@ async function importValidationDocuments(fileList, messageElement) {
   await saveValidationState({
     title: config.exists ? config.title : "",
     description: config.exists ? config.description : "",
-    draft: config.draft,
     archived: config.archived,
     documents: batDocuments
   });
@@ -2102,7 +1893,6 @@ function renderArchivedOrdersHistory() {
 function setHeroVisible(visible) {
   if (heroBand) heroBand.hidden = !visible;
   if (heroActionsRow) heroActionsRow.hidden = !visible;
-  if (visible) updateAllMenuCountBadges();
   if (!visible && archivedOrdersVisible) {
     archivedOrdersVisible = false;
     renderArchivedOrdersHistory();
@@ -2133,8 +1923,6 @@ function showArchivedOrdersPage(operationId = "") {
   responseSuccess.hidden = true;
   if (precommandandesListPage) precommandandesListPage.hidden = true;
   if (sondagesListPage) sondagesListPage.hidden = true;
-  if (pendingDocumentsListPage) pendingDocumentsListPage.hidden = true;
-  if (upcomingListPage) upcomingListPage.hidden = true;
   renderArchivedOrdersHistory();
   archivedOrdersPanel.scrollIntoView({ behavior: "smooth", block: "start" });
 }
@@ -2143,148 +1931,14 @@ function renderPrecommandesListPage() {
   if (!precommandandesListRows || !precommandandesEmpty) return;
   const validationConfig = currentValidationConfig();
   const currentBatDocument = currentPharmacy ? batDocumentForPharmacy(currentPharmacy) : null;
-  const showBatToPharmacy = Boolean(currentBatDocument) && validationConfig.exists && !validationConfig.draft && !validationConfig.archived;
-  const openCampaigns = campaigns.filter((campaign) => campaignIsOpenForPharmacy(campaign));
+  const showBatToPharmacy = Boolean(currentBatDocument) && validationConfig.exists && !validationConfig.archived;
+  const openCampaigns = campaigns.filter((campaign) => campaignIsVisibleForPharmacy(campaign));
   const sorted = [...openCampaigns].reverse();
   const cardsToDisplay = [];
   if (showBatToPharmacy) cardsToDisplay.push(batValidationCard(currentBatDocument, "form"));
   cardsToDisplay.push(...sorted.map((campaign) => campaignCard(campaign, "form")));
   precommandandesListRows.innerHTML = cardsToDisplay.length ? cardsToDisplay.join("") : "";
   precommandandesEmpty.hidden = Boolean(cardsToDisplay.length);
-}
-
-// "Document en attente" : les documents de validation (ex. BAT calendriers) que
-// la pharmacie connectée n'a pas encore traités (ni approuvé, ni demandé de correction).
-function renderPendingDocumentsListPage() {
-  if (!pendingDocumentsListRows || !pendingDocumentsEmpty) return;
-  const validationConfig = currentValidationConfig();
-  const currentBatDocument = currentPharmacy ? batDocumentForPharmacy(currentPharmacy) : null;
-  const isPending = Boolean(currentBatDocument)
-    && validationConfig.exists
-    && !validationConfig.draft
-    && !validationConfig.archived
-    && !batResponseForDocument(currentBatDocument);
-  pendingDocumentsListRows.innerHTML = isPending ? batValidationCard(currentBatDocument, "form") : "";
-  pendingDocumentsEmpty.hidden = isPending;
-}
-
-function showPendingDocumentsListPage() {
-  if (pharmacyAccessRequired()) {
-    renderPharmacyAccess();
-    return;
-  }
-
-  selectedCampaign = null;
-  selectedPoll = null;
-  selectedInfoForm = null;
-  selectedBatDocument = null;
-  archivedOrdersVisible = false;
-  setHeroVisible(false);
-  campaignPicker.hidden = true;
-  form.hidden = true;
-  pollForm.hidden = true;
-  if (satisfactionPage) satisfactionPage.hidden = true;
-  profileUpdateForm.hidden = true;
-  batValidationForm.hidden = true;
-  responseSuccess.hidden = true;
-  if (archivedOrdersPanel) archivedOrdersPanel.hidden = true;
-  if (precommandandesListPage) precommandandesListPage.hidden = true;
-  if (sondagesListPage) sondagesListPage.hidden = true;
-  if (upcomingListPage) upcomingListPage.hidden = true;
-  renderPendingDocumentsListPage();
-  pendingDocumentsListPage.hidden = false;
-  pendingDocumentsListPage.scrollIntoView({ behavior: "smooth", block: "start" });
-}
-
-// Pastille numérique sur le bouton "Bientôt disponible" : nombre d'opérations à venir
-// (même règle que renderUpcomingListPage ci-dessous).
-function updateUpcomingCountBadge() {
-  if (!upcomingCountBadge) return;
-  const count = campaigns.filter(
-    (campaign) => campaignIsVisibleForPharmacy(campaign) && !campaignIsOpenForPharmacy(campaign)
-  ).length;
-  upcomingCountBadge.textContent = String(count);
-  upcomingCountBadge.hidden = count === 0;
-}
-
-// Pastilles "non lu" : une précommande/un sondage/un document est compté tant que
-// la pharmacie n'y a pas encore répondu (dès qu'elle répond, la pastille disparaît).
-function updatePrecommandesCountBadge() {
-  if (!precommandesCountBadge) return;
-  const count = campaigns.filter(
-    (campaign) => campaignIsOpenForPharmacy(campaign) && !pharmacyCampaignResponses[campaign.id]
-  ).length;
-  precommandesCountBadge.textContent = String(count);
-  precommandesCountBadge.hidden = count === 0;
-}
-
-function updateSondagesCountBadge() {
-  if (!sondagesCountBadge) return;
-  const count = polls.filter(
-    (poll) => !poll.closed && !poll.draft && !pharmacyPollAnswers[poll.id]
-  ).length;
-  sondagesCountBadge.textContent = String(count);
-  sondagesCountBadge.hidden = count === 0;
-}
-
-function updatePendingDocumentsCountBadge() {
-  if (!pendingDocumentsCountBadge) return;
-  const validationConfig = currentValidationConfig();
-  const currentBatDocument = currentPharmacy ? batDocumentForPharmacy(currentPharmacy) : null;
-  const isPending = Boolean(currentBatDocument)
-    && validationConfig.exists
-    && !validationConfig.draft
-    && !validationConfig.archived
-    && !batResponseForDocument(currentBatDocument);
-  pendingDocumentsCountBadge.textContent = isPending ? "1" : "0";
-  pendingDocumentsCountBadge.hidden = !isPending;
-}
-
-function updateAllMenuCountBadges() {
-  updatePrecommandesCountBadge();
-  updateSondagesCountBadge();
-  updatePendingDocumentsCountBadge();
-  updateUpcomingCountBadge();
-}
-
-// "Bientôt disponible" : précommandes dont la pharmacie peut voir l'existence (périodes
-// programmées) mais qui ne sont pas encore ouvertes aujourd'hui.
-function renderUpcomingListPage() {
-  if (!upcomingListRows || !upcomingEmpty) return;
-  const upcomingCampaigns = campaigns.filter(
-    (campaign) => campaignIsVisibleForPharmacy(campaign) && !campaignIsOpenForPharmacy(campaign)
-  );
-  const sorted = [...upcomingCampaigns].reverse();
-  upcomingListRows.innerHTML = sorted.length ? sorted.map((campaign) => campaignCard(campaign, "form")).join("") : "";
-  upcomingEmpty.hidden = Boolean(sorted.length);
-}
-
-function showUpcomingListPage() {
-  if (pharmacyAccessRequired()) {
-    renderPharmacyAccess();
-    return;
-  }
-
-  selectedCampaign = null;
-  selectedPoll = null;
-  selectedInfoForm = null;
-  selectedBatDocument = null;
-  archivedOrdersVisible = false;
-  setHeroVisible(false);
-  campaignPicker.hidden = true;
-  form.hidden = true;
-  pollForm.hidden = true;
-  if (satisfactionPage) satisfactionPage.hidden = true;
-  profileUpdateForm.hidden = true;
-  batValidationForm.hidden = true;
-  responseSuccess.hidden = true;
-  if (archivedOrdersPanel) archivedOrdersPanel.hidden = true;
-  if (precommandandesListPage) precommandandesListPage.hidden = true;
-  if (sondagesListPage) sondagesListPage.hidden = true;
-  if (pendingDocumentsListPage) pendingDocumentsListPage.hidden = true;
-  renderUpcomingListPage();
-  upcomingListPage.hidden = false;
-  upcomingListPage.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function showPrecommandesListPage() {
@@ -2308,8 +1962,6 @@ function showPrecommandesListPage() {
   responseSuccess.hidden = true;
   if (archivedOrdersPanel) archivedOrdersPanel.hidden = true;
   if (sondagesListPage) sondagesListPage.hidden = true;
-  if (pendingDocumentsListPage) pendingDocumentsListPage.hidden = true;
-  if (upcomingListPage) upcomingListPage.hidden = true;
   renderPrecommandesListPage();
   precommandandesListPage.hidden = false;
   precommandandesListPage.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -2331,7 +1983,7 @@ function satisfactionListCard(poll) {
 
 function renderSondagesListPage() {
   if (!sondagesListRows || !sondagesEmpty) return;
-  const openPolls = polls.filter((poll) => !poll.closed && !poll.draft);
+  const openPolls = polls.filter((poll) => !poll.closed);
   const sorted = [...openPolls].reverse();
   sondagesListRows.innerHTML = sorted.length
     ? sorted.map((poll) => poll.category === "satisfaction" ? satisfactionListCard(poll) : pollCard(poll, "form")).join("")
@@ -2360,8 +2012,6 @@ function showSondagesListPage() {
   responseSuccess.hidden = true;
   if (archivedOrdersPanel) archivedOrdersPanel.hidden = true;
   if (precommandandesListPage) precommandandesListPage.hidden = true;
-  if (pendingDocumentsListPage) pendingDocumentsListPage.hidden = true;
-  if (upcomingListPage) upcomingListPage.hidden = true;
   renderSondagesListPage();
   sondagesListPage.hidden = false;
   sondagesListPage.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -2713,219 +2363,11 @@ function closeImagePreview() {
   document.body.classList.remove("modal-open");
 }
 
-// Nom complet d'une personne (titulaire ou membre d'équipe), avec civilité si
-// connue (ex. "Mme Isabelle AZAR"). Repli sur l'e-mail si aucun nom n'est
-// renseigné.
-function formatUserFullName(user) {
-  if (!user) return "";
-  const civility = user.civility ? `${user.civility} ` : "";
-  const name = [user.firstName, user.lastName].filter(Boolean).join(" ");
-  return `${civility}${name}`.trim() || user.email || "";
-}
-
-function renderUserMenu() {
-  if (!userMenu) return;
-  userMenu.hidden = !currentUser;
-  if (!currentUser) {
-    if (userMenuPanel) userMenuPanel.hidden = true;
-    return;
-  }
-  const fullName = formatUserFullName(currentUser);
-  if (userMenuName) userMenuName.textContent = fullName;
-  if (userMenuEmail) userMenuEmail.textContent = currentUser.email;
-  if (userMenuPharmacy) {
-    userMenuPharmacy.textContent = currentUser.role === "soguasphar_admin"
-      ? "Administration SOGUASPHAR"
-      : (currentUser.pharmacyName || "Pharmacie non rattachée");
-  }
-  if (userMenuTeamBtn) {
-    const isPharmacyRole = currentUser.role === "pharmacy_admin" || currentUser.role === "pharmacy_collaborator";
-    userMenuTeamBtn.hidden = !isPharmacyRole;
-    userMenuTeamBtn.textContent = currentUser.role === "pharmacy_admin" ? "Gérer mon équipe" : "Mon équipe";
-  }
-}
-
-// --- Fenêtre "Mon équipe" ---------------------------------------------------
-// Un titulaire (pharmacy_admin) peut créer, réinitialiser le mot de passe de,
-// désactiver ou supprimer des comptes collaborateurs de sa propre pharmacie.
-// Un collaborateur (pharmacy_collaborator) peut seulement consulter la liste.
-
-async function openTeamModal() {
-  if (!teamModal) return;
-  teamModal.hidden = false;
-  document.body.classList.add("modal-open");
-  teamModalMessage.textContent = "Chargement...";
-  await refreshTeamModal();
-}
-
-function closeTeamModal() {
-  if (!teamModal || teamModal.hidden) return;
-  teamModal.hidden = true;
-  document.body.classList.remove("modal-open");
-  if (teamModalMessage) teamModalMessage.textContent = "";
-}
-
-async function refreshTeamModal() {
-  try {
-    teamMembers = await fetchTeam();
-    renderTeamModal();
-  } catch (error) {
-    teamMembersList.innerHTML = "";
-    teamModalMessage.textContent = error.message || "Impossible de charger l'équipe pour le moment.";
-  }
-}
-
-function renderTeamModal() {
-  if (!teamMembersList) return;
-  const isAdmin = currentUser?.role === "pharmacy_admin";
-  if (teamAddForm) teamAddForm.hidden = !isAdmin;
-
-  if (!teamMembers.length) {
-    teamMembersList.innerHTML = '<p class="empty-campaigns">Personne d\'autre n\'a encore de compte pour cette pharmacie.</p>';
-    return;
-  }
-
-  teamMembersList.innerHTML = `
-    <table>
-      <thead><tr><th>Nom</th><th>E-mail</th><th>Fonction</th><th>Statut</th>${isAdmin ? "<th>Action</th>" : ""}</tr></thead>
-      <tbody>
-        ${teamMembers.map((member) => {
-          const fullName = [member.firstName, member.lastName].filter(Boolean).join(" ") || "-";
-          const fonctionLabel = member.jobTitle || (member.role === "pharmacy_admin" ? "Titulaire" : "Collaborateur");
-          const statusLabel = member.active === false ? "Désactivé" : (member.mustChangePassword ? "Invitation envoyée" : "Actif");
-          const isSelf = currentUser && member.id === currentUser.id;
-          const actions = isAdmin && member.role === "pharmacy_collaborator" ? `
-            <button class="ghost-btn small-btn" type="button" data-reset-team-member="${escapeHtml(member.id)}">Réinitialiser le mot de passe</button>
-            <button class="ghost-btn small-btn" type="button" data-toggle-team-member="${escapeHtml(member.id)}" data-next-active="${member.active === false ? "true" : "false"}">${member.active === false ? "Réactiver" : "Désactiver"}</button>
-            <button class="delete-response-btn" type="button" data-delete-team-member="${escapeHtml(member.id)}" aria-label="Supprimer ${escapeHtml(fullName)}">&#128465;</button>
-          ` : (isAdmin && isSelf ? "<em>Vous</em>" : "");
-          return `
-            <tr>
-              <td><strong>${escapeHtml(fullName)}</strong></td>
-              <td>${escapeHtml(member.email)}</td>
-              <td>${escapeHtml(fonctionLabel)}</td>
-              <td>${statusLabel}</td>
-              ${isAdmin ? `<td class="pharmacy-actions">${actions}</td>` : ""}
-            </tr>
-          `;
-        }).join("")}
-      </tbody>
-    </table>
-  `;
-}
-
-teamMembersList?.addEventListener("click", async (event) => {
-  const resetButton = event.target.closest("[data-reset-team-member]");
-  if (resetButton) {
-    const member = teamMembers.find((item) => item.id === resetButton.dataset.resetTeamMember);
-    if (!member) return;
-    const fullName = [member.firstName, member.lastName].filter(Boolean).join(" ") || member.email;
-    if (!confirm(`Réinitialiser le mot de passe de ${fullName} ?`)) return;
-    try {
-      await resetTeamMemberPassword(member.id);
-      teamModalMessage.textContent = `Un e-mail avec un lien pour créer un nouveau mot de passe vient d'être envoyé à ${fullName}.`;
-      await refreshTeamModal();
-    } catch (error) {
-      teamModalMessage.textContent = error.message || "Impossible de réinitialiser ce mot de passe.";
-    }
-    return;
-  }
-
-  const toggleButton = event.target.closest("[data-toggle-team-member]");
-  if (toggleButton) {
-    const member = teamMembers.find((item) => item.id === toggleButton.dataset.toggleTeamMember);
-    if (!member) return;
-    const nextActive = toggleButton.dataset.nextActive === "true";
-    const fullName = [member.firstName, member.lastName].filter(Boolean).join(" ") || member.email;
-    if (!confirm(`${nextActive ? "Réactiver" : "Désactiver"} l'accès de ${fullName} ?`)) return;
-    try {
-      await setTeamMemberActive(member.id, nextActive);
-      teamModalMessage.textContent = `Accès ${nextActive ? "réactivé" : "désactivé"} pour ${fullName}.`;
-      await refreshTeamModal();
-    } catch (error) {
-      teamModalMessage.textContent = error.message || "Impossible de modifier cet accès.";
-    }
-    return;
-  }
-
-  const deleteButton = event.target.closest("[data-delete-team-member]");
-  if (deleteButton) {
-    const member = teamMembers.find((item) => item.id === deleteButton.dataset.deleteTeamMember);
-    if (!member) return;
-    const fullName = [member.firstName, member.lastName].filter(Boolean).join(" ") || member.email;
-    if (!confirm(`Supprimer l'accès de ${fullName} ? Cette action est définitive.`)) return;
-    try {
-      await deleteTeamMember(member.id);
-      teamModalMessage.textContent = `Accès supprimé pour ${fullName}.`;
-      await refreshTeamModal();
-    } catch (error) {
-      teamModalMessage.textContent = error.message || "Impossible de supprimer cet accès.";
-    }
-  }
-});
-
-// Bascule vers le nouvel écran de connexion (email + mot de passe), en test
-// en parallèle de l'ancienne connexion par mot de passe pharmacie.
-function showNewAuthScreen() {
-  showingNewAuthScreen = true;
-  if (pharmacyGate) pharmacyGate.hidden = true;
-  if (newAuthGate) newAuthGate.hidden = false;
-  if (newAuthLoginMessage) newAuthLoginMessage.textContent = "";
-  resetNewAuthLoginScreen();
-}
-
-// Remet l'écran de connexion (nouveau système) dans son état normal : le
-// formulaire de connexion visible, celui de changement de mot de passe
-// provisoire masqué. À appeler après une connexion réussie, une déconnexion,
-// ou un retour à cet écran.
-function resetNewAuthLoginScreen() {
-  if (newAuthLoginForm) newAuthLoginForm.hidden = false;
-  if (forgotNewAuthPasswordBtn) forgotNewAuthPasswordBtn.hidden = false;
-  if (newAuthPasswordChangeForm) newAuthPasswordChangeForm.hidden = true;
-  pendingInitialUserPassword = "";
-}
-
-function showOldAuthScreen() {
-  showingNewAuthScreen = false;
-  if (newAuthGate) newAuthGate.hidden = true;
-  if (newAuthAdminStatus) newAuthAdminStatus.hidden = true;
-  renderPharmacyAccess();
-}
-
 function renderPharmacyAccess() {
-  if (showingNewAuthScreen) {
-    // L'écran du nouveau système de connexion gère lui-même sa visibilité ;
-    // on s'assure juste que l'ancien écran reste masqué pendant ce temps.
-    if (pharmacyGate) pharmacyGate.hidden = true;
-    return;
-  }
-  // Un administrateur SOGUASPHAR (nouveau système) peut, sur l'onglet
-  // « Formulaire », choisir une pharmacie pour voir l'écran tel qu'une
-  // pharmacie le voit (même sélecteur/connexion que pour une vraie
-  // pharmacie) — on ne le masque donc plus pour lui.
   const requiresLogin = pharmacyAccessRequired();
   pharmacyGate.hidden = !requiresLogin;
-
-  // Une vraie pharmacie connectée (nouveau système, compte nominatif) voit
-  // son nom complet, sans bouton "Changer de pharmacie" (elle n'a qu'une
-  // seule pharmacie — ce bouton n'a de sens que pour une administratrice
-  // SOGUASPHAR qui prévisualise différentes pharmacies). Elle se déconnecte
-  // via le menu ⚙️ en haut à droite.
-  const isNewSystemPharmacy = Boolean(currentUser) && (currentUser.role === "pharmacy_admin" || currentUser.role === "pharmacy_collaborator");
   pharmacySessionBar.hidden = !currentPharmacy;
-  currentPharmacyName.textContent = currentPharmacy
-    ? `Connecté : ${isNewSystemPharmacy ? formatUserFullName(currentUser) : currentPharmacy.name}`
-    : "";
-  if (logoutPharmacyBtn) logoutPharmacyBtn.hidden = isNewSystemPharmacy;
-
-  // Idem pour l'onglet "Administration" : une pharmacie (ancien ou nouveau
-  // système) ne doit pas le voir. Une administratrice SOGUASPHAR qui
-  // prévisualise une pharmacie depuis l'onglet "Formulaire" doit, elle,
-  // continuer à voir les deux onglets.
-  const viewSwitch = document.querySelector(".view-switch");
-  if (viewSwitch) {
-    viewSwitch.hidden = Boolean(currentPharmacy) && !(currentUser && currentUser.role === "soguasphar_admin");
-  }
+  currentPharmacyName.textContent = currentPharmacy ? `Connecté : ${currentPharmacy.name}` : "";
   if (pendingPasswordPharmacy) {
     pharmacyLoginForm.hidden = true;
     pharmacyPasswordChangeForm.hidden = false;
@@ -2954,8 +2396,6 @@ function renderPharmacyAccess() {
     responseSuccess.hidden = true;
   if (precommandandesListPage) precommandandesListPage.hidden = true;
   if (sondagesListPage) sondagesListPage.hidden = true;
-  if (pendingDocumentsListPage) pendingDocumentsListPage.hidden = true;
-  if (upcomingListPage) upcomingListPage.hidden = true;
   }
 }
 
@@ -3012,23 +2452,23 @@ function renderPharmacyAccounts() {
     <div class="table-toolbar pharmacy-export-toolbar">
       <div>
         <h2>Accès pharmacies</h2>
-        <p>Les mots de passe ne sont plus stockés en clair : ils ne s'affichent qu'une fois, à la création ou à la réinitialisation.</p>
+        <p>Exportez la liste des pharmacies avec leurs mots de passe actuels.</p>
       </div>
       <button class="primary-btn" type="button" data-export-pharmacy-passwords>Exporter Excel</button>
     </div>
     <div class="table-wrap compact">
       <table>
-        <thead><tr><th>Pharmacie</th><th>Mot de passe</th><th>Statut</th><th>Demande</th><th>Action</th></tr></thead>
+        <thead><tr><th>Pharmacie</th><th>Mot de passe actuel</th><th>Statut</th><th>Demande</th><th>Action</th></tr></thead>
         <tbody>
           ${pharmacies.map((pharmacy) => {
             const resetRequested = Boolean(pharmacy.passwordResetRequested);
             const requestDate = pharmacy.passwordResetRequestedAt ? `<small>${escapeHtml(pharmacy.passwordResetRequestedAt)}</small>` : "";
             const requestLabel = resetRequested ? `<span class="request-badge">Réinitialisation demandée</span>${requestDate}` : "-";
-            const resetButton = `<button class="ghost-btn small-btn" type="button" data-reset-pharmacy-password="${escapeHtml(pharmacy.id)}">Réinitialiser</button>`;
+            const resetButton = resetRequested ? `<button class="ghost-btn small-btn" type="button" data-reset-pharmacy-password="${escapeHtml(pharmacy.id)}">Réinitialiser</button>` : "";
             return `
               <tr class="${resetRequested ? "needs-reset" : ""}">
                 <td><strong>${escapeHtml(pharmacy.name)}</strong></td>
-                <td><em>Masqué</em></td>
+                <td><code>${escapeHtml(pharmacy.password)}</code></td>
                 <td>${pharmacy.mustChangePassword === false ? "Personnalisé" : "À changer"}</td>
                 <td>${requestLabel}</td>
                 <td class="pharmacy-actions">
@@ -3750,15 +3190,12 @@ function pollCard(poll, target) {
     `;
   }
 
-  const pollStatusLabel = poll.draft
-    ? "Brouillon"
-    : (poll.category === "satisfaction" ? (poll.closed ? "Questionnaire de satisfaction clôturé" : "Questionnaire de satisfaction") : (poll.closed ? "Sondage clôturé" : "Sondage"));
   return `
     <article class="campaign-card poll-card">
       ${adminPollImage}
       <div>
         <div class="campaign-card-top">
-          <span class="campaign-type ${poll.closed ? "closed" : ""} ${poll.draft ? "draft" : ""}">${pollStatusLabel}</span>
+          <span class="campaign-type ${poll.closed ? "closed" : ""}">${poll.category === "satisfaction" ? (poll.closed ? "Questionnaire de satisfaction clôturé" : "Questionnaire de satisfaction") : (poll.closed ? "Sondage clôturé" : "Sondage")}</span>
           <button class="delete-campaign-btn" type="button" title="Supprimer le sondage" aria-label="Supprimer le sondage ${escapeHtml(poll.question)}" data-delete-poll="${escapeHtml(poll.id)}">&#128465;</button>
         </div>
         <h3>${escapeHtml(poll.question)}</h3>
@@ -3767,11 +3204,10 @@ function pollCard(poll, target) {
       <div class="campaign-foot">
         <span>${responseCount} réponse${responseCount > 1 ? "s" : ""}</span>
         <div class="campaign-actions">
-          ${isAdmin && poll.draft ? `<button class="primary-btn" type="button" data-publish-poll="${escapeHtml(poll.id)}">Publier</button>` : ""}
-          ${isAdmin && !poll.draft ? `<button class="ghost-btn" type="button" data-toggle-closed-poll="${escapeHtml(poll.id)}">${poll.closed ? "Rouvrir" : "Clôturer"}</button>` : ""}
-          ${!isAdmin || !poll.draft ? `<button class="primary-btn" type="button" data-${target}-poll="${escapeHtml(poll.id)}">
+          <button class="ghost-btn" type="button" data-toggle-closed-poll="${escapeHtml(poll.id)}">${poll.closed ? "Rouvrir" : "Clôturer"}</button>
+          <button class="primary-btn" type="button" data-${target}-poll="${escapeHtml(poll.id)}">
             ${isAdmin ? "Voir les résultats" : "Répondre"}
-          </button>` : ""}
+          </button>
         </div>
       </div>
     </article>
@@ -3785,14 +3221,14 @@ function infoFormCard(infoForm, target) {
   const currentResponse = !isAdmin && currentPharmacy
     ? responses.find((response) => responseMatchesPharmacy(response, currentPharmacy))
     : null;
-  const statusLabel = infoForm.draft ? "Brouillon" : (infoForm.closed ? "Clôturée" : "Fiche pharmacie");
+  const statusLabel = infoForm.closed ? "Clôturée" : "Fiche pharmacie";
   const actionAttr = isAdmin ? `data-admin-info="${escapeHtml(infoForm.id)}"` : `data-info-form="${escapeHtml(infoForm.id)}"`;
 
   return `
     <article class="campaign-card info-form-card ${currentResponse ? "completed" : ""} clickable" ${actionAttr} role="button" tabindex="0">
       <div>
         <div class="campaign-card-top">
-          <span class="campaign-type ${infoForm.closed ? "closed" : ""} ${infoForm.draft ? "draft" : ""}">${statusLabel}</span>
+          <span class="campaign-type ${infoForm.closed ? "closed" : ""}">${statusLabel}</span>
           ${isAdmin ? `<button class="delete-campaign-btn" type="button" title="Supprimer la demande" aria-label="Supprimer ${escapeHtml(infoForm.title)}" data-delete-info="${escapeHtml(infoForm.id)}">&#128465;</button>` : ""}
         </div>
         <h3>${escapeHtml(infoForm.title)}</h3>
@@ -3802,8 +3238,7 @@ function infoFormCard(infoForm, target) {
       <div class="campaign-foot">
         <strong>${isAdmin ? `${responseCount} réponse${responseCount > 1 ? "s" : ""}` : "Coordonnées, horaires, services"}</strong>
         <div class="campaign-actions">
-          ${isAdmin && infoForm.draft ? `<button class="primary-btn" type="button" data-publish-info="${escapeHtml(infoForm.id)}">Publier</button>` : ""}
-          ${isAdmin && !infoForm.draft ? `<button class="ghost-btn" type="button" data-toggle-closed-info="${escapeHtml(infoForm.id)}">${infoForm.closed ? "Rouvrir" : "Clôturer"}</button>` : ""}
+          ${isAdmin ? `<button class="ghost-btn" type="button" data-toggle-closed-info="${escapeHtml(infoForm.id)}">${infoForm.closed ? "Rouvrir" : "Clôturer"}</button>` : ""}
           <button class="primary-btn" type="button" ${actionAttr}>${isAdmin ? "Voir le suivi" : (currentResponse ? "Modifier ma fiche" : "Remplir")}</button>
         </div>
       </div>
@@ -3851,12 +3286,11 @@ function adminBatOverviewCard() {
   const corrections = documents.filter((document) => normalizeValidationStatus(batResponseForDocument(document)?.status) === "Correction demandée");
   const validationConfig = currentValidationConfig();
 
-  const statusLabel = validationConfig.draft ? "Brouillon" : (validationConfig.archived ? "Validation archivée" : "Validation");
   return `
     <article class="campaign-card bat-card clickable" data-admin-bat-overview role="button" tabindex="0">
       <div>
         <div class="campaign-card-top">
-          <span class="campaign-type ${validationConfig.archived ? "closed" : ""} ${validationConfig.draft ? "draft" : ""}">${statusLabel}</span>
+          <span class="campaign-type ${validationConfig.archived ? "closed" : ""}">${validationConfig.archived ? "Validation archivée" : "Validation"}</span>
           <button class="delete-campaign-btn" type="button" title="Supprimer la validation" aria-label="Supprimer la validation" data-delete-validation>&#128465;</button>
         </div>
         <h3>${escapeHtml(validationConfig.title)}</h3>
@@ -3867,7 +3301,7 @@ function adminBatOverviewCard() {
         <div class="campaign-actions">
           ${corrections.length ? `<span class="request-badge">${corrections.length} correction${corrections.length > 1 ? "s" : ""}</span>` : ""}
           ${unmatched.length ? `<span class="request-badge">${unmatched.length} non reconnu${unmatched.length > 1 ? "s" : ""}</span>` : ""}
-          ${validationConfig.draft ? `<button class="primary-btn" type="button" data-publish-validation>Publier</button>` : `<button class="ghost-btn" type="button" data-toggle-validation-archive>${validationConfig.archived ? "Rouvrir" : "Archiver"}</button>`}
+          <button class="ghost-btn" type="button" data-toggle-validation-archive>${validationConfig.archived ? "Rouvrir" : "Archiver"}</button>
           <button class="primary-btn" type="button" data-admin-bat-overview>Documents en attente validation</button>
         </div>
       </div>
@@ -3877,29 +3311,24 @@ function adminBatOverviewCard() {
 
 function showAdminSection(section) {
   stopAdminValidationAutoRefresh();
-  activeAdminSection = section || "campaign-new";
+  activeAdminSection = section || "new-campaign";
   if (createPollMessage) createPollMessage.textContent = "";
-  const sectionCopy = ADMIN_SECTIONS[activeAdminSection] || ADMIN_SECTIONS["campaign-new"];
+  const sectionCopy = ADMIN_SECTIONS[activeAdminSection] || ADMIN_SECTIONS["new-campaign"];
   const validationConfig = currentValidationConfig();
   const activeGroup = adminGroupForSection(activeAdminSection);
-  const activeState = adminStateForSection(activeAdminSection);
   const closedActions = showClosedCampaignsBtn?.closest(".closed-campaign-actions");
-  const showCampaignList = activeGroup === "campaign" && activeState !== "new";
-  const showPollList = activeGroup === "poll" && activeState !== "new";
-  const showInfoList = activeGroup === "document" && activeState !== "new";
-  const showPharmacies = activeAdminSection === "parametre";
-  const showBatList = activeGroup === "document" && activeState !== "new"
-    && validationConfig.exists
-    && (activeState === "draft" ? validationConfig.draft
-      : activeState === "archived" ? (!validationConfig.draft && validationConfig.archived)
-      : (!validationConfig.draft && !validationConfig.archived));
+  const showCampaignList = activeAdminSection === "campaigns" || activeAdminSection === "archives";
+  const showPollList = activeAdminSection === "polls" || activeAdminSection === "archives";
+  const showInfoList = activeAdminSection === "polls" || activeAdminSection === "archives";
+  const showPharmacies = activeAdminSection === "pharmacies";
+  const showBatList = activeAdminSection === "bat" || (activeAdminSection === "archives" && validationConfig.exists);
 
   adminCampaignTitle.textContent = sectionCopy.title;
   adminSectionIntro.textContent = sectionCopy.intro;
-  createCampaignForm.hidden = activeAdminSection !== "campaign-new";
-  createPollForm.hidden = activeAdminSection !== "poll-new";
-  createInfoForm.hidden = activeAdminSection !== "document-new";
-  if (createValidationForm) createValidationForm.hidden = activeAdminSection !== "document-new";
+  createCampaignForm.hidden = activeAdminSection !== "new-campaign";
+  createPollForm.hidden = activeAdminSection !== "new-poll";
+  createInfoForm.hidden = activeAdminSection !== "new-poll";
+  if (createValidationForm) createValidationForm.hidden = activeAdminSection !== "new-validation";
   createPharmacyForm.hidden = !showPharmacies;
   pharmacyAccountsList.hidden = !showPharmacies;
   adminCampaignCards.hidden = !showCampaignList;
@@ -3912,7 +3341,7 @@ function showAdminSection(section) {
     button.classList.toggle("active", button.dataset.adminGroup === activeGroup);
   });
   adminDashboardNav?.querySelectorAll("[data-admin-subnav]").forEach((subNav) => {
-    subNav.hidden = !adminGroupChosen || subNav.dataset.adminSubnav !== activeGroup;
+    subNav.hidden = subNav.dataset.adminSubnav !== activeGroup;
   });
   adminDashboardNav?.querySelectorAll("[data-admin-section]").forEach((button) => {
     button.classList.toggle("active", button.dataset.adminSection === activeAdminSection);
@@ -3922,17 +3351,16 @@ function showAdminSection(section) {
 }
 
 async function showAdminSectionFresh(section) {
-  const nextSection = section || "campaign-new";
-  const nextGroup = adminGroupForSection(nextSection);
-  const nextState = adminStateForSection(nextSection);
+  const nextSection = section || "new-campaign";
   if (adminUnlocked) {
-    if (nextGroup === "poll" && nextState !== "new") {
+    if (nextSection === "polls" || nextSection === "archives") {
       await refreshPollResponseCounts();
     }
-    if (nextGroup === "document" && nextState !== "new") {
+    if (nextSection === "polls" || nextSection === "archives") {
       infoResponses = await getInfoResponses();
     }
-    if (nextGroup === "document" && nextState !== "new") {
+    if (nextSection === "bat" || nextSection === "archives") {
+      await refreshValidationDocuments();
       await refreshAdminValidationResponses();
     }
   }
@@ -3941,35 +3369,18 @@ async function showAdminSectionFresh(section) {
 
 function renderCampaignPickers() {
   const validationConfig = currentValidationConfig();
-  const activeState = adminStateForSection(activeAdminSection);
-  const campaignStateFilter = {
-    draft: (campaign) => Boolean(campaign.draft),
-    current: (campaign) => !campaign.draft && !campaignIsEffectivelyClosed(campaign),
-    archived: (campaign) => !campaign.draft && campaignIsEffectivelyClosed(campaign)
-  };
-  const pollStateFilter = {
-    draft: (poll) => Boolean(poll.draft),
-    current: (poll) => !poll.draft && !poll.closed,
-    archived: (poll) => !poll.draft && poll.closed
-  };
-  const infoFormStateFilter = {
-    draft: (infoForm) => Boolean(infoForm.draft),
-    current: (infoForm) => !infoForm.draft && !infoForm.closed,
-    archived: (infoForm) => !infoForm.draft && infoForm.closed
-  };
-
-  const openCampaigns = campaigns.filter((campaign) => campaignIsVisibleForPharmacy(campaign) && !campaign.draft);
-  const adminCampaigns = campaigns.filter((campaign) => (campaignStateFilter[activeState] || campaignStateFilter.current)(campaign));
-  const openPolls = polls.filter((poll) => !poll.draft && !poll.closed && poll.category !== "satisfaction");
-  const adminPolls = polls.filter((poll) => (pollStateFilter[activeState] || pollStateFilter.current)(poll));
+  const openCampaigns = campaigns.filter((campaign) => campaignIsVisibleForPharmacy(campaign));
+  const adminCampaigns = campaigns.filter((campaign) => activeAdminSection === "archives" ? campaignIsEffectivelyClosed(campaign) : !campaignIsEffectivelyClosed(campaign));
+  const openPolls = polls.filter((poll) => !poll.closed && poll.category !== "satisfaction");
+  const adminPolls = polls.filter((poll) => activeAdminSection === "archives" ? poll.closed : !poll.closed);
   const satisfactionPoll = polls.find((poll) => poll.category === "satisfaction");
-  const openInfoForms = infoForms.filter((infoForm) => !infoForm.draft && !infoForm.closed);
-  const adminInfoForms = infoForms.filter((infoForm) => (infoFormStateFilter[activeState] || infoFormStateFilter.current)(infoForm));
+  const openInfoForms = infoForms.filter((infoForm) => !infoForm.closed);
+  const adminInfoForms = infoForms.filter((infoForm) => activeAdminSection === "archives" ? infoForm.closed : !infoForm.closed);
   const currentBatDocument = currentPharmacy ? batDocumentForPharmacy(currentPharmacy) : null;
   const adminBatDocuments = batDocumentsForActivePharmacies();
 
   const openCampaignsRecentFirst = [...openCampaigns].reverse();
-  const showBatToPharmacy = Boolean(currentBatDocument) && validationConfig.exists && !validationConfig.draft && !validationConfig.archived;
+  const showBatToPharmacy = Boolean(currentBatDocument) && validationConfig.exists && !validationConfig.archived;
 
   let cardsToDisplay = [];
   if (showBatToPharmacy) {
@@ -4011,17 +3422,11 @@ function renderCampaignPickers() {
     : '<p class="empty-campaigns">Aucune mise à jour fiche pharmacie créée pour le moment.</p>';
 
   if (adminBatCards) {
-    const showDraftValidation = activeState === "draft" && validationConfig.exists && validationConfig.draft;
-    const showActiveValidation = activeState === "current" && validationConfig.exists && !validationConfig.draft && !validationConfig.archived;
-    const showArchivedValidation = activeState === "archived" && validationConfig.exists && !validationConfig.draft && validationConfig.archived;
-    const emptyLabel = activeState === "archived"
-      ? "Aucune validation archivée."
-      : activeState === "draft"
-        ? "Aucune validation en brouillon."
-        : "Aucune validation en cours. Créez une nouvelle validation pour importer des documents.";
-    adminBatCards.innerHTML = (showDraftValidation || showActiveValidation || showArchivedValidation)
+    const showActiveValidation = activeAdminSection === "bat" && validationConfig.exists && !validationConfig.archived;
+    const showArchivedValidation = activeAdminSection === "archives" && validationConfig.exists && validationConfig.archived;
+    adminBatCards.innerHTML = (showActiveValidation || showArchivedValidation)
       ? adminBatOverviewCard()
-      : `<p class="empty-campaigns">${emptyLabel}</p>`;
+      : `<p class="empty-campaigns">${activeAdminSection === "archives" ? "Aucune validation archivée." : "Aucune validation en cours. Créez une nouvelle validation pour importer des documents."}</p>`;
   }
 
   showClosedCampaignsBtn.textContent = adminShowingClosedCampaigns ? "Campagnes actives" : "Campagnes clôturées";
@@ -4041,7 +3446,7 @@ function renderAdminSummary() {
 
 function renderSatisfactionEntry(poll) {
   if (!satisfactionEntryBtn) return;
-  if (!poll || poll.draft || poll.closed || (pharmacyAccessRequired && pharmacyAccessRequired())) {
+  if (!poll || poll.closed || (pharmacyAccessRequired && pharmacyAccessRequired())) {
     satisfactionEntryBtn.hidden = true;
     return;
   }
@@ -4102,8 +3507,6 @@ function openSatisfactionPage(pollId) {
   responseSuccess.hidden = true;
   if (precommandandesListPage) precommandandesListPage.hidden = true;
   if (sondagesListPage) sondagesListPage.hidden = true;
-  if (pendingDocumentsListPage) pendingDocumentsListPage.hidden = true;
-  if (upcomingListPage) upcomingListPage.hidden = true;
   if (archivedOrdersPanel) archivedOrdersPanel.hidden = true;
 
   satisfactionForm.dataset.inlinePollForm = poll.id;
@@ -4141,8 +3544,6 @@ function selectCampaign(campaignId) {
   responseSuccess.hidden = true;
   if (precommandandesListPage) precommandandesListPage.hidden = true;
   if (sondagesListPage) sondagesListPage.hidden = true;
-  if (pendingDocumentsListPage) pendingDocumentsListPage.hidden = true;
-  if (upcomingListPage) upcomingListPage.hidden = true;
   document.querySelector("#formTitle").textContent = "Commande, précommande, confirmation";
   if (selectedCampaign.pharmacyMessage) {
     campaignNotice.hidden = false;
@@ -4188,8 +3589,6 @@ function selectPoll(pollId) {
   responseSuccess.hidden = true;
   if (precommandandesListPage) precommandandesListPage.hidden = true;
   if (sondagesListPage) sondagesListPage.hidden = true;
-  if (pendingDocumentsListPage) pendingDocumentsListPage.hidden = true;
-  if (upcomingListPage) upcomingListPage.hidden = true;
   renderCampaignPickers();
   const openedCard = Array.from(pollCards.querySelectorAll("[data-inline-poll-form]"))
     .find((item) => item.dataset.inlinePollForm === selectedPoll.id);
@@ -4219,8 +3618,6 @@ function selectInfoForm(infoFormId) {
   responseSuccess.hidden = true;
   if (precommandandesListPage) precommandandesListPage.hidden = true;
   if (sondagesListPage) sondagesListPage.hidden = true;
-  if (pendingDocumentsListPage) pendingDocumentsListPage.hidden = true;
-  if (upcomingListPage) upcomingListPage.hidden = true;
 
   profileUpdateForm.reset();
   profileFormTitle.textContent = selectedInfoForm.title;
@@ -4270,22 +3667,20 @@ function selectBat(documentId) {
   responseSuccess.hidden = true;
   if (precommandandesListPage) precommandandesListPage.hidden = true;
   if (sondagesListPage) sondagesListPage.hidden = true;
-  if (pendingDocumentsListPage) pendingDocumentsListPage.hidden = true;
-  if (upcomingListPage) upcomingListPage.hidden = true;
 
   batFormTitle.textContent = currentValidationConfig().title;
   batPdfTitle.textContent = `Document - ${selectedBatDocument.pharmacyName}`;
   const isImageDocument = selectedBatDocument.fileType?.startsWith("image/");
   if (batDocumentPreview) {
     batDocumentPreview.hidden = !isImageDocument;
-    batDocumentPreview.src = isImageDocument ? resolveBatDocumentUrl(selectedBatDocument.url) : "";
+    batDocumentPreview.src = isImageDocument ? resolveBatDocumentUrl(selectedBatDocument) : "";
     batDocumentPreview.alt = `Aperçu du document ${selectedBatDocument.pharmacyName}`;
   }
   if (batDocumentPdfPreview) {
     batDocumentPdfPreview.hidden = isImageDocument;
-    batDocumentPdfPreview.data = isImageDocument ? "" : resolveBatDocumentUrl(selectedBatDocument.url);
+    batDocumentPdfPreview.data = isImageDocument ? "" : resolveBatDocumentUrl(selectedBatDocument);
   }
-  batPdfOpenLink.href = resolveBatDocumentUrl(selectedBatDocument.url);
+  batPdfOpenLink.href = resolveBatDocumentUrl(selectedBatDocument);
   batPdfOpenLink.download = validationDocumentDownloadName(selectedBatDocument);
   batPdfOpenLink.textContent = "Télécharger le document";
   batPdfOpenLink.removeAttribute("target");
@@ -4423,7 +3818,7 @@ function renderBatResults() {
             <td><strong>${escapeHtml(document.pharmacyName)}</strong></td>
             <td>${escapeHtml(status)}</td>
             <td>${escapeHtml(response?.comment || "-")}</td>
-            <td><a class="ghost-btn small-btn" href="${escapeHtml(resolveBatDocumentUrl(document.url))}" download="${escapeHtml(validationDocumentDownloadName(document))}" data-bat-pdf-link>Télécharger</a></td>
+            <td><a class="ghost-btn small-btn" href="${escapeHtml(resolveBatDocumentUrl(document))}" download="${escapeHtml(validationDocumentDownloadName(document))}" data-bat-pdf-link>Télécharger</a></td>
           </tr>
         `;
       }).join("")
@@ -4441,7 +3836,7 @@ function renderBatResults() {
         <td><strong>${escapeHtml(response.pharmacyName || document.pharmacyName)}</strong></td>
         <td>${escapeHtml(normalizeValidationStatus(response.status))}</td>
         <td>${escapeHtml(response.comment || "-")}</td>
-        <td><a class="ghost-btn small-btn" href="${escapeHtml(resolveBatDocumentUrl(document.url))}" download="${escapeHtml(validationDocumentDownloadName(document))}" data-bat-pdf-link>Télécharger</a></td>
+        <td><a class="ghost-btn small-btn" href="${escapeHtml(resolveBatDocumentUrl(document))}" download="${escapeHtml(validationDocumentDownloadName(document))}" data-bat-pdf-link>Télécharger</a></td>
       </tr>
     `).join("")
     : '<tr><td colspan="5" class="empty-state">Aucune validation pour le moment.</td></tr>';
@@ -4545,8 +3940,6 @@ function showCampaignPicker() {
   responseSuccess.hidden = true;
   if (precommandandesListPage) precommandandesListPage.hidden = true;
   if (sondagesListPage) sondagesListPage.hidden = true;
-  if (pendingDocumentsListPage) pendingDocumentsListPage.hidden = true;
-  if (upcomingListPage) upcomingListPage.hidden = true;
   campaignNotice.hidden = true;
   campaignNotice.textContent = "";
   refreshCampaignImagePreview(null);
@@ -4568,8 +3961,6 @@ function showSuccessScreen() {
   responseSuccess.hidden = false;
   if (precommandandesListPage) precommandandesListPage.hidden = true;
   if (sondagesListPage) sondagesListPage.hidden = true;
-  if (pendingDocumentsListPage) pendingDocumentsListPage.hidden = true;
-  if (upcomingListPage) upcomingListPage.hidden = true;
 }
 
 async function selectAdminCampaign(campaignId) {
@@ -4605,7 +3996,6 @@ async function selectAdminPoll(pollId) {
   selectedAdminInfoForm = null;
   adminPollTitle.textContent = selectedAdminPoll.question;
   pollTitleEdit.value = selectedAdminPoll.question;
-  if (pollClosingDateEdit) pollClosingDateEdit.value = selectedAdminPoll.endDate || "";
   if (pollTitleMessage) pollTitleMessage.textContent = "";
   adminCampaignPicker.hidden = true;
   adminDetail.hidden = true;
@@ -5222,8 +4612,6 @@ function showPublicPollResults(pollId) {
   batValidationForm.hidden = true;
   if (precommandandesListPage) precommandandesListPage.hidden = true;
   if (sondagesListPage) sondagesListPage.hidden = true;
-  if (pendingDocumentsListPage) pendingDocumentsListPage.hidden = true;
-  if (upcomingListPage) upcomingListPage.hidden = true;
   if (pharmacyGate) pharmacyGate.hidden = true;
 
   refreshPublicPollResults(pollId);
@@ -5482,10 +4870,11 @@ function exportPharmacyPasswordsToExcel() {
   const sortedPharmacies = pharmacies
     .slice()
     .sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""), "fr"));
-  const headings = ["Pharmacie", "Accès actif", "Mot de passe à changer", "Demande de réinitialisation", "Date de demande"];
+  const headings = ["Pharmacie", "Mot de passe", "Accès actif", "Mot de passe à changer", "Demande de réinitialisation", "Date de demande"];
   const body = sortedPharmacies.map((pharmacy) => `
     <tr>
       <td>${escapeHtml(pharmacy.name || "")}</td>
+      <td>${escapeHtml(pharmacy.password || "")}</td>
       <td>${pharmacy.active === false ? "Non" : "Oui"}</td>
       <td>${pharmacy.mustChangePassword === false ? "Non" : "Oui"}</td>
       <td>${pharmacy.passwordResetRequested ? "Oui" : "Non"}</td>
@@ -5660,34 +5049,13 @@ async function exportToExcel() {
   adminMessage.textContent = "Export Excel généré.";
 }
 
-// Bascule l'affichage sur l'onglet "Administration", comme si on avait
-// cliqué dessus. Utilisé pour qu'une administratrice SOGUASPHAR arrive
-// directement sur le tableau de bord, que ce soit juste après une connexion
-// par e-mail/mot de passe ou au rechargement d'une session déjà ouverte.
-async function activateAdminView() {
-  const adminViewBtn = document.querySelector('.switch-btn[data-view="adminView"]');
-  const adminViewSection = document.querySelector("#adminView");
-  if (!adminViewBtn || !adminViewSection) return;
-  document.querySelectorAll(".switch-btn").forEach((item) => item.classList.remove("active"));
-  document.querySelectorAll(".view").forEach((item) => item.classList.remove("active"));
-  adminViewBtn.classList.add("active");
-  adminViewSection.classList.add("active");
-  await renderAdmin();
-}
-
 document.querySelectorAll(".switch-btn").forEach((button) => {
   button.addEventListener("click", async () => {
     document.querySelectorAll(".switch-btn").forEach((item) => item.classList.remove("active"));
     document.querySelectorAll(".view").forEach((item) => item.classList.remove("active"));
     button.classList.add("active");
     document.querySelector(`#${button.dataset.view}`).classList.add("active");
-    if (button.dataset.view === "formView") {
-      // Un administrateur SOGUASPHAR revenant sur "Formulaire" doit pouvoir
-      // choisir/voir une pharmacie comme elle le ferait elle-même.
-      renderPharmacyAccess();
-    } else {
-      await renderAdmin();
-    }
+    await renderAdmin();
   });
 });
 
@@ -5733,8 +5101,7 @@ productRows?.addEventListener("change", (event) => {
 adminDashboardNav?.addEventListener("click", async (event) => {
   const groupButton = event.target.closest("[data-admin-group]");
   if (groupButton) {
-    adminGroupChosen = true;
-    const nextSection = ADMIN_GROUP_DEFAULT_SECTION[groupButton.dataset.adminGroup] || "campaign-new";
+    const nextSection = ADMIN_GROUP_DEFAULT_SECTION[groupButton.dataset.adminGroup] || "new-campaign";
     await showAdminSectionFresh(nextSection);
     return;
   }
@@ -5747,7 +5114,7 @@ adminDashboardNav?.addEventListener("click", async (event) => {
 adminResetAlert?.addEventListener("click", async (event) => {
   const button = event.target.closest("[data-open-reset-requests]");
   if (!button) return;
-  await showAdminSectionFresh("parametre");
+  await showAdminSectionFresh("pharmacies");
   pharmacyAccountsList?.scrollIntoView({ behavior: "smooth", block: "start" });
 });
 
@@ -5811,6 +5178,7 @@ pharmacyLoginForm.addEventListener("submit", async (event) => {
     renderCampaignPickers();
     showCampaignPicker();
     renderPharmacyAccess();
+    await refreshValidationDocuments();
     await refreshPharmacyPollAnswers();
     await refreshPharmacyCampaignResponses();
     await refreshPharmacyInfoResponses();
@@ -5836,9 +5204,8 @@ pharmacyPasswordChangeForm.addEventListener("submit", async (event) => {
   const newPassword = newPharmacyPassword.value.trim();
   const confirmation = confirmPharmacyPassword.value.trim();
 
-  const ruleError = passwordRuleError(newPassword);
-  if (ruleError) {
-    pharmacyLoginMessage.textContent = ruleError;
+  if (newPassword.length < 6) {
+    pharmacyLoginMessage.textContent = "Le nouveau mot de passe doit contenir au moins 6 caractères.";
     return;
   }
 
@@ -5848,7 +5215,10 @@ pharmacyPasswordChangeForm.addEventListener("submit", async (event) => {
   }
 
   try {
-    currentPharmacy = await changePharmacyPassword(pendingPasswordPharmacy.id, pendingInitialPassword, newPassword);
+    const updatedPharmacy = await changePharmacyPassword(pendingPasswordPharmacy.id, pendingInitialPassword, newPassword);
+    // Le jeton de session a été reçu à la connexion initiale (/api/pharmacy-login) ;
+    // /api/pharmacy-password ne le renvoie pas, on le conserve donc tel quel.
+    currentPharmacy = { ...updatedPharmacy, token: pendingPasswordPharmacy.token };
     archivedOrdersVisible = false;
     localStorage.setItem(PHARMACY_SESSION_KEY, JSON.stringify(currentPharmacy));
     pendingPasswordPharmacy = null;
@@ -5859,6 +5229,7 @@ pharmacyPasswordChangeForm.addEventListener("submit", async (event) => {
     renderCampaignPickers();
     showCampaignPicker();
     renderPharmacyAccess();
+    await refreshValidationDocuments();
     await refreshPharmacyPollAnswers();
     await refreshPharmacyCampaignResponses();
     await refreshPharmacyInfoResponses();
@@ -5871,302 +5242,17 @@ pharmacyPasswordChangeForm.addEventListener("submit", async (event) => {
   }
 });
 
-logoutPharmacyBtn.addEventListener("click", async () => {
-  try {
-    await requestJson("/api/auth/logout", { method: "POST" });
-  } catch {
-    // Non bloquant : on efface quand même la session côté navigateur.
-  }
+logoutPharmacyBtn.addEventListener("click", () => {
   currentPharmacy = null;
   pendingPasswordPharmacy = null;
   pendingInitialPassword = "";
   pharmacyPollAnswers = {};
   pharmacyCampaignResponses = {};
   archivedOrdersVisible = false;
+  batDocuments = [];
   localStorage.removeItem(PHARMACY_SESSION_KEY);
   renderCampaignPickers();
   showCampaignPicker();
-});
-
-// --- Nouveau système de connexion (email + mot de passe), en test ----------
-
-switchToNewAuthBtn?.addEventListener("click", () => {
-  showNewAuthScreen();
-});
-
-switchToOldAuthBtn?.addEventListener("click", () => {
-  showOldAuthScreen();
-});
-
-toggleNewAuthPassword?.addEventListener("click", () => {
-  const isPassword = newAuthPassword.type === "password";
-  newAuthPassword.type = isPassword ? "text" : "password";
-  toggleNewAuthPassword.textContent = isPassword ? "Masquer" : "Voir";
-  toggleNewAuthPassword.setAttribute("aria-label", isPassword ? "Masquer le mot de passe" : "Afficher le mot de passe");
-});
-
-forgotNewAuthPasswordBtn?.addEventListener("click", () => {
-  forgotNewAuthPasswordForm.hidden = !forgotNewAuthPasswordForm.hidden;
-  if (!forgotNewAuthPasswordForm.hidden) {
-    forgotNewAuthEmail.value = newAuthEmail.value.trim();
-    forgotNewAuthEmail.focus();
-  }
-});
-
-forgotNewAuthPasswordForm?.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const email = forgotNewAuthEmail.value.trim();
-  if (!email) {
-    newAuthLoginMessage.textContent = "Indiquez votre adresse e-mail.";
-    return;
-  }
-
-  try {
-    await requestPasswordResetLink(email);
-    forgotNewAuthPasswordForm.reset();
-    forgotNewAuthPasswordForm.hidden = true;
-    newAuthLoginMessage.textContent = "Si cette adresse correspond à un compte, un e-mail avec un lien de réinitialisation vient d'être envoyé.";
-  } catch (error) {
-    newAuthLoginMessage.textContent = error.message || "Impossible de transmettre la demande. Réessayez.";
-  }
-});
-
-// Écran "choisir un nouveau mot de passe", ouvert via le lien reçu par e-mail
-// (adresse avec ?reset=<jeton>). Vérifié au chargement de la page, voir plus bas.
-resetPasswordForm?.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const token = new URLSearchParams(window.location.search).get("reset") || "";
-  const newPassword = resetPasswordNew.value.trim();
-  const confirmation = resetPasswordConfirm.value.trim();
-
-  const ruleError = passwordRuleError(newPassword);
-  if (ruleError) {
-    resetPasswordMessage.textContent = ruleError;
-    return;
-  }
-  if (newPassword !== confirmation) {
-    resetPasswordMessage.textContent = "Les deux mots de passe ne sont pas identiques.";
-    return;
-  }
-
-  try {
-    currentUser = await resetPasswordWithToken(token, newPassword);
-    resetPasswordGate.hidden = true;
-    window.history.replaceState({}, "", window.location.pathname);
-    renderUserMenu();
-
-    if (currentUser.role === "pharmacy_admin" || currentUser.role === "pharmacy_collaborator") {
-      currentPharmacy = { id: currentUser.pharmacyId, name: currentUser.pharmacyName, mustChangePassword: false };
-      localStorage.setItem(PHARMACY_SESSION_KEY, JSON.stringify(currentPharmacy));
-      renderCampaignPickers();
-      showCampaignPicker();
-      renderPharmacyAccess();
-      await refreshPharmacyPollAnswers();
-      await refreshPharmacyCampaignResponses();
-      await refreshPharmacyInfoResponses();
-      await refreshPharmacyValidationResponses();
-      renderCampaignPickers();
-      showRequestedOperationOrMenu();
-      renderPharmacyAccess();
-    } else {
-      if (newAuthAdminStatus) newAuthAdminStatus.hidden = false;
-      renderPharmacyAccess();
-      if (!adminUnlocked) await unlockAdminPanel();
-      await activateAdminView();
-    }
-  } catch (error) {
-    resetPasswordMessage.textContent = error.message || "Ce lien n'est plus valable. Refaites une demande de réinitialisation.";
-  }
-});
-
-newAuthLoginForm?.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const email = newAuthEmail.value.trim();
-  const password = newAuthPassword.value;
-  if (!email || !password) {
-    newAuthLoginMessage.textContent = "Indiquez votre e-mail et votre mot de passe.";
-    return;
-  }
-
-  try {
-    currentUser = await loginWithEmail(email, password);
-
-    if (currentUser.mustChangePassword) {
-      pendingInitialUserPassword = password;
-      newAuthPassword.value = "";
-      newAuthLoginMessage.textContent = "";
-      newAuthLoginForm.hidden = true;
-      forgotNewAuthPasswordBtn.hidden = true;
-      newAuthPasswordChangeForm.hidden = false;
-      newAuthNewPassword.focus();
-      return;
-    }
-
-    newAuthPassword.value = "";
-    newAuthLoginMessage.textContent = "";
-    resetNewAuthLoginScreen();
-    renderUserMenu();
-    showingNewAuthScreen = false;
-    newAuthGate.hidden = true;
-
-    if (currentUser.role === "pharmacy_admin" || currentUser.role === "pharmacy_collaborator") {
-      currentPharmacy = { id: currentUser.pharmacyId, name: currentUser.pharmacyName, mustChangePassword: false };
-      archivedOrdersVisible = false;
-      localStorage.setItem(PHARMACY_SESSION_KEY, JSON.stringify(currentPharmacy));
-      renderCampaignPickers();
-      showCampaignPicker();
-      renderPharmacyAccess();
-      await refreshPharmacyPollAnswers();
-      await refreshPharmacyCampaignResponses();
-      await refreshPharmacyInfoResponses();
-      await refreshPharmacyValidationResponses();
-      renderCampaignPickers();
-      showRequestedOperationOrMenu();
-      renderPharmacyAccess();
-    } else {
-      // Admin SOGUASPHAR (nouveau système) : ouvre directement le tableau de
-      // bord d'administration habituel (précommandes, sondages, validations
-      // en cours), sans redemander le code administrateur ni cliquer sur
-      // l'onglet "Administration" soi-même.
-      if (newAuthAdminStatus) newAuthAdminStatus.hidden = false;
-      renderPharmacyAccess();
-      if (!adminUnlocked) await unlockAdminPanel();
-      await activateAdminView();
-    }
-  } catch (error) {
-    newAuthLoginMessage.textContent = error.message || "E-mail ou mot de passe incorrect.";
-  }
-});
-
-newAuthPasswordChangeForm?.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  if (!pendingInitialUserPassword) {
-    newAuthLoginMessage.textContent = "Reconnectez-vous avec le mot de passe transmis.";
-    resetNewAuthLoginScreen();
-    return;
-  }
-
-  const newPassword = newAuthNewPassword.value.trim();
-  const confirmation = newAuthConfirmPassword.value.trim();
-
-  const ruleError = passwordRuleError(newPassword);
-  if (ruleError) {
-    newAuthLoginMessage.textContent = ruleError;
-    return;
-  }
-
-  if (newPassword !== confirmation) {
-    newAuthLoginMessage.textContent = "Les deux mots de passe ne sont pas identiques.";
-    return;
-  }
-
-  try {
-    currentUser = await changeOwnPassword(pendingInitialUserPassword, newPassword);
-    newAuthNewPassword.value = "";
-    newAuthConfirmPassword.value = "";
-    newAuthLoginMessage.textContent = "";
-    resetNewAuthLoginScreen();
-    renderUserMenu();
-    showingNewAuthScreen = false;
-    newAuthGate.hidden = true;
-
-    if (currentUser.role === "pharmacy_admin" || currentUser.role === "pharmacy_collaborator") {
-      currentPharmacy = { id: currentUser.pharmacyId, name: currentUser.pharmacyName, mustChangePassword: false };
-      archivedOrdersVisible = false;
-      localStorage.setItem(PHARMACY_SESSION_KEY, JSON.stringify(currentPharmacy));
-      renderCampaignPickers();
-      showCampaignPicker();
-      renderPharmacyAccess();
-      await refreshPharmacyPollAnswers();
-      await refreshPharmacyCampaignResponses();
-      await refreshPharmacyInfoResponses();
-      await refreshPharmacyValidationResponses();
-      renderCampaignPickers();
-      showRequestedOperationOrMenu();
-      renderPharmacyAccess();
-    } else {
-      if (newAuthAdminStatus) newAuthAdminStatus.hidden = false;
-      renderPharmacyAccess();
-      if (!adminUnlocked) await unlockAdminPanel();
-    }
-  } catch (error) {
-    newAuthLoginMessage.textContent = error.message || "Impossible d'enregistrer ce mot de passe. Réessayez.";
-  }
-});
-
-userMenuBtn?.addEventListener("click", (event) => {
-  event.stopPropagation();
-  const isHidden = userMenuPanel.hidden;
-  userMenuPanel.hidden = !isHidden;
-  userMenuBtn.setAttribute("aria-expanded", String(isHidden));
-});
-
-document.addEventListener("click", (event) => {
-  if (!userMenu || !userMenuPanel || userMenuPanel.hidden) return;
-  if (!userMenu.contains(event.target)) {
-    userMenuPanel.hidden = true;
-    userMenuBtn?.setAttribute("aria-expanded", "false");
-  }
-});
-
-userMenuTeamBtn?.addEventListener("click", async () => {
-  userMenuPanel.hidden = true;
-  await openTeamModal();
-});
-
-teamModalClose?.addEventListener("click", closeTeamModal);
-document.addEventListener("click", (event) => {
-  if (teamModal && !teamModal.hidden && event.target.closest("[data-close-team-modal]")) {
-    closeTeamModal();
-  }
-});
-document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape" && teamModal && !teamModal.hidden) {
-    closeTeamModal();
-  }
-});
-
-teamAddForm?.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const firstName = teamNewFirstName.value.trim();
-  const lastName = teamNewLastName.value.trim();
-  const email = teamNewEmail.value.trim();
-  const jobTitle = teamNewJobTitle.value.trim();
-
-  if (!firstName || !lastName || !email) {
-    teamModalMessage.textContent = "Indiquez le prénom, le nom et l'e-mail de la personne.";
-    return;
-  }
-
-  try {
-    await createTeamMember({ firstName, lastName, email, jobTitle });
-    teamAddForm.reset();
-    teamModalMessage.textContent = `Accès créé pour ${firstName} ${lastName}. Un e-mail vient de lui être envoyé avec un lien pour créer son mot de passe (valable 7 jours) — elle n'a rien à transmettre.`;
-    await refreshTeamModal();
-  } catch (error) {
-    teamModalMessage.textContent = error.message || "Impossible de créer cet accès. Réessayez.";
-  }
-});
-
-userMenuLogoutBtn?.addEventListener("click", async () => {
-  const wasPharmacyRole = currentUser && (currentUser.role === "pharmacy_admin" || currentUser.role === "pharmacy_collaborator");
-  await logoutNewAuth();
-  currentUser = null;
-  renderUserMenu();
-  closeTeamModal();
-  if (newAuthAdminStatus) newAuthAdminStatus.hidden = true;
-  if (wasPharmacyRole) {
-    currentPharmacy = null;
-    pendingPasswordPharmacy = null;
-    pendingInitialPassword = "";
-    pharmacyPollAnswers = {};
-    pharmacyCampaignResponses = {};
-    archivedOrdersVisible = false;
-    localStorage.removeItem(PHARMACY_SESSION_KEY);
-    renderCampaignPickers();
-    showCampaignPicker();
-  }
-  showNewAuthScreen();
 });
 
 campaignCards.addEventListener("click", (event) => {
@@ -6208,14 +5294,6 @@ viewSondagesBtn?.addEventListener("click", () => {
   showSondagesListPage();
 });
 
-viewPendingDocumentsBtn?.addEventListener("click", () => {
-  showPendingDocumentsListPage();
-});
-
-viewUpcomingBtn?.addEventListener("click", () => {
-  showUpcomingListPage();
-});
-
 viewArchivesBtn?.addEventListener("click", () => {
   showArchivedOrdersPage();
 });
@@ -6223,8 +5301,6 @@ viewArchivesBtn?.addEventListener("click", () => {
 backToArchivedOrdersMenuBtn?.addEventListener("click", showCampaignPicker);
 backToPrecomandesMenuBtn?.addEventListener("click", showCampaignPicker);
 backToSondagesMenuBtn?.addEventListener("click", showCampaignPicker);
-backToPendingDocumentsMenuBtn?.addEventListener("click", showCampaignPicker);
-backToUpcomingMenuBtn?.addEventListener("click", showCampaignPicker);
 
 archivedOrdersSearch?.addEventListener("input", (event) => {
   archivedOrdersSearchTerm = event.target.value;
@@ -6568,26 +5644,6 @@ adminPollCards.addEventListener("click", async (event) => {
     return;
   }
 
-  const publishButton = event.target.closest("[data-publish-poll]");
-  if (publishButton) {
-    const poll = polls.find((item) => item.id === publishButton.dataset.publishPoll);
-    if (!poll) return;
-    const previousDraft = poll.draft;
-    poll.draft = false;
-    polls = polls.map((item) => item.id === poll.id ? poll : item);
-    try {
-      await savePolls(polls);
-    } catch (error) {
-      poll.draft = previousDraft;
-      polls = polls.map((item) => item.id === poll.id ? poll : item);
-      adminMessage.textContent = `Le sondage n'a pas pu être publié sur le serveur : ${error.message || "erreur inconnue"}. Réessayez.`;
-      return;
-    }
-    renderCampaignPickers();
-    adminMessage.textContent = `Sondage "${poll.question}" publié : il est visible par les pharmacies.`;
-    return;
-  }
-
   const toggleButton = event.target.closest("[data-toggle-closed-poll]");
   if (toggleButton) {
     const poll = polls.find((item) => item.id === toggleButton.dataset.toggleClosedPoll);
@@ -6635,18 +5691,6 @@ adminInfoCards?.addEventListener("click", async (event) => {
     return;
   }
 
-  const publishButton = event.target.closest("[data-publish-info]");
-  if (publishButton) {
-    const infoForm = infoForms.find((item) => item.id === publishButton.dataset.publishInfo);
-    if (!infoForm) return;
-    infoForm.draft = false;
-    infoForms = infoForms.map((item) => item.id === infoForm.id ? infoForm : item);
-    infoForms = await saveInfoForms(infoForms);
-    renderCampaignPickers();
-    adminMessage.textContent = `Demande "${infoForm.title}" publiée : elle est visible par les pharmacies.`;
-    return;
-  }
-
   const toggleButton = event.target.closest("[data-toggle-closed-info]");
   if (toggleButton) {
     const infoForm = infoForms.find((item) => item.id === toggleButton.dataset.toggleClosedInfo);
@@ -6676,28 +5720,11 @@ adminBatCards?.addEventListener("click", async (event) => {
     const confirmed = confirm("Supprimer définitivement cette validation ?\n\nLe titre, le message, les documents importés et les réponses seront supprimés.");
     if (!confirmed) return;
     resetValidationState();
-    await saveValidationState({ title: "", description: "", draft: false, archived: false, documents: [] });
+    await saveValidationState({ title: "", description: "", archived: false, documents: [] });
     await saveValidationResponses([]);
-    showAdminSection("document-new");
+    showAdminSection("new-validation");
     renderCampaignPickers();
     adminMessage.textContent = "Validation supprimée. Vous pouvez repartir de zéro.";
-    return;
-  }
-
-  const publishButton = event.target.closest("[data-publish-validation]");
-  if (publishButton) {
-    event.stopPropagation();
-    const validationConfig = currentValidationConfig();
-    setValidationDraft(false);
-    await saveValidationState({
-      title: validationConfig.title,
-      description: validationConfig.description,
-      draft: false,
-      archived: validationConfig.archived,
-      documents: batDocuments
-    });
-    renderCampaignPickers();
-    adminMessage.textContent = "Validation publiée : elle est visible par les pharmacies concernées.";
     return;
   }
 
@@ -6714,7 +5741,6 @@ adminBatCards?.addEventListener("click", async (event) => {
     await saveValidationState({
       title: validationConfig.title,
       description: validationConfig.description,
-      draft: validationConfig.draft,
       archived: nextArchived,
       documents: batDocuments
     });
@@ -6737,7 +5763,7 @@ createValidationForm?.addEventListener("submit", async (event) => {
     return;
   }
 
-  validationConfigState = { title, description: message, draft: true, archived: false };
+  validationConfigState = { title, description: message, archived: false };
   localStorage.setItem(VALIDATION_TITLE_KEY, title);
   localStorage.setItem(VALIDATION_MESSAGE_KEY, message);
   setValidationArchived(false);
@@ -6749,11 +5775,11 @@ createValidationForm?.addEventListener("submit", async (event) => {
     await importValidationDocuments(validationDocumentInput.files, validationImportMessage);
     validationDocumentInput.value = "";
   }
-  await saveValidationState({ title, description: message, draft: true, archived: false, documents: batDocuments });
+  await saveValidationState({ title, description: message, archived: false, documents: batDocuments });
   await saveValidationResponses([]);
   renderCampaignPickers();
-  showAdminSection("document-draft");
-  adminMessage.textContent = `Validation "${title}" créée en brouillon. Publiez-la quand elle est prête pour qu'elle soit visible par les pharmacies.`;
+  showAdminSection("bat");
+  adminMessage.textContent = `Validation "${title}" créée. Les documents rattachés aux pharmacies sont visibles dans validations en attente.`;
 });
 
 validationDocumentInput?.addEventListener("change", async () => {
@@ -6786,10 +5812,10 @@ adminBatDetail?.addEventListener("click", async (event) => {
     const confirmed = confirm("Supprimer définitivement cette validation ?\n\nLe titre, le message, les documents importés et les réponses seront supprimés.");
     if (!confirmed) return;
     resetValidationState();
-    await saveValidationState({ title: "", description: "", draft: false, archived: false, documents: [] });
+    await saveValidationState({ title: "", description: "", archived: false, documents: [] });
     await saveValidationResponses([]);
     adminBatDetail.hidden = true;
-    showAdminSection("document-new");
+    showAdminSection("new-validation");
     renderCampaignPickers();
     adminMessage.textContent = "Validation supprimée. Vous pouvez repartir de zéro.";
     return;
@@ -6807,7 +5833,6 @@ adminBatDetail?.addEventListener("click", async (event) => {
     await saveValidationState({
       title: validationConfig.title,
       description: validationConfig.description,
-      draft: validationConfig.draft,
       archived: nextArchived,
       documents: batDocuments
     });
@@ -6834,8 +5859,14 @@ backToAdminBatBtn?.addEventListener("click", showAdminCampaignPicker);
 backToCampaignsBtn.addEventListener("click", showCampaignPicker);
 backToPollsBtn.addEventListener("click", showCampaignPicker);
 backToBatListBtn?.addEventListener("click", showCampaignPicker);
-backToAdminCampaignsBtn.addEventListener("click", showAdminCampaignPicker);
-backToAdminPollsBtn.addEventListener("click", showAdminCampaignPicker);
+backToAdminCampaignsBtn.addEventListener("click", async () => {
+  activeAdminSection = "campaigns";
+  await showAdminCampaignPicker();
+});
+backToAdminPollsBtn.addEventListener("click", async () => {
+  activeAdminSection = "polls";
+  await showAdminCampaignPicker();
+});
 returnToMenuBtn.addEventListener("click", showCampaignPicker);
 
 showClosedCampaignsBtn.addEventListener("click", () => {
@@ -7011,12 +6042,11 @@ savePollTitleBtn?.addEventListener("click", async () => {
   try {
     pollTitleMessage.textContent = "Enregistrement...";
     selectedAdminPoll.question = title;
-    selectedAdminPoll.endDate = pollClosingDateEdit ? pollClosingDateEdit.value : (selectedAdminPoll.endDate || "");
     polls = polls.map((poll) => poll.id === selectedAdminPoll.id ? selectedAdminPoll : poll);
     await savePolls(polls);
     adminPollTitle.textContent = title;
     renderCampaignPickers();
-    pollTitleMessage.textContent = "Titre et date enregistrés.";
+    pollTitleMessage.textContent = "Titre enregistré.";
   } catch (error) {
     pollTitleMessage.textContent = error.message;
   }
@@ -7055,7 +6085,7 @@ createCampaignForm.addEventListener("submit", async (event) => {
   campaigns = [...campaigns, campaign];
   await saveCampaigns(campaigns);
   newCampaignTitle.value = "";
-  showAdminSection("campaign-draft");
+  showAdminSection("campaigns");
   adminMessage.textContent = `Précommande "${title}" ajoutée en brouillon. Ouvrez-la, préparez-la, puis cliquez sur "Publier" quand elle est prête pour les adhérents.`;
 });
 
@@ -7198,8 +6228,6 @@ createPollForm.addEventListener("submit", async (event) => {
     freeTextLabel: newPollFreeLabel.value.trim(),
     freeTextRequired: newPollFreeRequired.checked,
     imageData: newPollImageData,
-    endDate: newPollClosingDate ? newPollClosingDate.value : "",
-    draft: true,
     closed: false
   };
 
@@ -7214,7 +6242,6 @@ createPollForm.addEventListener("submit", async (event) => {
   }
 
   createPollForm.reset();
-  if (newPollClosingDate) newPollClosingDate.value = "";
   createPollMessage.textContent = "";
   resetPollQuestionBlocks();
   newPollImageData = "";
@@ -7222,8 +6249,8 @@ createPollForm.addEventListener("submit", async (event) => {
   if (newPollImagePreview) newPollImagePreview.hidden = true;
   if (removeNewPollImageBtn) removeNewPollImageBtn.hidden = true;
   if (newPollImageMessage) newPollImageMessage.textContent = "";
-  showAdminSection("poll-draft");
-  adminMessage.textContent = `Sondage "${question}" créé en brouillon. Cliquez sur "Publier" quand il est prêt pour les pharmacies.`;
+  showAdminSection("polls");
+  adminMessage.textContent = `Sondage "${question}" créé.`;
   await selectAdminPoll(id);
 });
 
@@ -7248,15 +6275,14 @@ createInfoForm?.addEventListener("submit", async (event) => {
     title,
     type: "Fiche pharmacie",
     intro: newInfoIntro.value.trim() || "Merci de noter vos coordonnées, réseaux sociaux, horaires et services proposés.",
-    draft: true,
     closed: false
   };
 
   infoForms = [...infoForms, infoForm];
   infoForms = await saveInfoForms(infoForms);
   createInfoForm.reset();
-  showAdminSection("document-draft");
-  adminMessage.textContent = `Demande "${title}" ajoutée en brouillon. Cliquez sur "Publier" quand elle est prête pour les pharmacies.`;
+  showAdminSection("polls");
+  adminMessage.textContent = `Demande "${title}" créée dans les sondages.`;
 });
 
 createPharmacyForm.addEventListener("submit", async (event) => {
@@ -7282,7 +6308,7 @@ createPharmacyForm.addEventListener("submit", async (event) => {
   renderPharmacyAccounts();
   renderAdminResetAlert();
   renderPharmacyAccess();
-  showAdminSection("parametre");
+  showAdminSection("pharmacies");
   adminMessage.textContent = `Accès créé pour ${name}. Mot de passe : ${pharmacy.password}`;
 });
 
@@ -7678,13 +6704,15 @@ form.addEventListener("reset", () => {
   });
 });
 
-// Ouvre l'écran Administration (précommandes, sondages, validations en cours).
-// Utilisée aussi bien après la saisie du code admin que pour un administrateur
-// SOGUASPHAR déjà connecté via le nouveau système (e-mail + mot de passe),
-// qui n'a pas à ressaisir le code.
-async function unlockAdminPanel() {
+adminLogin.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const code = document.querySelector("#adminCode").value.trim();
+  if (code !== ADMIN_CODE) {
+    adminMessage.textContent = "Code administrateur incorrect.";
+    return;
+  }
+
   adminUnlocked = true;
-  adminGroupChosen = false;
   adminPanel.hidden = true;
   document.querySelector(".admin-layout").classList.add("unlocked");
   adminContent.hidden = false;
@@ -7696,17 +6724,6 @@ async function unlockAdminPanel() {
   renderPharmacyAccounts();
   renderAdminResetAlert();
   await showAdminCampaignPicker();
-}
-
-adminLogin.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const code = document.querySelector("#adminCode").value.trim();
-  if (code !== ADMIN_CODE) {
-    adminMessage.textContent = "Code administrateur incorrect.";
-    return;
-  }
-
-  await unlockAdminPanel();
   adminMessage.textContent = "Accès administrateur ouvert.";
 });
 
@@ -7750,17 +6767,6 @@ async function init() {
     return;
   }
 
-  // Lien de réinitialisation de mot de passe reçu par e-mail (?reset=<jeton>) :
-  // on affiche directement l'écran "choisir un nouveau mot de passe", avant
-  // tout le reste (pas besoin de charger campagnes/sondages pour ça).
-  const resetToken = String(new URLSearchParams(window.location.search).get("reset") || "").trim();
-  if (resetToken && resetPasswordGate) {
-    if (pharmacyGate) pharmacyGate.hidden = true;
-    if (newAuthGate) newAuthGate.hidden = true;
-    resetPasswordGate.hidden = false;
-    return;
-  }
-
   campaignPicker.hidden = true;
   setHeroVisible(false);
   form.hidden = true;
@@ -7771,8 +6777,6 @@ async function init() {
   responseSuccess.hidden = true;
   if (precommandandesListPage) precommandandesListPage.hidden = true;
   if (sondagesListPage) sondagesListPage.hidden = true;
-  if (pendingDocumentsListPage) pendingDocumentsListPage.hidden = true;
-  if (upcomingListPage) upcomingListPage.hidden = true;
   campaigns = await getCampaigns();
   polls = await getPolls();
   infoForms = await getInfoForms();
@@ -7781,7 +6785,6 @@ async function init() {
   validationConfigState = {
     title: validationState.title || "",
     description: validationState.description || "",
-    draft: Boolean(validationState.draft),
     archived: Boolean(validationState.archived)
   };
   batDocuments = Array.isArray(validationState.documents) ? validationState.documents : [];
@@ -7805,35 +6808,6 @@ async function init() {
   } else {
     pharmacies = new Array(pharmacyInfo.count || 0).fill(null);
   }
-
-  // Nouveau système de connexion : si un cookie de session valide existe déjà
-  // (rechargement de page après une connexion par e-mail), on restaure l'écran
-  // correspondant au lieu de redemander la connexion.
-  currentUser = await fetchCurrentUser();
-  renderUserMenu();
-  if (currentUser && (currentUser.role === "pharmacy_admin" || currentUser.role === "pharmacy_collaborator" || currentUser.role === "pharmacy_legacy")) {
-    if (!currentPharmacy || currentPharmacy.id !== currentUser.pharmacyId) {
-      currentPharmacy = { id: currentUser.pharmacyId, name: currentUser.pharmacyName, mustChangePassword: Boolean(currentUser.mustChangePassword) };
-      localStorage.setItem(PHARMACY_SESSION_KEY, JSON.stringify(currentPharmacy));
-    }
-  } else if (currentUser && currentUser.role === "soguasphar_admin") {
-    if (newAuthAdminStatus) newAuthAdminStatus.hidden = false;
-    if (!adminUnlocked) await unlockAdminPanel();
-    // Une administratrice déjà connectée doit arriver directement sur le
-    // tableau de bord "Administration" (précommandes, sondages, validations
-    // en cours), sans avoir à cliquer manuellement sur l'onglet. Exception :
-    // si un lien direct vers une opération précise est utilisé, on laisse
-    // l'écran "Formulaire" répondre à cette demande.
-    if (!requestedOperationId) await activateAdminView();
-  } else if (currentPharmacy) {
-    // Aucune session pharmacie valide côté serveur (jamais connectée ou
-    // session expirée au bout d'1h d'inactivité) : on ne fait pas confiance
-    // à une mémoire locale seule, on redemande le mot de passe. Si le
-    // navigateur l'a mémorisé, il le proposera automatiquement.
-    currentPharmacy = null;
-    localStorage.removeItem(PHARMACY_SESSION_KEY);
-  }
-
   await refreshPharmacyPollAnswers();
   await refreshPharmacyCampaignResponses();
   await refreshPharmacyInfoResponses();
@@ -7841,16 +6815,7 @@ async function init() {
   renderCampaignPickers();
   showRequestedOperationOrMenu();
   await showAdminCampaignPicker();
-
-  // L'ancienne connexion "mot de passe pharmacie" n'est plus proposée : une
-  // pharmacie qui doit s'identifier arrive directement sur l'écran
-  // e-mail + mot de passe personnel (sauf une administratrice SOGUASPHAR,
-  // qui n'a jamais besoin de cet écran).
-  if (pharmacyAccessRequired() && !(currentUser && currentUser.role === "soguasphar_admin")) {
-    showNewAuthScreen();
-  } else {
-    renderPharmacyAccess();
-  }
+  renderPharmacyAccess();
 }
 
 init();

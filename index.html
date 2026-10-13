@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20261012-comptes-equipe-2">
+  <link rel="stylesheet" href="styles.css?v=20261009-revert-securite">
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js" defer></script>
@@ -26,18 +26,6 @@
       <button class="switch-btn active" data-view="formView" type="button">Formulaire</button>
       <button class="switch-btn" data-view="adminView" type="button">Administration</button>
     </nav>
-    <div class="user-menu" id="userMenu" hidden>
-      <button id="userMenuBtn" class="user-menu-btn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Mon compte">
-        <span aria-hidden="true">&#9881;</span>
-      </button>
-      <div id="userMenuPanel" class="user-menu-panel" hidden>
-        <p class="user-menu-name" id="userMenuName"></p>
-        <p class="user-menu-email" id="userMenuEmail"></p>
-        <p class="user-menu-pharmacy" id="userMenuPharmacy"></p>
-        <button id="userMenuTeamBtn" class="ghost-btn small-btn" type="button">Gérer mon équipe</button>
-        <button id="userMenuLogoutBtn" class="primary-btn small-btn" type="button">Déconnexion</button>
-      </div>
-    </div>
   </header>
 
   <main>
@@ -72,59 +60,6 @@
         </div>
       </section>
 
-      <section id="newAuthGate" class="pharmacy-gate" hidden>
-        <div class="pharmacy-gate-card">
-          <p class="eyebrow">Accès pharmacie</p>
-          <h2>Connexion à votre compte</h2>
-          <p>Connectez-vous avec l'adresse e-mail et le mot de passe de votre compte personnel.</p>
-          <form id="newAuthLoginForm">
-            <label for="newAuthEmail">Adresse e-mail</label>
-            <input id="newAuthEmail" type="email" autocomplete="username" placeholder="prenom.nom@exemple.com">
-            <label for="newAuthPassword">Mot de passe</label>
-            <div class="password-field">
-              <input id="newAuthPassword" type="password" autocomplete="current-password" placeholder="Mot de passe">
-              <button id="toggleNewAuthPassword" class="password-toggle" type="button" aria-label="Afficher le mot de passe">Voir</button>
-            </div>
-            <button class="primary-btn" type="submit">Se connecter</button>
-          </form>
-          <button id="forgotNewAuthPasswordBtn" class="link-btn" type="button">Mot de passe oublié ?</button>
-          <form id="forgotNewAuthPasswordForm" class="forgot-password-form" hidden>
-            <label for="forgotNewAuthEmail">Votre adresse e-mail</label>
-            <input id="forgotNewAuthEmail" type="email" autocomplete="username" placeholder="prenom.nom@exemple.com">
-            <button class="ghost-btn" type="submit">Recevoir un lien de réinitialisation</button>
-          </form>
-          <form id="newAuthPasswordChangeForm" class="pharmacy-password-change" hidden>
-            <p>Ce mot de passe est provisoire : choisissez-en un nouveau pour continuer.</p>
-            <label for="newAuthNewPassword">Nouveau mot de passe</label>
-            <input id="newAuthNewPassword" type="password" autocomplete="new-password" placeholder="Nouveau mot de passe" minlength="6">
-            <label for="newAuthConfirmPassword">Confirmer le mot de passe</label>
-            <input id="newAuthConfirmPassword" type="password" autocomplete="new-password" placeholder="Confirmer le mot de passe" minlength="6">
-            <button class="primary-btn" type="submit">Enregistrer mon mot de passe</button>
-          </form>
-          <p id="newAuthLoginMessage" class="status-message" role="status"></p>
-        </div>
-      </section>
-
-      <section id="resetPasswordGate" class="pharmacy-gate" hidden>
-        <div class="pharmacy-gate-card">
-          <p class="eyebrow">Réinitialisation du mot de passe</p>
-          <h2>Choisissez un nouveau mot de passe</h2>
-          <p>Ce lien vous a été envoyé par e-mail et reste valable 2 heures.</p>
-          <form id="resetPasswordForm">
-            <label for="resetPasswordNew">Nouveau mot de passe</label>
-            <input id="resetPasswordNew" type="password" autocomplete="new-password" placeholder="Nouveau mot de passe" minlength="6">
-            <label for="resetPasswordConfirm">Confirmer le mot de passe</label>
-            <input id="resetPasswordConfirm" type="password" autocomplete="new-password" placeholder="Confirmer le mot de passe" minlength="6">
-            <button class="primary-btn" type="submit">Enregistrer mon mot de passe</button>
-          </form>
-          <p id="resetPasswordMessage" class="status-message" role="status"></p>
-        </div>
-      </section>
-
-      <div id="newAuthAdminStatus" class="pharmacy-session-bar" hidden>
-        <strong>Connecté comme administrateur SOGUASPHAR</strong>
-      </div>
-
       <div id="pharmacySessionBar" class="pharmacy-session-bar" hidden>
         <strong id="currentPharmacyName"></strong>
         <button id="logoutPharmacyBtn" class="ghost-btn" type="button">Changer de pharmacie</button>
@@ -139,19 +74,9 @@
         <div class="hero-menu" role="navigation">
           <button id="viewPrecommandes" class="hero-menu-btn" type="button">
             <span class="hero-menu-label">Précommandes en cours</span>
-            <span id="precommandesCountBadge" class="hero-menu-badge" hidden>0</span>
           </button>
           <button id="viewSondages" class="hero-menu-btn" type="button">
             <span class="hero-menu-label">Sondages en cours</span>
-            <span id="sondagesCountBadge" class="hero-menu-badge" hidden>0</span>
-          </button>
-          <button id="viewPendingDocuments" class="hero-menu-btn" type="button">
-            <span class="hero-menu-label">Document en attente</span>
-            <span id="pendingDocumentsCountBadge" class="hero-menu-badge" hidden>0</span>
-          </button>
-          <button id="viewUpcoming" class="hero-menu-btn" type="button">
-            <span class="hero-menu-label">Bientôt disponible</span>
-            <span id="upcomingCountBadge" class="hero-menu-badge" hidden>0</span>
           </button>
           <button id="viewArchives" class="hero-menu-btn" type="button">
             <span class="hero-menu-label">Archivés</span>
@@ -168,30 +93,6 @@
         </div>
         <div id="precommandandesListRows" class="campaign-list-container" aria-live="polite"></div>
         <p id="precommandandesEmpty" class="empty-campaigns" hidden>Aucune précommande disponible pour le moment.</p>
-      </section>
-
-      <section id="pendingDocumentsListPage" class="form-shell campaign-list-page" hidden>
-        <button id="backToPendingDocumentsMenuBtn" class="back-strong-btn" type="button">← Retour au menu</button>
-        <div class="section-head">
-          <div>
-            <h2>Document en attente</h2>
-            <p>Document(s) à valider pour votre pharmacie, en attente de votre réponse.</p>
-          </div>
-        </div>
-        <div id="pendingDocumentsListRows" class="campaign-list-container" aria-live="polite"></div>
-        <p id="pendingDocumentsEmpty" class="empty-campaigns" hidden>Aucun document en attente pour le moment.</p>
-      </section>
-
-      <section id="upcomingListPage" class="form-shell campaign-list-page" hidden>
-        <button id="backToUpcomingMenuBtn" class="back-strong-btn" type="button">← Retour au menu</button>
-        <div class="section-head">
-          <div>
-            <h2>Bientôt disponible</h2>
-            <p>Précommandes programmées, qui ouvriront bientôt.</p>
-          </div>
-        </div>
-        <div id="upcomingListRows" class="campaign-list-container" aria-live="polite"></div>
-        <p id="upcomingEmpty" class="empty-campaigns" hidden>Rien de programmé pour le moment.</p>
       </section>
 
       <section id="satisfactionListPage" class="form-shell campaign-list-page" hidden>
@@ -543,29 +444,32 @@
               <p id="adminSectionIntro">Créez une nouvelle campagne, puis ouvrez-la pour importer le bon de commande.</p>
             </div>
             <div id="adminDashboardNav" class="admin-dashboard-nav" aria-label="Menu administrateur">
+              <div id="adminSummaryBar" class="admin-summary-bar" aria-label="Sommaire">
+                <button class="admin-summary-card" type="button" data-admin-section="campaigns">
+                  <span class="admin-summary-label">Précommandes en cours</span>
+                </button>
+                <button class="admin-summary-card" type="button" data-admin-section="polls">
+                  <span class="admin-summary-label">Sondages en cours</span>
+                </button>
+                <button class="admin-summary-card" type="button" data-admin-section="archives">
+                  <span class="admin-summary-label">Archivés</span>
+                </button>
+              </div>
               <div class="admin-main-nav" aria-label="Rubriques administrateur">
-                <button class="admin-dashboard-btn admin-main-btn active" type="button" data-admin-group="campaign">Précommandes</button>
-                <button class="admin-dashboard-btn admin-main-btn" type="button" data-admin-group="poll">Sondages</button>
-                <button class="admin-dashboard-btn admin-main-btn" type="button" data-admin-group="document">Documents</button>
-                <button class="admin-dashboard-btn admin-main-btn" type="button" data-admin-group="parametre">Paramètres</button>
+                <button class="admin-dashboard-btn admin-main-btn active" type="button" data-admin-group="new">Nouveau</button>
+                <button class="admin-dashboard-btn admin-main-btn" type="button" data-admin-group="current">En cours</button>
+                <button class="admin-dashboard-btn admin-main-btn" type="button" data-admin-group="archives">Archivés</button>
+                <button class="admin-dashboard-btn admin-main-btn" type="button" data-admin-group="pharmacies">Pharmacies</button>
               </div>
-              <div class="admin-sub-nav" data-admin-subnav="campaign" aria-label="Précommandes" hidden>
-                <button class="admin-dashboard-btn admin-sub-btn active" type="button" data-admin-section="campaign-new">Nouveau</button>
-                <button class="admin-dashboard-btn admin-sub-btn" type="button" data-admin-section="campaign-draft">Brouillon</button>
-                <button class="admin-dashboard-btn admin-sub-btn" type="button" data-admin-section="campaign-current">En cours</button>
-                <button class="admin-dashboard-btn admin-sub-btn admin-sub-btn-danger" type="button" data-admin-section="campaign-archived">Archivé</button>
+              <div class="admin-sub-nav" data-admin-subnav="new" aria-label="Créer un nouvel élément">
+                <button class="admin-dashboard-btn admin-sub-btn active" type="button" data-admin-section="new-campaign">Campagne précommande</button>
+                <button class="admin-dashboard-btn admin-sub-btn" type="button" data-admin-section="new-poll">Sondage</button>
+                <button class="admin-dashboard-btn admin-sub-btn" type="button" data-admin-section="new-validation">Validation</button>
               </div>
-              <div class="admin-sub-nav" data-admin-subnav="poll" aria-label="Sondages" hidden>
-                <button class="admin-dashboard-btn admin-sub-btn" type="button" data-admin-section="poll-new">Nouveau</button>
-                <button class="admin-dashboard-btn admin-sub-btn" type="button" data-admin-section="poll-draft">Brouillon</button>
-                <button class="admin-dashboard-btn admin-sub-btn" type="button" data-admin-section="poll-current">En cours</button>
-                <button class="admin-dashboard-btn admin-sub-btn admin-sub-btn-danger" type="button" data-admin-section="poll-archived">Archivé</button>
-              </div>
-              <div class="admin-sub-nav" data-admin-subnav="document" aria-label="Documents" hidden>
-                <button class="admin-dashboard-btn admin-sub-btn" type="button" data-admin-section="document-new">Nouveau</button>
-                <button class="admin-dashboard-btn admin-sub-btn" type="button" data-admin-section="document-draft">Brouillon</button>
-                <button class="admin-dashboard-btn admin-sub-btn" type="button" data-admin-section="document-current">En cours</button>
-                <button class="admin-dashboard-btn admin-sub-btn admin-sub-btn-danger" type="button" data-admin-section="document-archived">Archivé</button>
+              <div class="admin-sub-nav" data-admin-subnav="current" aria-label="Éléments en cours" hidden>
+                <button class="admin-dashboard-btn admin-sub-btn" type="button" data-admin-section="campaigns">Campagnes en cours</button>
+                <button class="admin-dashboard-btn admin-sub-btn" type="button" data-admin-section="polls">Sondages en cours</button>
+                <button class="admin-dashboard-btn admin-sub-btn" type="button" data-admin-section="bat">Validations en attente</button>
               </div>
             </div>
             <div id="adminResetAlert" class="admin-reset-alert" hidden></div>
@@ -579,9 +483,6 @@
             <form id="createPollForm" class="create-campaign-form">
               <label for="newPollQuestion">Nouveau sondage</label>
               <input id="newPollQuestion" type="text" placeholder="Ex. Assemblée générale du ..." autocomplete="off">
-              <label for="newPollClosingDate">Date de clôture prévue (facultatif)</label>
-              <input id="newPollClosingDate" type="date">
-              <p class="field-hint">Si elle est renseignée, un rappel par e-mail est envoyé automatiquement aux pharmacies qui n'ont pas répondu, puis une dernière relance la veille de cette date.</p>
               <div id="pollQuestionBlocks" class="poll-question-blocks"></div>
               <button id="addPollQuestionBtn" class="ghost-btn" type="button">+ Ajouter une autre question</button>
               <p class="field-hint">Pour chaque question, indiquez les réponses possibles, une par ligne (ou séparées par une virgule) — au moins deux réponses. Ajoutez plusieurs questions si besoin, par exemple « Présence à l'AG » et « Choix du repas » : la pharmacie répondra aux deux dans le même sondage.</p>
@@ -866,10 +767,7 @@
             <section class="admin-message-editor">
               <label for="pollTitleEdit">Modifier le titre du sondage</label>
               <input id="pollTitleEdit" type="text" placeholder="Titre du sondage">
-              <label for="pollClosingDateEdit">Date de clôture prévue (facultatif)</label>
-              <input id="pollClosingDateEdit" type="date">
-              <p class="field-hint">Utilisée pour le rappel automatique aux pharmacies qui n'ont pas répondu, et la dernière relance la veille de cette date.</p>
-              <button id="savePollTitleBtn" class="primary-btn" type="button">Enregistrer le titre et la date</button>
+              <button id="savePollTitleBtn" class="primary-btn" type="button">Enregistrer le titre</button>
               <p id="pollTitleMessage" class="status-message" role="status"></p>
             </section>
 
@@ -1078,31 +976,6 @@
     </section>
   </main>
 
-  <div id="teamModal" class="image-preview-modal" role="dialog" aria-modal="true" aria-labelledby="teamModalTitle" hidden>
-    <div class="image-preview-backdrop" data-close-team-modal></div>
-    <div class="image-preview-dialog team-modal-dialog">
-      <div class="image-preview-head">
-        <h2 id="teamModalTitle">Mon équipe</h2>
-        <button id="teamModalClose" class="image-preview-close" type="button" aria-label="Fermer">X</button>
-      </div>
-      <p class="form-help">Les personnes de votre équipe se connectent avec leur propre adresse e-mail et leur propre mot de passe, et voient les mêmes commandes et sondages que vous pour votre pharmacie.</p>
-      <div id="teamMembersList" class="table-wrap compact"></div>
-      <form id="teamAddForm" class="team-add-form" hidden>
-        <h3>Ajouter une personne</h3>
-        <label for="teamNewFirstName">Prénom</label>
-        <input id="teamNewFirstName" type="text" autocomplete="given-name" placeholder="Prénom">
-        <label for="teamNewLastName">Nom</label>
-        <input id="teamNewLastName" type="text" autocomplete="family-name" placeholder="Nom">
-        <label for="teamNewEmail">Adresse e-mail</label>
-        <input id="teamNewEmail" type="email" autocomplete="email" placeholder="prenom.nom@exemple.com">
-        <label for="teamNewJobTitle">Fonction (optionnel)</label>
-        <input id="teamNewJobTitle" type="text" placeholder="Ex. Préparateur">
-        <button class="primary-btn" type="submit">Créer l'accès</button>
-      </form>
-      <p id="teamModalMessage" class="status-message" role="status"></p>
-    </div>
-  </div>
-
   <div id="imagePreviewModal" class="image-preview-modal" role="dialog" aria-modal="true" aria-labelledby="imagePreviewTitle" hidden>
     <div class="image-preview-backdrop" data-close-image-preview></div>
     <div class="image-preview-dialog">
@@ -1115,6 +988,6 @@
     </div>
   </div>
 
-  <script src="app.js?v=20261012-comptes-equipe-2"></script>
+  <script src="app.js?v=20261009-revert-securite"></script>
 </body>
 </html>
