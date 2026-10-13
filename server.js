@@ -1427,15 +1427,22 @@ async function notifyCampaignClosed(campaign) {
 }
 
 // --- Relances automatiques par e-mail (précommandes et sondages) -----------
-// Chaque jour : si une pharmacie n'a pas répondu à une opération active et que
-// sa clôture approche, on lui envoie un rappel (J-3 à J-2), puis une dernière
-// relance insistante la veille/le jour de la clôture (une seule fois par type,
-// mémorisé dans campaign.remindersSent). Sans adresse e-mail connue pour la
-// pharmacie (comptes nominatifs, data/users.json), on ne peut rien envoyer :
-// on logue simplement la situation, sans jamais marquer la relance "envoyée",
-// pour qu'elle reparte dès qu'une adresse sera renseignée.
-const REMINDER_WINDOW_DAYS = 3;
+// Chaque jour : si une pharmacie n'a pas répondu à une opération active dont la
+// clôture est prévue le LENDEMAIN (J-1, un seul rappel, jamais avant), on lui
+// envoie une relance (une seule fois, mémorisée dans campaign.remindersSent).
+// Sans adresse e-mail connue pour la pharmacie (comptes nominatifs,
+// data/users.json), on ne peut rien envoyer : on logue simplement la
+// situation, sans jamais marquer la relance "envoyée", pour qu'elle reparte
+// dès qu'une adresse sera renseignée.
+// Décidé par Hélène le 13/10/2026 : plus de relance à J-3/J-2/jour-même, et
+// aucun rattrapage rétroactif des opérations dont le J-1 est déjà passé —
+// chaque jour on ne regarde que "la clôture est-elle exactement demain ?".
 const PRECO_BASE_URL = "https://preco.soguasphar.fr";
+// Les relances ne démarrent jamais avant cette date (même si le serveur
+// redémarre ou si la variable est activée avant), pour éviter tout envoi
+// accidentel le jour de la mise en service. Laisser vide/absent = pas de
+// limite (déconseillé en production sans y avoir réfléchi).
+const REMINDERS_START_DATE = String(process.env.REMINDERS_START_DATE || "").trim() || null;
 
 function reminderSlugify(value) {
   const slug = String(value || "")
@@ -1521,6 +1528,13 @@ async function sendReminderEmail({ emails, kind, operationType, title, closingDa
 
 async function checkReminders() {
   try {
+    if (REMINDERS_START_DATE) {
+      const todayStr = new Date().toISOString().slice(0, 10);
+      if (todayStr < REMINDERS_START_DATE) {
+        console.log(`[preco] relances automatiques : démarrage prévu le ${REMINDERS_START_DATE}, rien envoyé aujourd'hui (${todayStr}).`);
+        return;
+      }
+    }
     const pharmacies = readPharmacies().filter((pharmacy) => pharmacy && pharmacy.active !== false);
     const responses = readResponses();
     const pollResponses = readPollResponses();
@@ -1533,7 +1547,7 @@ async function checkReminders() {
       const closingDate = closingDateForOrder(order);
       const left = daysUntil(closingDate);
       if (left === null || left < 0) continue;
-      const kind = left <= 1 ? "veille" : (left <= REMINDER_WINDOW_DAYS ? "relance" : null);
+      const kind = left === 1 ? "veille" : null; // uniquement J-1, voir décision du 13/10/2026 ci-dessus
       if (!kind) continue;
 
       order.remindersSent = order.remindersSent || {};
@@ -1571,7 +1585,7 @@ async function checkReminders() {
       const closingDate = closingDateForPoll(poll);
       const left = daysUntil(closingDate);
       if (left === null || left < 0) continue;
-      const kind = left <= 1 ? "veille" : (left <= REMINDER_WINDOW_DAYS ? "relance" : null);
+      const kind = left === 1 ? "veille" : null; // uniquement J-1, voir décision du 13/10/2026 ci-dessus
       if (!kind) continue;
 
       poll.remindersSent = poll.remindersSent || {};
