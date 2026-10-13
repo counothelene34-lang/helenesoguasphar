@@ -42,6 +42,39 @@ cotisation 3 000 €/1 500 €) fusionné dans la tuile **« Document en attente
   **sans** `attestation-responses.json` ni le dossier `attestations-2027/` de la
   copie de test (qui ne contenaient qu'une signature de TEST, pas une vraie).
 
+## Aperçu "voir comme pharmacie" pour les administrateurs (ajouté le 13/10/2026)
+Un compte administrateur SOGUASPHAR (rôle `soguasphar_admin`) peut, sur l'onglet
+« Formulaire », choisir une pharmacie dans un menu déroulant (`#adminPreviewSelect`,
+`renderAdminPreviewPharmacyOptions()` dans `app.js`) pour voir exactement ce que
+voit cette pharmacie — sans créer de compte pharmacie de test. Points clés :
+- Réutilise `currentPharmacy` (tout l'affichage existant marche donc tel quel),
+  avec un marqueur `isAdminPreview: true` qui déclenche `isAdminPreviewMode()`.
+  **Jamais persisté dans `localStorage`** (sinon l'admin se retrouverait avec
+  une fausse session pharmacie au rechargement de page).
+- **Lecture seule, à deux niveaux** : les boutons d'envoi/signature sont grisés
+  visuellement (CSS `body.admin-preview-mode`, ciblé sur les formulaires
+  `#requestForm`/`#pollForm`/`#profileUpdateForm`/`#batValidationForm`/
+  `#attestationForm` uniquement, jamais sur les formulaires d'admin qui vivent
+  aussi dans `#formView`), ET bloqués dans le code (`blockIfAdminPreview()` en
+  tout début de chaque gestionnaire `submit`) — vérifié qu'un envoi forcé par
+  JavaScript (contournant le bouton grisé) n'atteint jamais le serveur.
+- **Piège évité** : le bouton « Changer de pharmacie » (`logoutPharmacyBtn`)
+  appelait `/api/auth/logout` pour une vraie pharmacie — ça aurait déconnecté
+  le compte ADMIN lui-même en mode aperçu. Corrigé : cet appel est sauté quand
+  `isAdminPreviewMode()` est vrai.
+- **Piège évité (attestation)** : `getAttestation()` n'envoyait jamais le
+  `pharmacyId` au serveur (il comptait sur la session pharmacie réelle, que
+  l'admin n'a pas) — la carte attestation restait invisible en aperçu. Corrigé
+  en passant `?pharmacyId=<currentPharmacy.id>` explicitement. Si un nouveau
+  type de document/réponse est ajouté un jour, vérifier que sa route de lecture
+  accepte bien un `pharmacyId` explicite (les autres routes `/api/pharmacy-*`
+  l'acceptaient déjà, aucune n'exige d'authentification côté serveur).
+- `renderAdminPreviewPharmacyOptions()` doit être appelée à CHAQUE chemin de
+  connexion admin qui charge `pharmacies` (il y en a 4 : rechargement de page
+  dans `init()`, connexion par e-mail, après changement de mot de passe
+  obligatoire, après réinitialisation de mot de passe) — sinon le menu
+  déroulant reste vide pour ce chemin-là.
+
 ## Où elle vit
 | | En ligne | Copie de test |
 |---|---|---|
