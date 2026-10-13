@@ -260,6 +260,7 @@ const pharmacyAccessPharmacySelect = document.querySelector("#pharmacyAccessPhar
 const pharmacyAccessNewName = document.querySelector("#pharmacyAccessNewName");
 const pharmacyAccessEmail = document.querySelector("#pharmacyAccessEmail");
 const createPharmacyAccessMessage = document.querySelector("#createPharmacyAccessMessage");
+const settingsCreateSection = document.querySelector("#settingsCreateSection");
 const pharmacyOverviewSection = document.querySelector("#pharmacyOverviewSection");
 const adminAccountsSection = document.querySelector("#adminAccountsSection");
 const pharmacyOverviewCount = document.querySelector("#pharmacyOverviewCount");
@@ -4375,6 +4376,7 @@ function showAdminSection(section) {
   // "Utilisateurs - Pharmacies" ci-dessous, qui liste aussi ces pharmacies).
   createPharmacyForm.hidden = true;
   pharmacyAccountsList.hidden = true;
+  if (settingsCreateSection) settingsCreateSection.hidden = !showPharmacies;
   if (settingsCreateChoice) settingsCreateChoice.hidden = !showPharmacies;
   if (createPharmacyAccessForm) createPharmacyAccessForm.hidden = true;
   if (createAdminAccountForm) createAdminAccountForm.hidden = true;
