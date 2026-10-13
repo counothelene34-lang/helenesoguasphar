@@ -2388,6 +2388,64 @@ const server = http.createServer(async (request, response) => {
       return;
     }
 
+    // Comptes administrateurs SOGUASPHAR (distincts des comptes pharmacie) :
+    // seule une administratrice déjà connectée peut en créer ou en voir la liste.
+    if (url.pathname === "/api/admin-team" && request.method === "GET") {
+      const user = requireAuth(request, response, ["soguasphar_admin"]);
+      if (!user) return;
+      const members = readUsers()
+        .filter((item) => item.role === "soguasphar_admin")
+        .map(publicUser);
+      sendJson(response, 200, { members });
+      return;
+    }
+
+    if (url.pathname === "/api/admin-team" && request.method === "POST") {
+      const user = requireAuth(request, response, ["soguasphar_admin"]);
+      if (!user) return;
+
+      const payload = JSON.parse(await readBody(request));
+      const email = normalizeEmail(payload.email);
+      const firstName = String(payload.firstName || "").trim();
+      const lastName = String(payload.lastName || "").trim();
+
+      if (!email || !firstName || !lastName) {
+        sendJson(response, 400, { error: "Indiquez le prénom, le nom et l'e-mail." });
+        return;
+      }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        sendJson(response, 400, { error: "Adresse e-mail invalide." });
+        return;
+      }
+      if (findUserByEmail(email)) {
+        sendJson(response, 409, { error: "Cette adresse e-mail est déjà utilisée par un compte." });
+        return;
+      }
+
+      const newUser = {
+        id: `user-${crypto.randomBytes(8).toString("hex")}`,
+        email,
+        passwordHash: hashPassword(crypto.randomBytes(24).toString("hex")), // remplacé tout de suite par le lien envoyé par e-mail
+        firstName,
+        lastName,
+        jobTitle: "",
+        pharmacyId: null,
+        role: "soguasphar_admin",
+        active: true,
+        mustChangePassword: true,
+        createdAt: new Date().toISOString(),
+        lastLoginAt: null,
+        invitedAt: new Date().toISOString(),
+        invitationToken: null
+      };
+      const users = readUsers();
+      users.push(newUser);
+      writeUsers(users);
+      const invitedUser = issueAccountPasswordLink(newUser, { isNewAccount: true });
+      sendJson(response, 201, { member: publicUser(invitedUser) });
+      return;
+    }
+
     if (url.pathname === "/api/orders" && request.method === "PUT") {
       if (!requireAdminCode(request, response)) {
         return;

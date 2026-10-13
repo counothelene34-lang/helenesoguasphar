@@ -635,6 +635,18 @@
               <p class="form-help">Un mot de passe est généré automatiquement.</p>
             </form>
             <div id="pharmacyAccountsList" class="pharmacy-accounts-list"></div>
+            <form id="createAdminAccountForm" class="create-campaign-form">
+              <label for="newAdminFirstName">Nouveau compte administrateur SOGUASPHAR</label>
+              <div class="create-campaign-row">
+                <input id="newAdminFirstName" type="text" placeholder="Prénom" autocomplete="off">
+                <input id="newAdminLastName" type="text" placeholder="Nom" autocomplete="off">
+                <input id="newAdminEmail" type="email" placeholder="E-mail" autocomplete="off">
+                <button class="primary-btn" type="submit">Créer l'accès</button>
+              </div>
+              <p class="form-help">Un e-mail est envoyé à cette adresse pour créer le mot de passe (lien valable 7 jours).</p>
+              <p id="createAdminAccountMessage" class="status-message" role="status"></p>
+            </form>
+            <div id="adminAccountsList" class="pharmacy-accounts-list"></div>
             <div class="closed-campaign-actions">
               <button id="showClosedCampaignsBtn" class="ghost-btn" type="button">Campagnes clôturées</button>
             </div>

@@ -245,6 +245,12 @@ const newInfoIntro = document.querySelector("#newInfoIntro");
 const createPharmacyForm = document.querySelector("#createPharmacyForm");
 const newPharmacyName = document.querySelector("#newPharmacyName");
 const pharmacyAccountsList = document.querySelector("#pharmacyAccountsList");
+const createAdminAccountForm = document.querySelector("#createAdminAccountForm");
+const newAdminFirstName = document.querySelector("#newAdminFirstName");
+const newAdminLastName = document.querySelector("#newAdminLastName");
+const newAdminEmail = document.querySelector("#newAdminEmail");
+const createAdminAccountMessage = document.querySelector("#createAdminAccountMessage");
+const adminAccountsList = document.querySelector("#adminAccountsList");
 const showClosedCampaignsBtn = document.querySelector("#showClosedCampaignsBtn");
 const adminPollCards = document.querySelector("#adminPollCards");
 const adminPollBlock = document.querySelector("#adminPollBlock");
@@ -1360,6 +1366,20 @@ async function createTeamMember(member) {
 async function resetTeamMemberPassword(memberId) {
   return requestJson(`/api/team/${encodeURIComponent(memberId)}/reset-password`, {
     method: "POST"
+  });
+}
+
+// --- Comptes administrateurs SOGUASPHAR (distincts des comptes pharmacie) --
+
+async function fetchAdminTeam() {
+  const result = await requestJson("/api/admin-team");
+  return result.members || [];
+}
+
+async function createAdminTeamMember(member) {
+  return requestJson("/api/admin-team", {
+    method: "POST",
+    body: JSON.stringify(member)
   });
 }
 
@@ -3045,6 +3065,61 @@ function renderPharmacyAccounts() {
   `;
 }
 
+let adminAccounts = [];
+
+async function refreshAdminAccounts() {
+  if (!adminAccountsList) return;
+  try {
+    adminAccounts = await fetchAdminTeam();
+  } catch (error) {
+    adminAccounts = [];
+  }
+  renderAdminAccounts();
+}
+
+function renderAdminAccounts() {
+  if (!adminAccountsList) return;
+  if (!adminAccounts.length) {
+    adminAccountsList.innerHTML = '<p class="empty-campaigns">Aucun compte administrateur créé pour le moment.</p>';
+    return;
+  }
+  adminAccountsList.innerHTML = `
+    <div class="table-wrap compact">
+      <table>
+        <thead><tr><th>Nom</th><th>E-mail</th><th>Statut</th></tr></thead>
+        <tbody>
+          ${adminAccounts.map((account) => `
+            <tr>
+              <td><strong>${escapeHtml(formatUserFullName(account))}</strong></td>
+              <td>${escapeHtml(account.email)}</td>
+              <td>${account.mustChangePassword === false ? "Actif" : "Invitation envoyée, en attente"}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+createAdminAccountForm?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const firstName = newAdminFirstName.value.trim();
+  const lastName = newAdminLastName.value.trim();
+  const email = newAdminEmail.value.trim();
+  if (!firstName || !lastName || !email) {
+    createAdminAccountMessage.textContent = "Indiquez le prénom, le nom et l'e-mail.";
+    return;
+  }
+  try {
+    await createAdminTeamMember({ firstName, lastName, email });
+    createAdminAccountMessage.textContent = `Accès créé : un e-mail a été envoyé à ${email} pour créer son mot de passe.`;
+    createAdminAccountForm.reset();
+    await refreshAdminAccounts();
+  } catch (error) {
+    createAdminAccountMessage.textContent = error.message || "Impossible de créer ce compte.";
+  }
+});
+
 function imageFileToDataUrl(file) {
   return new Promise((resolve, reject) => {
     if (!file || !file.type.startsWith("image/")) {
@@ -3903,6 +3978,9 @@ function showAdminSection(section) {
   if (createValidationForm) createValidationForm.hidden = activeAdminSection !== "document-new";
   createPharmacyForm.hidden = !showPharmacies;
   pharmacyAccountsList.hidden = !showPharmacies;
+  if (createAdminAccountForm) createAdminAccountForm.hidden = !showPharmacies;
+  if (adminAccountsList) adminAccountsList.hidden = !showPharmacies;
+  if (showPharmacies) refreshAdminAccounts();
   adminCampaignCards.hidden = !showCampaignList;
   if (adminBatBlock) adminBatBlock.hidden = !showBatList;
   adminPollBlock.hidden = !showPollList;
