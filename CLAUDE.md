@@ -101,3 +101,13 @@ Avant de modifier des données à la main : copie datée dans `data-backups/`.
   le code mais toutes les sauvegardes échouent en silence (401). Après avoir corrigé un
   `.env`, utiliser `sudo appctl rebuild <app>` (pas juste `restart`) : les variables
   d'environnement de `docker-compose.yml` ne sont relues qu'à la recréation du conteneur.
+- **13/10/2026 : `appctl publier preco` a failli effacer une fonctionnalité en ligne**
+  (création de comptes administrateurs). Cause : une correction avait été faite en
+  modifiant directement les fichiers du site EN LIGNE (pas la copie de test), puis
+  copiée partiellement vers la copie de test (un seul fichier sur trois) ; publier a
+  ensuite tout resynchronisé depuis cette copie de test incomplète, écrasant en ligne
+  ce qui n'y était pas. Repéré tout de suite grâce à la sauvegarde automatique prise
+  par `appctl publier` avant d'écraser, et corrigé à partir d'elle. **Leçon : toujours
+  modifier le code dans la copie de test, jamais directement dans le dossier en
+  ligne**, même pour une petite correction — sinon la copie de test n'est plus une
+  image fidèle de ce qui sera publié.
