@@ -8247,13 +8247,30 @@ async function init() {
   }
 
   // Lien de réinitialisation de mot de passe reçu par e-mail (?reset=<jeton>) :
-  // on affiche directement l'écran "choisir un nouveau mot de passe", avant
-  // tout le reste (pas besoin de charger campagnes/sondages pour ça).
+  // on affiche tout de suite l'écran "choisir un nouveau mot de passe", mais on
+  // charge quand même les précommandes/sondages/documents en arrière-plan (sans
+  // bloquer l'affichage du formulaire). Sinon, juste après avoir choisi son mot
+  // de passe, la pharmacie arrivait sur un écran vide ("Aucune précommande/
+  // sondage disponible") car ces listes n'avaient jamais été chargées (bug
+  // repéré le 13/10/2026, juste après l'envoi des e-mails d'activation).
   const resetToken = String(new URLSearchParams(window.location.search).get("reset") || "").trim();
   if (resetToken && resetPasswordGate) {
     if (pharmacyGate) pharmacyGate.hidden = true;
     if (newAuthGate) newAuthGate.hidden = true;
     resetPasswordGate.hidden = false;
+    campaigns = await getCampaigns();
+    polls = await getPolls();
+    infoForms = await getInfoForms();
+    infoResponses = localInfoResponses();
+    const validationState = await getValidationState();
+    validationConfigState = {
+      title: validationState.title || "",
+      description: validationState.description || "",
+      draft: Boolean(validationState.draft),
+      archived: Boolean(validationState.archived)
+    };
+    batDocuments = Array.isArray(validationState.documents) ? validationState.documents : [];
+    batResponses = await getValidationResponses();
     return;
   }
 
