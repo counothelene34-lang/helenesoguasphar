@@ -130,3 +130,10 @@ Avant de modifier des données à la main : copie datée dans `data-backups/`.
   `data:...;base64,...` stocké et le sert avec le bon `Content-Type`). Si une autre
   application affiche un jour les photos des opérations, réutiliser cette route plutôt
   que de redemander tout `GET /api/orders`.
+- **13/10/2026 : tableau admin « Dernière connexion » affichait "Jamais connecté" pour
+  tout le monde.** Cause : quand une personne crée son mot de passe via le lien reçu par
+  e-mail (route `/api/auth/reset-password`), elle est connectée automatiquement, mais
+  cette route n'enregistrait pas `lastLoginAt` (seule la route `/api/auth/login`, utilisée
+  au 2ᵉ login, le faisait). Corrigé : `/api/auth/reset-password` enregistre maintenant
+  aussi `lastLoginAt`. Les 12 comptes déjà activés le 13/10 mais mal marqués ont été
+  corrigés à la main dans `data/users.json` (sauvegarde avant dans `data-backups/`).
