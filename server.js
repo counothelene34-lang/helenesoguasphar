@@ -2037,95 +2037,28 @@ const server = http.createServer(async (request, response) => {
       return;
     }
 
+    // Ancien système (mot de passe unique par pharmacie) : fermé le 13/10/2026
+    // à la demande d'Hélène, maintenant que chaque pharmacie a un compte
+    // personnel (e-mail + mot de passe). On renvoie une erreur claire plutôt
+    // que de laisser cette ancienne porte fonctionner (l'écran correspondant
+    // n'est de toute façon plus accessible côté interface).
     if (url.pathname === "/api/pharmacy-password-reset-request" && request.method === "POST") {
-      const payload = JSON.parse(await readBody(request));
-      const pharmacyName = normalizeLookup(payload.pharmacyName);
-      if (!pharmacyName) {
-        sendJson(response, 400, { error: "Indiquez le nom de la pharmacie." });
-        return;
-      }
-
-      const pharmacies = readPharmacies();
-      const pharmacy = pharmacies.find((item) => item.active !== false && normalizeLookup(item.name) === pharmacyName)
-        || pharmacies.find((item) => {
-          const name = normalizeLookup(item.name);
-          return item.active !== false && (name.includes(pharmacyName) || pharmacyName.includes(name));
-        });
-      if (pharmacy) {
-        const updatedPharmacies = pharmacies.map((item) => item.id === pharmacy.id ? {
-          ...item,
-          passwordResetRequested: true,
-          passwordResetRequestedAt: new Date().toLocaleString("fr-FR")
-        } : item);
-        writePharmacies(updatedPharmacies);
-      }
-
-      sendJson(response, 200, { ok: true });
+      sendJson(response, 410, { error: "Cet ancien accès n'est plus utilisé. Utilisez votre compte personnel (e-mail + mot de passe) ou le lien « Mot de passe oublié » de l'écran de connexion." });
       return;
     }
 
+    // Ancien système (mot de passe unique par pharmacie) : fermé le 13/10/2026
+    // à la demande d'Hélène, maintenant que chaque pharmacie a un compte
+    // personnel (e-mail + mot de passe) — voir CLAUDE.md « Pièges connus ».
+    // On garde la route pour répondre proprement plutôt que de 404 à une
+    // éventuelle page restée ouverte dans un vieux navigateur.
     if (url.pathname === "/api/pharmacy-login" && request.method === "POST") {
-      const bruteForceKey = `pharmacy-login:${getClientIp(request)}`;
-      if (isLocked(bruteForceKey)) {
-        sendJson(response, 429, { error: "Trop de tentatives. Réessayez dans quelques minutes." });
-        return;
-      }
-      const payload = JSON.parse(await readBody(request));
-      const password = String(payload.password || "").trim();
-      const pharmacy = readPharmacies().find((item) => item.active !== false && verifyPassword(password, item.passwordHash));
-      if (!pharmacy) {
-        registerFailure(bruteForceKey);
-        sendJson(response, 401, { error: "Mot de passe pharmacie incorrect" });
-        return;
-      }
-      registerSuccess(bruteForceKey);
-      const pharmacyToken = createSession(null, "pharmacy_legacy", pharmacy.id);
-      setSessionCookie(response, pharmacyToken, "pharmacy_legacy");
-      sendJson(response, 200, {
-        id: pharmacy.id,
-        name: pharmacy.name,
-        mustChangePassword: pharmacy.mustChangePassword !== false
-      });
+      sendJson(response, 410, { error: "Cet ancien accès n'est plus utilisé. Connectez-vous avec votre compte personnel (e-mail + mot de passe)." });
       return;
     }
 
     if (url.pathname === "/api/pharmacy-password" && request.method === "PUT") {
-      const payload = JSON.parse(await readBody(request));
-      const pharmacyId = String(payload.pharmacyId || "").trim();
-      const oldPassword = String(payload.oldPassword || "").trim();
-      const newPassword = String(payload.newPassword || "").trim();
-      const bruteForceKey = `pharmacy-password:${getClientIp(request)}:${pharmacyId}`;
-      if (isLocked(bruteForceKey)) {
-        sendJson(response, 429, { error: "Trop de tentatives. Réessayez dans quelques minutes." });
-        return;
-      }
-      const pharmacies = readPharmacies();
-      const pharmacy = pharmacies.find((item) => item.active !== false && item.id === pharmacyId && verifyPassword(oldPassword, item.passwordHash));
-
-      if (!pharmacy) {
-        registerFailure(bruteForceKey);
-        sendJson(response, 401, { error: "Mot de passe actuel incorrect" });
-        return;
-      }
-      registerSuccess(bruteForceKey);
-
-      const ruleError = passwordRuleError(newPassword);
-      if (ruleError) {
-        sendJson(response, 400, { error: ruleError });
-        return;
-      }
-
-      const updatedPharmacies = pharmacies.map((item) => item.id === pharmacy.id ? {
-        ...item,
-        passwordHash: hashPassword(newPassword),
-        mustChangePassword: false,
-        passwordResetRequested: false,
-        passwordResetRequestedAt: ""
-      } : item);
-      writePharmacies(updatedPharmacies);
-      const changeToken = createSession(null, "pharmacy_legacy", pharmacy.id);
-      setSessionCookie(response, changeToken, "pharmacy_legacy");
-      sendJson(response, 200, { id: pharmacy.id, name: pharmacy.name, mustChangePassword: false });
+      sendJson(response, 410, { error: "Cet ancien accès n'est plus utilisé. Connectez-vous avec votre compte personnel (e-mail + mot de passe)." });
       return;
     }
 
