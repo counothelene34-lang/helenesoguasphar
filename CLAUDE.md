@@ -8,9 +8,39 @@
 ## À quoi elle sert
 Site du groupement pour les **pharmacies adhérentes** : précommandes (bons de
 commande par opération), sondages, questionnaires de satisfaction, formulaires
-d'informations, et **validations de documents** (ex. BAT calendriers 2027).
-Espace admin protégé par un code (`ADMIN_CODE`, défini côté serveur, jamais dans le code).
-Propriétaire : Hélène (partagée avec Chantal).
+d'informations, et **validations de documents** (ex. BAT calendriers 2027,
+attestation d'engagement 2027). Espace admin protégé par un code (`ADMIN_CODE`,
+défini côté serveur, jamais dans le code). Propriétaire : Hélène (partagée avec Chantal).
+
+## Attestation d'engagement SOGUASPHAR 2027 (lancée le 13/10/2026)
+Document de signature en ligne (44 pharmacies, SIREN/représentant pré-remplis,
+cotisation 3 000 €/1 500 €) fusionné dans la tuile **« Document en attente »**
+(avec le BAT calendriers) côté pharmacie. Points clés :
+- Données : `data/attestations.json` (config + liste des 44 pharmacies, `draft`/
+  `archived` pour ouvrir/fermer la campagne), `data/attestation-responses.json`
+  (qui a signé), PDF signés dans `data/attestations-2027/<pharmacyId>.pdf`
+  (générés à la volée via le service commun PDF, servis par la route
+  `/attestations-2027/<fichier>.pdf` dans `server.js` — même piège que `/bat-2027`,
+  `/data` étant bloqué par Traefik).
+- Pharmacie : doit cliquer « Voir le document complet avant de signer » (aperçu
+  PDF généré à la volée, route `/api/attestation/preview`) avant que le bouton de
+  signature se débloque — champ `attestationDocumentViewed` côté client.
+- Carte affichée à DEUX endroits dans `app.js` : `renderPendingDocumentsListPage()`
+  (page dédiée « Document en attente ») ET `renderCampaignPickers()` (colonne de
+  gauche du menu principal, à la place de « Aucun document en attente pour le
+  moment », fonctions `attestationCard()` / `isAttestationVisibleForPharmacy()`).
+  Les deux doivent rester synchronisées si la carte évolue.
+- **Piège de timing** : `refreshAttestationVisibility()` (appelée par
+  `setHeroVisible(true)` sans `await`) doit, une fois les données chargées,
+  rappeler **à la fois** `renderPendingDocumentsListPage()` ET
+  `renderCampaignPickers()` (sinon la carte reste absente du menu principal au
+  premier chargement, corrigé le 13/10/2026).
+- Développé et vérifié sur la copie de test (`preco-test`, redémarrée pour
+  l'occasion), puis publié avec `appctl publier preco`. **La donnée n'est jamais
+  copiée par `publier`** : le fichier `data/attestations.json` (44 pharmacies) a
+  dû être copié à la main vers `/opt/apps/soguasphar-preco/data/`, volontairement
+  **sans** `attestation-responses.json` ni le dossier `attestations-2027/` de la
+  copie de test (qui ne contenaient qu'une signature de TEST, pas une vraie).
 
 ## Où elle vit
 | | En ligne | Copie de test |
