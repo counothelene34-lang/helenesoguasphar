@@ -111,3 +111,11 @@ Avant de modifier des données à la main : copie datée dans `data-backups/`.
   modifier le code dans la copie de test, jamais directement dans le dossier en
   ligne**, même pour une petite correction — sinon la copie de test n'est plus une
   image fidèle de ce qui sera publié.
+- **13/10/2026 : route `/api/orders/:id/image` manquante.** Soguaspilot affiche la vraie
+  photo de chaque précommande en appelant `GET /api/orders/:id/image` sur Préco (pour ne
+  pas charger tout `GET /api/orders`, lourd avec les images en base64 dans `imageData`/
+  `imageData2`). Cette route avait été prévue côté Soguaspilot mais jamais créée côté
+  Préco (toutes les photos apparaissaient vides) : ajoutée dans `server.js` (décode le
+  `data:...;base64,...` stocké et le sert avec le bon `Content-Type`). Si une autre
+  application affiche un jour les photos des opérations, réutiliser cette route plutôt
+  que de redemander tout `GET /api/orders`.
