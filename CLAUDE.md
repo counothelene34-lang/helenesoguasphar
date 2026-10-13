@@ -150,3 +150,14 @@ Avant de modifier des données à la main : copie datée dans `data-backups/`.
   la fermeture du raccourci "taper le code → accès anonyme". Si un vrai renforcement est
   nécessaire un jour, il faudrait remplacer les vérifications `requireAdminCode` côté
   serveur par `requireAuth(["soguasphar_admin"])` — chantier plus large, pas fait ici.
+- **13/10/2026 : ancien accès pharmacie (mot de passe unique par pharmacie) fermé**
+  à la demande d'Hélène, pour que "Dernière connexion" soit fiable partout (pas
+  seulement côté admin). Routes désactivées dans `server.js` (répondent 410) :
+  `/api/pharmacy-login`, `/api/pharmacy-password`, `/api/pharmacy-password-reset-request`.
+  Seul reste utilisable le compte personnel (e-mail + mot de passe,
+  `/api/auth/*`). **Attention :** au moment de la fermeture, 32 pharmacies sur 44
+  n'avaient pas encore activé leur compte personnel (lien d'invitation jamais
+  ouvert) — elles ne peuvent plus du tout se connecter tant qu'elles n'ont pas
+  cliqué ce lien. Si une pharmacie signale qu'elle ne peut plus entrer, renvoyer
+  son lien d'activation (bouton "Renvoyer l'invitation" dans Paramètres > vue
+  d'ensemble des pharmacies) plutôt que de rouvrir l'ancien système.
