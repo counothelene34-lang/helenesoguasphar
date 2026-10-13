@@ -1851,6 +1851,29 @@ const server = http.createServer(async (request, response) => {
       return;
     }
 
+    // Sert la seule image d'une opération (sans renvoyer tout le JSON en base64),
+    // utilisée notamment par Soguaspilot pour afficher les vignettes des tâches en attente.
+    const orderImageMatch = url.pathname.match(/^\/api\/orders\/([^/]+)\/image$/);
+    if (orderImageMatch && request.method === "GET") {
+      const orderId = decodeURIComponent(orderImageMatch[1]);
+      const order = readOrders().find((item) => item.id === orderId);
+      const dataUrl = order && (order.imageData || order.imageData2);
+      const match = typeof dataUrl === "string" && dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+      if (!match) {
+        response.writeHead(404);
+        response.end("Not found");
+        return;
+      }
+      const buffer = Buffer.from(match[2], "base64");
+      response.writeHead(200, {
+        "Content-Type": match[1],
+        "Cache-Control": "public, max-age=3600",
+        "Content-Length": buffer.length
+      });
+      response.end(buffer);
+      return;
+    }
+
     if (url.pathname === "/api/polls" && request.method === "GET") {
       sendJson(response, 200, readPolls());
       return;

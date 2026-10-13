@@ -2112,7 +2112,11 @@ function renderArchivedOrdersHistory() {
     toggleArchivedOrdersBtn.hidden = !currentPharmacy;
     toggleArchivedOrdersBtn.setAttribute("aria-expanded", archivedOrdersVisible ? "true" : "false");
   }
-  archivedOrdersPanel.hidden = !archivedOrdersVisible || !currentPharmacy;
+  // Note : ce panneau (avec son bouton "← Retour au menu") doit rester visible
+  // même sans pharmacie sélectionnée (ex. administratrice SOGUASPHAR qui clique
+  // sur la tuile "Archivés" sans avoir choisi de pharmacie) : sinon l'écran
+  // paraît vide, sans aucun moyen de revenir en arrière (corrigé le 13/10/2026).
+  archivedOrdersPanel.hidden = !archivedOrdersVisible;
   if (archivedOrdersSearch) archivedOrdersSearch.closest(".archived-orders-search").hidden = !allOperations.length;
   archivedOrdersRows.innerHTML = operations.length ? operations.map((entry) => archivedOperationCard(entry)).join("") : "";
   archivedOrdersEmpty.hidden = Boolean(allOperations.length);
@@ -2910,6 +2914,29 @@ function showOldAuthScreen() {
   if (newAuthGate) newAuthGate.hidden = true;
   if (newAuthAdminStatus) newAuthAdminStatus.hidden = true;
   renderPharmacyAccess();
+}
+
+// Vrai si AU MOINS une zone de contenu de l'onglet "Formulaire" est actuellement
+// affichée (menu principal, ou une page spécifique déjà ouverte). Sert à
+// détecter l'écran totalement vide que voyait une administratrice SOGUASPHAR
+// en revenant sur "Formulaire" (corrigé le 13/10/2026).
+function isFormViewContentVisible() {
+  const isVisible = (el) => Boolean(el) && el.hidden === false;
+  return (
+    isVisible(heroBand)
+    || isVisible(campaignPicker)
+    || isVisible(form)
+    || isVisible(pollForm)
+    || isVisible(satisfactionPage)
+    || isVisible(profileUpdateForm)
+    || isVisible(batValidationForm)
+    || isVisible(responseSuccess)
+    || isVisible(precommandandesListPage)
+    || isVisible(sondagesListPage)
+    || isVisible(pendingDocumentsListPage)
+    || isVisible(upcomingListPage)
+    || isVisible(archivedOrdersPanel)
+  );
 }
 
 function renderPharmacyAccess() {
@@ -5763,6 +5790,17 @@ document.querySelectorAll(".switch-btn").forEach((button) => {
       // Une administratrice SOGUASPHAR revenant sur "Formulaire" voit
       // directement le contenu (pas d'écran de connexion pharmacie).
       renderPharmacyAccess();
+      // Après une connexion par e-mail/mot de passe, l'administratrice est
+      // envoyée directement sur "Administration" (activateAdminView) : rien
+      // n'a encore affiché le menu "Formulaire". Si elle clique ensuite sur
+      // "Formulaire" sans avoir de pharmacie choisie, renderPharmacyAccess()
+      // ne montre rien (ni écran de connexion, ni menu) → écran vide, sans
+      // bouton retour. On affiche alors le menu principal (corrigé le
+      // 13/10/2026). Si une page précise était déjà ouverte, on la laisse
+      // telle quelle.
+      if (!isFormViewContentVisible()) {
+        showCampaignPicker();
+      }
     } else {
       await renderAdmin();
     }
