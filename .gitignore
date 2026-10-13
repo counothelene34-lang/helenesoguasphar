@@ -5,6 +5,7 @@ liste_mots_de_passe_pharmacies.csv
 # Environnement local
 node_modules/
 .env
+.env.backup*
 *.log
 
 # Fichiers système

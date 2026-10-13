@@ -9,11 +9,16 @@ services:
       NODE_ENV: production
       PORT: 3000
       ADMIN_CODE: ${ADMIN_CODE:-SOGUASPHAR2026}
+      MAILER_URL: ${MAILER_URL:-http://sogua-mailer:8080}
+      MAILER_API_KEY: ${MAILER_API_KEY}
+      ARCHIVE_NOTIFY_EMAILS: ${ARCHIVE_NOTIFY_EMAILS}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-https://preco.soguasphar.fr}
     volumes:
       # Persistance des données fichiers (commandes, sondages, pharmacies…)
       - ./data:/app/data
     networks:
       - web
+      - internal
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=web"
@@ -24,4 +29,6 @@ services:
 
 networks:
   web:
+    external: true
+  internal:
     external: true
