@@ -123,6 +123,31 @@ const backToUpcomingMenuBtn = document.querySelector("#backToUpcomingMenuBtn");
 const upcomingListRows = document.querySelector("#upcomingListRows");
 const upcomingEmpty = document.querySelector("#upcomingEmpty");
 const upcomingCountBadge = document.querySelector("#upcomingCountBadge");
+const viewAttestation = document.querySelector("#viewAttestation");
+const attestationCountBadge = document.querySelector("#attestationCountBadge");
+const attestationPage = document.querySelector("#attestationPage");
+const backToAttestationMenuBtn = document.querySelector("#backToAttestationMenuBtn");
+const attestationPageTitle = document.querySelector("#attestationPageTitle");
+const attestationPageIntro = document.querySelector("#attestationPageIntro");
+const attestationPageInstructions = document.querySelector("#attestationPageInstructions");
+const attestationAlreadySigned = document.querySelector("#attestationAlreadySigned");
+const attestationSignedDate = document.querySelector("#attestationSignedDate");
+const attestationDownloadLink = document.querySelector("#attestationDownloadLink");
+const attestationPreviewLink = document.querySelector("#attestationPreviewLink");
+const attestationViewRequiredNotice = document.querySelector("#attestationViewRequiredNotice");
+const attestationSubmitBtn = document.querySelector("#attestationSubmitBtn");
+const attestationForm = document.querySelector("#attestationForm");
+const attestationPharmacyName = document.querySelector("#attestationPharmacyName");
+const attestationSocieteExploitante = document.querySelector("#attestationSocieteExploitante");
+const attestationSiren = document.querySelector("#attestationSiren");
+const attestationRepresentant = document.querySelector("#attestationRepresentant");
+const attestationQualite = document.querySelector("#attestationQualite");
+const attestationFaitA = document.querySelector("#attestationFaitA");
+const attestationYearInline = document.querySelector("#attestationYearInline");
+const attestationSignatureFile = document.querySelector("#attestationSignatureFile");
+const attestationSignaturePreview = document.querySelector("#attestationSignaturePreview");
+const attestationSignaturePreviewImg = document.querySelector("#attestationSignaturePreviewImg");
+const attestationFormMessage = document.querySelector("#attestationFormMessage");
 const batCards = document.querySelector("#batCards");
 const batPickerBlock = document.querySelector("#batPickerBlock");
 const pollCards = document.querySelector("#pollCards");
@@ -276,6 +301,19 @@ const adminPollCards = document.querySelector("#adminPollCards");
 const adminPollBlock = document.querySelector("#adminPollBlock");
 const adminInfoBlock = document.querySelector("#adminInfoBlock");
 const adminInfoCards = document.querySelector("#adminInfoCards");
+const adminAttestationBlock = document.querySelector("#adminAttestationBlock");
+const adminAttestationCardBlock = document.querySelector("#adminAttestationCardBlock");
+const adminAttestationCards = document.querySelector("#adminAttestationCards");
+const backToDocumentsFromAttestationBtn = document.querySelector("#backToDocumentsFromAttestationBtn");
+const attestationStatusBadge = document.querySelector("#attestationStatusBadge");
+const attestationAdminIntro = document.querySelector("#attestationAdminIntro");
+const attestationPublishBtn = document.querySelector("#attestationPublishBtn");
+const attestationArchiveBtn = document.querySelector("#attestationArchiveBtn");
+const attestationReopenBtn = document.querySelector("#attestationReopenBtn");
+const attestationSignedCount = document.querySelector("#attestationSignedCount");
+const attestationTableRows = document.querySelector("#attestationTableRows");
+const attestationSaveEditsBtn = document.querySelector("#attestationSaveEditsBtn");
+const attestationAdminMessage = document.querySelector("#attestationAdminMessage");
 const adminInfoDetail = document.querySelector("#adminInfoDetail");
 const backToAdminInfoBtn = document.querySelector("#backToAdminInfoBtn");
 const adminInfoTitle = document.querySelector("#adminInfoTitle");
@@ -397,6 +435,18 @@ let selectedCampaign = null;
 let selectedPoll = null;
 let selectedInfoForm = null;
 let selectedBatDocument = null;
+// Attestation d'engagement (module séparé de "Validation") : fiche pré-remplie de la
+// pharmacie connectée + sa réponse (si déjà signée) + la photo choisie (pas encore
+// envoyée tant que le formulaire n'est pas soumis).
+let currentAttestation = null;
+let currentAttestationResponse = null;
+let currentAttestationSignatureDataUrl = "";
+// true seulement après que la pharmacie a cliqué sur "Voir le document complet"
+// (obligatoire avant de pouvoir signer — demandé par Hélène le 13/10/2026).
+let attestationDocumentViewed = false;
+// Admin : campagne complète (toutes pharmacies) + réponses, pour le tableau de suivi.
+let adminAttestationCampaign = null;
+let adminAttestationResponses = [];
 let selectedAdminCampaign = null;
 let selectedAdminPeriodId = "";
 let selectedAdminPoll = null;
@@ -497,6 +547,10 @@ const ADMIN_SECTIONS = {
   parametre: {
     title: "Paramètres",
     intro: "Accès pharmacies et réglages généraux (à configurer)."
+  },
+  "attestation-main": {
+    title: "Attestation d'engagement",
+    intro: "Suivez qui a signé l'attestation d'engagement de l'année, et publiez-la aux pharmacies quand elle est prête."
   }
 };
 
@@ -504,11 +558,13 @@ const ADMIN_GROUP_DEFAULT_SECTION = {
   campaign: "campaign-new",
   poll: "poll-new",
   document: "document-new",
-  parametre: "parametre"
+  parametre: "parametre",
+  attestation: "attestation-main"
 };
 
 function adminGroupForSection(section) {
   if (section === "parametre") return "parametre";
+  if (section === "attestation-main") return "document";
   if (String(section).startsWith("campaign")) return "campaign";
   if (String(section).startsWith("poll")) return "poll";
   if (String(section).startsWith("document")) return "document";
@@ -1706,28 +1762,6 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
-// Pour les textes libres écrits par l'admin (message pharmacie, description...) :
-// échappe le HTML (sécurité), transforme *mot* en gras (comme sur WhatsApp), puis
-// rend cliquable tout lien http(s)://... qui traîne dans le texte.
-// À utiliser à la place d'escapeHtml() quand le texte doit être inséré en HTML
-// (innerHTML), jamais avec .textContent (qui afficherait les balises en brut).
-function formatRichText(value) {
-  const escaped = escapeHtml(value);
-  const bolded = escaped.replace(/\*([^*\n]+)\*/g, "<strong>$1</strong>");
-  return bolded.replace(/(https?:\/\/[^\s<]+)/g, (match) => {
-    // Laisse dehors la ponctuation de fin de phrase (. , ; : ! ? ) qui suit
-    // souvent un lien, pour ne pas l'inclure dans l'adresse cliquable.
-    let url = match;
-    let trailing = "";
-    while (url && /[.,;:!?)\]]$/.test(url)) {
-      trailing = url.slice(-1) + trailing;
-      url = url.slice(0, -1);
-    }
-    if (!url) return match;
-    return `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>${trailing}`;
-  });
-}
-
 function safeDownloadName(value, fallback = "document.pdf") {
   const cleaned = String(value || fallback)
     .replace(/[\\/:*?"<>|]+/g, "-")
@@ -2206,7 +2240,10 @@ function renderArchivedOrdersHistory() {
 function setHeroVisible(visible) {
   if (heroBand) heroBand.hidden = !visible;
   if (heroActionsRow) heroActionsRow.hidden = !visible;
-  if (visible) updateAllMenuCountBadges();
+  if (visible) {
+    updateAllMenuCountBadges();
+    refreshAttestationVisibility();
+  }
   if (!visible && archivedOrdersVisible) {
     archivedOrdersVisible = false;
     renderArchivedOrdersHistory();
@@ -2239,6 +2276,7 @@ function showArchivedOrdersPage(operationId = "") {
   if (sondagesListPage) sondagesListPage.hidden = true;
   if (pendingDocumentsListPage) pendingDocumentsListPage.hidden = true;
   if (upcomingListPage) upcomingListPage.hidden = true;
+  if (attestationPage) attestationPage.hidden = true;
   renderArchivedOrdersHistory();
   archivedOrdersPanel.scrollIntoView({ behavior: "smooth", block: "start" });
 }
@@ -2257,19 +2295,22 @@ function renderPrecommandesListPage() {
   precommandandesEmpty.hidden = Boolean(cardsToDisplay.length);
 }
 
-// "Document en attente" : les documents de validation (ex. BAT calendriers) que
-// la pharmacie connectée n'a pas encore traités (ni approuvé, ni demandé de correction).
+// "Document en attente" : regroupe les documents de validation (BAT calendriers)
+// ET l'attestation d'engagement de la pharmacie connectée — tout document qu'elle
+// n'a pas encore traité (ni approuvé/signé, ni demandé de correction), ainsi que
+// ceux déjà traités pour pouvoir les revoir/retélécharger.
 function renderPendingDocumentsListPage() {
   if (!pendingDocumentsListRows || !pendingDocumentsEmpty) return;
-  const validationConfig = currentValidationConfig();
   const currentBatDocument = currentPharmacy ? batDocumentForPharmacy(currentPharmacy) : null;
-  const isPending = Boolean(currentBatDocument)
-    && validationConfig.exists
-    && !validationConfig.draft
-    && !validationConfig.archived
-    && !batResponseForDocument(currentBatDocument);
-  pendingDocumentsListRows.innerHTML = isPending ? batValidationCard(currentBatDocument, "form") : "";
-  pendingDocumentsEmpty.hidden = isPending;
+  const cards = [];
+  if (currentBatDocument && isBatDocumentPending()) {
+    cards.push(batValidationCard(currentBatDocument, "form"));
+  }
+  if (isAttestationVisibleForPharmacy()) {
+    cards.push(attestationCard());
+  }
+  pendingDocumentsListRows.innerHTML = cards.join("");
+  pendingDocumentsEmpty.hidden = Boolean(cards.length);
 }
 
 function showPendingDocumentsListPage() {
@@ -2295,6 +2336,7 @@ function showPendingDocumentsListPage() {
   if (precommandandesListPage) precommandandesListPage.hidden = true;
   if (sondagesListPage) sondagesListPage.hidden = true;
   if (upcomingListPage) upcomingListPage.hidden = true;
+  if (attestationPage) attestationPage.hidden = true;
   renderPendingDocumentsListPage();
   pendingDocumentsListPage.hidden = false;
   pendingDocumentsListPage.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -2331,17 +2373,33 @@ function updateSondagesCountBadge() {
   sondagesCountBadge.hidden = count === 0;
 }
 
-function updatePendingDocumentsCountBadge() {
-  if (!pendingDocumentsCountBadge) return;
+// "Document en attente" regroupe désormais DEUX types de documents pour la
+// pharmacie connectée : la validation BAT calendriers ET l'attestation
+// d'engagement (fusionnées à la demande d'Hélène le 13/10/2026 — l'attestation
+// avait sa propre tuile de menu séparée, ce qui n'était pas voulu).
+function isBatDocumentPending() {
   const validationConfig = currentValidationConfig();
   const currentBatDocument = currentPharmacy ? batDocumentForPharmacy(currentPharmacy) : null;
-  const isPending = Boolean(currentBatDocument)
+  return Boolean(currentBatDocument)
     && validationConfig.exists
     && !validationConfig.draft
     && !validationConfig.archived
     && !batResponseForDocument(currentBatDocument);
-  pendingDocumentsCountBadge.textContent = isPending ? "1" : "0";
-  pendingDocumentsCountBadge.hidden = !isPending;
+}
+
+function isAttestationVisibleForPharmacy() {
+  return Boolean(currentAttestation?.document) && !currentAttestation?.draft && !currentAttestation?.archived;
+}
+
+function isAttestationPending() {
+  return isAttestationVisibleForPharmacy() && !currentAttestationResponse;
+}
+
+function updatePendingDocumentsCountBadge() {
+  if (!pendingDocumentsCountBadge) return;
+  const count = (isBatDocumentPending() ? 1 : 0) + (isAttestationPending() ? 1 : 0);
+  pendingDocumentsCountBadge.textContent = String(count);
+  pendingDocumentsCountBadge.hidden = count === 0;
 }
 
 // Chiffre sur l'icône de l'appli (écran d'accueil du téléphone), quand le téléphone le
@@ -2411,10 +2469,297 @@ function showUpcomingListPage() {
   if (precommandandesListPage) precommandandesListPage.hidden = true;
   if (sondagesListPage) sondagesListPage.hidden = true;
   if (pendingDocumentsListPage) pendingDocumentsListPage.hidden = true;
+  if (attestationPage) attestationPage.hidden = true;
   renderUpcomingListPage();
   upcomingListPage.hidden = false;
   upcomingListPage.scrollIntoView({ behavior: "smooth", block: "start" });
 }
+
+// --- Attestation d'engagement (module séparé de "Validation") -------------
+
+async function getAttestation() {
+  try {
+    return await requestJson("/api/attestation");
+  } catch {
+    return null;
+  }
+}
+
+// Charge l'attestation de la pharmacie connectée. Depuis le 13/10/2026, il n'y a
+// plus de tuile de menu séparée pour l'attestation : elle apparaît dans la tuile
+// "Document en attente" (voir renderPendingDocumentsListPage / attestationCard).
+// Cette fonction garde viewAttestation/attestationCountBadge cachés en
+// permanence (anciens éléments gardés dans le HTML pour compatibilité) et
+// rafraîchit le compteur + la liste fusionnés une fois les données chargées.
+async function refreshAttestationVisibility() {
+  if (!currentPharmacy) return;
+  const data = await getAttestation();
+  currentAttestation = data;
+  currentAttestationResponse = data?.response || null;
+  if (viewAttestation) viewAttestation.hidden = true;
+  if (attestationCountBadge) attestationCountBadge.hidden = true;
+  updatePendingDocumentsCountBadge();
+  if (pendingDocumentsListPage && !pendingDocumentsListPage.hidden) {
+    renderPendingDocumentsListPage();
+  }
+  if (infoCards && heroBand && !heroBand.hidden) {
+    renderCampaignPickers();
+  }
+}
+
+function showAttestationPage() {
+  if (pharmacyAccessRequired()) {
+    renderPharmacyAccess();
+    return;
+  }
+  selectedCampaign = null;
+  selectedPoll = null;
+  selectedInfoForm = null;
+  selectedBatDocument = null;
+  archivedOrdersVisible = false;
+  setHeroVisible(false);
+  campaignPicker.hidden = true;
+  form.hidden = true;
+  pollForm.hidden = true;
+  if (satisfactionPage) satisfactionPage.hidden = true;
+  profileUpdateForm.hidden = true;
+  batValidationForm.hidden = true;
+  responseSuccess.hidden = true;
+  if (archivedOrdersPanel) archivedOrdersPanel.hidden = true;
+  if (precommandandesListPage) precommandandesListPage.hidden = true;
+  if (sondagesListPage) sondagesListPage.hidden = true;
+  if (pendingDocumentsListPage) pendingDocumentsListPage.hidden = true;
+  if (upcomingListPage) upcomingListPage.hidden = true;
+
+  renderAttestationPage();
+  attestationPage.hidden = false;
+  attestationPage.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function renderAttestationPage() {
+  if (!attestationPage || !currentAttestation?.document) return;
+  const doc = currentAttestation.document;
+  const response = currentAttestationResponse;
+  if (attestationPageTitle) attestationPageTitle.textContent = currentAttestation.title || attestationPageTitle.textContent;
+  // La description peut contenir deux paragraphes séparés par une ligne vide
+  // (pourquoi le document est nécessaire, puis quoi faire) — affichés chacun
+  // dans leur propre paragraphe plutôt que collés ensemble.
+  const descriptionParts = String(currentAttestation.description || "").split(/\n{2,}/).map((part) => part.trim()).filter(Boolean);
+  if (attestationPageIntro) attestationPageIntro.textContent = descriptionParts[0] || attestationPageIntro.textContent;
+  if (attestationPageInstructions) attestationPageInstructions.textContent = descriptionParts[1] || attestationPageInstructions.textContent;
+  if (attestationYearInline) attestationYearInline.textContent = String(currentAttestation.year || "");
+
+  attestationPharmacyName.value = doc.pharmacyName;
+  attestationSocieteExploitante.value = response?.societeExploitante || doc.societeExploitante || "";
+  attestationSiren.value = response?.siren || doc.siren || "";
+  attestationRepresentant.value = response?.representant || doc.representant || "";
+  attestationQualite.value = response?.qualite || doc.qualite || "Titulaire";
+  attestationFaitA.value = response?.faitA || doc.ville || "";
+
+  // Lien vers le PDF complet (texte entier de l'attestation), pour que la
+  // pharmacie puisse le lire avant de signer, pas seulement les quelques
+  // champs du formulaire (demandé par Hélène le 13/10/2026). Tant qu'elle n'a
+  // pas cliqué ce lien, le bouton de signature reste désactivé.
+  if (attestationPreviewLink) attestationPreviewLink.href = `${BASE_PREFIX}api/attestation/preview`;
+  attestationDocumentViewed = false;
+  if (attestationSubmitBtn) attestationSubmitBtn.disabled = true;
+  if (attestationViewRequiredNotice) attestationViewRequiredNotice.hidden = false;
+
+  currentAttestationSignatureDataUrl = "";
+  if (attestationSignatureFile) attestationSignatureFile.value = "";
+  if (attestationSignaturePreview) attestationSignaturePreview.hidden = true;
+  if (attestationFormMessage) attestationFormMessage.textContent = "";
+
+  if (attestationAlreadySigned) {
+    attestationAlreadySigned.hidden = !response;
+    if (response) {
+      attestationSignedDate.textContent = response.signedAt || "";
+      attestationDownloadLink.href = response.pdfUrl ? `${BASE_PREFIX}${response.pdfUrl.slice(1)}` : "#";
+    }
+  }
+}
+
+// Garde le lien "Voir le document complet" à jour avec ce que la pharmacie est
+// en train de saisir, pour qu'elle relise bien ce qu'elle va signer.
+function updateAttestationPreviewLink() {
+  if (!attestationPreviewLink) return;
+  const params = new URLSearchParams({
+    societeExploitante: attestationSocieteExploitante?.value || "",
+    siren: attestationSiren?.value || "",
+    representant: attestationRepresentant?.value || "",
+    qualite: attestationQualite?.value || "",
+    faitA: attestationFaitA?.value || ""
+  });
+  attestationPreviewLink.href = `${BASE_PREFIX}api/attestation/preview?${params.toString()}`;
+}
+[attestationSocieteExploitante, attestationSiren, attestationRepresentant, attestationQualite, attestationFaitA]
+  .forEach((field) => field?.addEventListener("input", updateAttestationPreviewLink));
+
+// Débloque le bouton de signature seulement une fois que la pharmacie a
+// cliqué pour ouvrir le document complet (lecture obligatoire avant de
+// signer — demandé par Hélène le 13/10/2026).
+attestationPreviewLink?.addEventListener("click", () => {
+  attestationDocumentViewed = true;
+  if (attestationSubmitBtn) attestationSubmitBtn.disabled = false;
+  if (attestationViewRequiredNotice) attestationViewRequiredNotice.hidden = true;
+});
+
+attestationSignatureFile?.addEventListener("change", async () => {
+  const file = attestationSignatureFile.files?.[0];
+  if (!file) return;
+  currentAttestationSignatureDataUrl = await imageFileToDataUrl(file);
+  if (attestationSignaturePreview && attestationSignaturePreviewImg) {
+    attestationSignaturePreviewImg.src = currentAttestationSignatureDataUrl;
+    attestationSignaturePreview.hidden = false;
+  }
+});
+
+attestationForm?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (!attestationDocumentViewed) {
+    attestationFormMessage.textContent = "Merci d'abord d'ouvrir et de lire le document complet (lien ci-dessus) avant de signer.";
+    if (attestationViewRequiredNotice) attestationViewRequiredNotice.hidden = false;
+    return;
+  }
+  if (!currentAttestationSignatureDataUrl) {
+    attestationFormMessage.textContent = "Ajoutez une photo de votre signature et cachet avant d'envoyer.";
+    return;
+  }
+  attestationFormMessage.textContent = "Envoi en cours...";
+  try {
+    const saved = await requestJson("/api/attestation/sign", {
+      method: "POST",
+      body: JSON.stringify({
+        societeExploitante: attestationSocieteExploitante.value.trim(),
+        siren: attestationSiren.value.trim(),
+        representant: attestationRepresentant.value.trim(),
+        qualite: attestationQualite.value.trim(),
+        faitA: attestationFaitA.value.trim(),
+        signatureImage: currentAttestationSignatureDataUrl
+      })
+    });
+    currentAttestationResponse = saved;
+    attestationFormMessage.textContent = "Attestation signée et enregistrée. Merci !";
+    renderAttestationPage();
+    await refreshAttestationVisibility();
+  } catch (error) {
+    attestationFormMessage.textContent = `Erreur : ${error.message}`;
+  }
+});
+
+viewAttestation?.addEventListener("click", showAttestationPage);
+backToAttestationMenuBtn?.addEventListener("click", showCampaignPicker);
+
+// --- Admin : suivi de l'attestation d'engagement ---------------------------
+
+async function refreshAdminAttestation() {
+  try {
+    const [campaign, responses] = await Promise.all([
+      requestJson("/api/attestations", { headers: { "X-Admin-Code": ADMIN_CODE } }),
+      requestJson("/api/attestation-responses", { headers: { "X-Admin-Code": ADMIN_CODE } })
+    ]);
+    adminAttestationCampaign = campaign;
+    adminAttestationResponses = Array.isArray(responses) ? responses : [];
+  } catch (error) {
+    adminAttestationCampaign = null;
+    adminAttestationResponses = [];
+    if (attestationAdminMessage) attestationAdminMessage.textContent = `Erreur de chargement : ${error.message}`;
+  }
+  renderAdminAttestation();
+}
+
+function renderAdminAttestation() {
+  if (!adminAttestationBlock) return;
+  const campaign = adminAttestationCampaign;
+  if (!campaign) {
+    attestationTableRows.innerHTML = `<tr><td colspan="6">Aucune attestation préparée.</td></tr>`;
+    return;
+  }
+  const statusLabel = campaign.draft ? "Brouillon" : (campaign.archived ? "Archivée" : "Publiée");
+  if (attestationStatusBadge) attestationStatusBadge.textContent = statusLabel;
+  if (attestationPublishBtn) attestationPublishBtn.hidden = !campaign.draft;
+  if (attestationArchiveBtn) attestationArchiveBtn.hidden = campaign.draft || campaign.archived;
+  if (attestationReopenBtn) attestationReopenBtn.hidden = campaign.draft || !campaign.archived;
+
+  const signedCount = adminAttestationResponses.length;
+  const totalCount = campaign.documents.length;
+  if (attestationSignedCount) {
+    attestationSignedCount.textContent = `${signedCount} / ${totalCount} pharmacie${totalCount > 1 ? "s" : ""} ont signé.`;
+  }
+
+  const rows = [...campaign.documents]
+    .sort((a, b) => a.pharmacyName.localeCompare(b.pharmacyName, "fr"))
+    .map((doc) => {
+      const response = adminAttestationResponses.find((item) => item.pharmacyId === doc.pharmacyId);
+      const statusCell = response
+        ? `<span class="status-ok">Signée le ${escapeHtml(response.signedAt)}</span>`
+        : `<span class="status-pending">En attente</span>`;
+      const docCell = response?.pdfUrl
+        ? `<a href="${BASE_PREFIX}${response.pdfUrl.slice(1)}" target="_blank" rel="noopener">⇩ PDF</a>`
+        : "—";
+      return `
+        <tr data-attestation-row="${escapeHtml(doc.pharmacyId)}">
+          <td>${escapeHtml(doc.pharmacyName)}</td>
+          <td>${escapeHtml(doc.representant)}</td>
+          <td>${escapeHtml(doc.siren)}</td>
+          <td><input type="text" data-field="societeExploitante" value="${escapeHtml(doc.societeExploitante)}" placeholder="(à compléter par la pharmacie)"></td>
+          <td>${statusCell}</td>
+          <td>${docCell}</td>
+        </tr>
+      `;
+    });
+  attestationTableRows.innerHTML = rows.join("");
+}
+
+attestationPublishBtn?.addEventListener("click", async () => {
+  if (!adminAttestationCampaign) return;
+  await requestJson("/api/attestations", {
+    method: "PUT",
+    headers: { "X-Admin-Code": ADMIN_CODE },
+    body: JSON.stringify({ ...adminAttestationCampaign, draft: false, archived: false })
+  });
+  attestationAdminMessage.textContent = "Attestation publiée : les pharmacies peuvent désormais signer.";
+  await refreshAdminAttestation();
+});
+
+attestationArchiveBtn?.addEventListener("click", async () => {
+  if (!adminAttestationCampaign) return;
+  await requestJson("/api/attestations", {
+    method: "PUT",
+    headers: { "X-Admin-Code": ADMIN_CODE },
+    body: JSON.stringify({ ...adminAttestationCampaign, draft: false, archived: true })
+  });
+  attestationAdminMessage.textContent = "Attestation archivée.";
+  await refreshAdminAttestation();
+});
+
+attestationReopenBtn?.addEventListener("click", async () => {
+  if (!adminAttestationCampaign) return;
+  await requestJson("/api/attestations", {
+    method: "PUT",
+    headers: { "X-Admin-Code": ADMIN_CODE },
+    body: JSON.stringify({ ...adminAttestationCampaign, draft: false, archived: false })
+  });
+  attestationAdminMessage.textContent = "Attestation rouverte.";
+  await refreshAdminAttestation();
+});
+
+attestationSaveEditsBtn?.addEventListener("click", async () => {
+  if (!adminAttestationCampaign) return;
+  const updatedDocuments = adminAttestationCampaign.documents.map((doc) => {
+    const row = attestationTableRows.querySelector(`[data-attestation-row="${CSS.escape(doc.pharmacyId)}"]`);
+    const input = row?.querySelector('[data-field="societeExploitante"]');
+    return input ? { ...doc, societeExploitante: input.value.trim() } : doc;
+  });
+  const saved = await requestJson("/api/attestations", {
+    method: "PUT",
+    headers: { "X-Admin-Code": ADMIN_CODE },
+    body: JSON.stringify({ ...adminAttestationCampaign, documents: updatedDocuments })
+  });
+  adminAttestationCampaign = saved;
+  attestationAdminMessage.textContent = "Modifications enregistrées.";
+  renderAdminAttestation();
+});
 
 function showPrecommandesListPage() {
   if (pharmacyAccessRequired()) {
@@ -2439,6 +2784,7 @@ function showPrecommandesListPage() {
   if (sondagesListPage) sondagesListPage.hidden = true;
   if (pendingDocumentsListPage) pendingDocumentsListPage.hidden = true;
   if (upcomingListPage) upcomingListPage.hidden = true;
+  if (attestationPage) attestationPage.hidden = true;
   renderPrecommandesListPage();
   precommandandesListPage.hidden = false;
   precommandandesListPage.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -2491,6 +2837,7 @@ function showSondagesListPage() {
   if (precommandandesListPage) precommandandesListPage.hidden = true;
   if (pendingDocumentsListPage) pendingDocumentsListPage.hidden = true;
   if (upcomingListPage) upcomingListPage.hidden = true;
+  if (attestationPage) attestationPage.hidden = true;
   renderSondagesListPage();
   sondagesListPage.hidden = false;
   sondagesListPage.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -3108,6 +3455,7 @@ function renderPharmacyAccess() {
   if (sondagesListPage) sondagesListPage.hidden = true;
   if (pendingDocumentsListPage) pendingDocumentsListPage.hidden = true;
   if (upcomingListPage) upcomingListPage.hidden = true;
+  if (attestationPage) attestationPage.hidden = true;
   }
 }
 
@@ -3986,7 +4334,7 @@ function campaignCard(campaign, target) {
         </div>
         <h3>${escapeHtml(campaign.title)}</h3>
         ${isAdmin ? `<p class="campaign-direct-link"><a href="${escapeHtml(`${window.location.origin}${window.location.pathname}?operation=${slugify(campaign.title)}`)}" target="_blank" rel="noopener">${escapeHtml(`${window.location.origin}${window.location.pathname}?operation=${slugify(campaign.title)}`)}</a></p>` : ""}
-        <p>${formatRichText(campaign.description || campaign.pharmacyMessage || "")}</p>
+        <p>${escapeHtml(campaign.description || campaign.pharmacyMessage || "")}</p>
         ${deliveryDateMarkup}
         ${periodInfoMarkup}
         ${isCompleted ? `<div class="campaign-done-summary"><strong>${escapeHtml(doneSummaryTitle)}</strong><span>${escapeHtml(summary)}</span></div>` : ""}
@@ -4224,7 +4572,7 @@ function pollCard(poll, target) {
   const optionsPreview = buildPollAnswersPreviewMarkup(questionList, showQuestionLabels, localAnswers);
   const inlineQuestions = buildPollQuestionsFormMarkup(questionList, showQuestionLabels);
   const inlineFreeText = poll.freeTextLabel ? `
-    <label class="inline-poll-free-label" for="inlineFreeText-${escapeHtml(poll.id)}">${formatRichText(poll.freeTextLabel)}</label>
+    <label class="inline-poll-free-label" for="inlineFreeText-${escapeHtml(poll.id)}">${escapeHtml(poll.freeTextLabel)}</label>
     <textarea id="inlineFreeText-${escapeHtml(poll.id)}" name="inlinePollFreeText" rows="3" ${poll.freeTextRequired ? "required" : ""}></textarea>
   ` : "";
   const pollImage = poll.imageData
@@ -4279,7 +4627,7 @@ function pollCard(poll, target) {
           <button class="delete-campaign-btn" type="button" title="Supprimer le sondage" aria-label="Supprimer le sondage ${escapeHtml(poll.question)}" data-delete-poll="${escapeHtml(poll.id)}">&#128465;</button>
         </div>
         <h3>${escapeHtml(poll.question)}</h3>
-        <p>${formatRichText(poll.freeTextLabel || "Réponse rapide en un clic.")}</p>
+        <p>${escapeHtml(poll.freeTextLabel || "Réponse rapide en un clic.")}</p>
       </div>
       <div class="campaign-foot">
         <span>${responseCount} réponse${responseCount > 1 ? "s" : ""}</span>
@@ -4313,7 +4661,7 @@ function infoFormCard(infoForm, target) {
           ${isAdmin ? `<button class="delete-campaign-btn" type="button" title="Supprimer la demande" aria-label="Supprimer ${escapeHtml(infoForm.title)}" data-delete-info="${escapeHtml(infoForm.id)}">&#128465;</button>` : ""}
         </div>
         <h3>${escapeHtml(infoForm.title)}</h3>
-        <p>${formatRichText(infoForm.intro || "Mettez à jour les informations de votre pharmacie.")}</p>
+        <p>${escapeHtml(infoForm.intro || "Mettez à jour les informations de votre pharmacie.")}</p>
         ${currentResponse ? `<div class="campaign-done-summary"><strong>Fiche déjà transmise</strong><span>Vous pouvez la modifier si nécessaire.</span></div>` : ""}
       </div>
       <div class="campaign-foot">
@@ -4343,7 +4691,7 @@ function batValidationCard(document, target) {
           <span class="campaign-type bat-type">Validation de précommande</span>
         </div>
         <h3>${escapeHtml(validationConfig.title)}</h3>
-        <p>${formatRichText(validationConfig.description)}</p>
+        <p>${escapeHtml(validationConfig.description)}</p>
         ${response ? `
           <div class="campaign-done-summary">
             <strong>${escapeHtml(displayStatus)}</strong>
@@ -4355,6 +4703,36 @@ function batValidationCard(document, target) {
         <strong>${escapeHtml(document.pharmacyName)}</strong>
         <div class="campaign-actions">
           <button class="primary-btn" type="button" ${actionAttr}>${isAdmin ? "Voir le suivi" : (response ? "Modifier" : "Voir")}</button>
+        </div>
+      </div>
+    </article>
+  `;
+}
+
+// Carte "Attestation d'engagement" affichée dans la tuile fusionnée "Document
+// en attente" (plus de tuile de menu séparée depuis le 13/10/2026).
+function attestationCard() {
+  const doc = currentAttestation?.document;
+  if (!doc) return "";
+  const response = currentAttestationResponse;
+  return `
+    <article class="campaign-card bat-card ${response ? "completed" : ""} clickable" data-open-attestation role="button" tabindex="0">
+      <div>
+        <div class="campaign-card-top">
+          <span class="campaign-type bat-type">Attestation d'engagement</span>
+        </div>
+        <h3>${escapeHtml(currentAttestation.title || "Attestation d'engagement SOGUASPHAR 2027")}</h3>
+        <p>${escapeHtml(String(currentAttestation.description || "").split(/\n{2,}/)[0] || "")}</p>
+        ${response ? `
+          <div class="campaign-done-summary">
+            <strong>Signée le ${escapeHtml(response.signedAt || "")}</strong>
+          </div>
+        ` : ""}
+      </div>
+      <div class="campaign-foot">
+        <strong>${escapeHtml(doc.pharmacyName || "")}</strong>
+        <div class="campaign-actions">
+          <button class="primary-btn" type="button" data-open-attestation>${response ? "Voir / modifier" : "Compléter et signer"}</button>
         </div>
       </div>
     </article>
@@ -4377,7 +4755,7 @@ function adminBatOverviewCard() {
           <button class="delete-campaign-btn" type="button" title="Supprimer la validation" aria-label="Supprimer la validation" data-delete-validation>&#128465;</button>
         </div>
         <h3>${escapeHtml(validationConfig.title)}</h3>
-        <p>${formatRichText(validationConfig.description)}</p>
+        <p>${escapeHtml(validationConfig.description)}</p>
       </div>
       <div class="campaign-foot">
         <strong>${batDocuments.length} document${batDocuments.length > 1 ? "s" : ""} importé${batDocuments.length > 1 ? "s" : ""}</strong>
@@ -4386,6 +4764,29 @@ function adminBatOverviewCard() {
           ${unmatched.length ? `<span class="request-badge">${unmatched.length} non reconnu${unmatched.length > 1 ? "s" : ""}</span>` : ""}
           ${validationConfig.draft ? `<button class="primary-btn" type="button" data-publish-validation>Publier</button>` : `<button class="ghost-btn" type="button" data-toggle-validation-archive>${validationConfig.archived ? "Rouvrir" : "Archiver"}</button>`}
           <button class="primary-btn" type="button" data-admin-bat-overview>Documents en attente validation</button>
+        </div>
+      </div>
+    </article>
+  `;
+}
+
+function attestationSummaryCard(campaign, responses) {
+  const statusLabel = campaign.draft ? "Brouillon" : (campaign.archived ? "Archivée" : "Publiée");
+  const totalCount = campaign.documents.length;
+  const signedCount = (responses || []).length;
+  return `
+    <article class="campaign-card bat-card clickable" data-admin-attestation-overview role="button" tabindex="0">
+      <div>
+        <div class="campaign-card-top">
+          <span class="campaign-type bat-type ${campaign.archived ? "closed" : ""} ${campaign.draft ? "draft" : ""}">${statusLabel}</span>
+        </div>
+        <h3>${escapeHtml(campaign.title || "Attestation d'engagement")}</h3>
+        <p>${escapeHtml(campaign.description || "")}</p>
+      </div>
+      <div class="campaign-foot">
+        <strong>${signedCount} / ${totalCount} pharmacie${totalCount > 1 ? "s" : ""} ont signé</strong>
+        <div class="campaign-actions">
+          <button class="primary-btn" type="button" data-admin-attestation-overview>Voir le détail</button>
         </div>
       </div>
     </article>
@@ -4403,13 +4804,20 @@ function showAdminSection(section) {
   const closedActions = showClosedCampaignsBtn?.closest(".closed-campaign-actions");
   const showCampaignList = activeGroup === "campaign" && activeState !== "new";
   const showPollList = activeGroup === "poll" && activeState !== "new";
-  const showInfoList = activeGroup === "document" && activeState !== "new";
+  const isAttestationDetail = activeAdminSection === "attestation-main";
+  const showInfoList = activeGroup === "document" && activeState !== "new" && !isAttestationDetail;
   const showPharmacies = activeAdminSection === "parametre";
-  const showBatList = activeGroup === "document" && activeState !== "new"
+  const showAttestation = isAttestationDetail;
+  const showBatList = activeGroup === "document" && activeState !== "new" && !isAttestationDetail
     && validationConfig.exists
     && (activeState === "draft" ? validationConfig.draft
       : activeState === "archived" ? (!validationConfig.draft && validationConfig.archived)
       : (!validationConfig.draft && !validationConfig.archived));
+  const showAttestationCardList = activeGroup === "document" && activeState !== "new" && !isAttestationDetail
+    && Boolean(adminAttestationCampaign)
+    && (activeState === "draft" ? adminAttestationCampaign.draft
+      : activeState === "archived" ? (!adminAttestationCampaign.draft && adminAttestationCampaign.archived)
+      : (!adminAttestationCampaign.draft && !adminAttestationCampaign.archived));
 
   adminCampaignTitle.textContent = sectionCopy.title;
   adminSectionIntro.textContent = sectionCopy.intro;
@@ -4438,6 +4846,8 @@ function showAdminSection(section) {
   if (adminBatBlock) adminBatBlock.hidden = !showBatList;
   adminPollBlock.hidden = !showPollList;
   adminInfoBlock.hidden = !showInfoList;
+  if (adminAttestationBlock) adminAttestationBlock.hidden = !showAttestation;
+  if (adminAttestationCardBlock) adminAttestationCardBlock.hidden = !showAttestationCardList;
   if (closedActions) closedActions.hidden = true;
 
   adminDashboardNav?.querySelectorAll("[data-admin-group]").forEach((button) => {
@@ -4466,6 +4876,9 @@ async function showAdminSectionFresh(section) {
     }
     if (nextGroup === "document" && nextState !== "new") {
       await refreshAdminValidationResponses();
+    }
+    if (nextGroup === "document") {
+      await refreshAdminAttestation();
     }
   }
   showAdminSection(nextSection);
@@ -4522,8 +4935,14 @@ function renderCampaignPickers() {
     ? openPollsRecentFirst.map((poll) => pollCard(poll, "form")).join("")
     : '<p class="empty-campaigns">Aucun sondage en attente pour le moment.</p>';
 
-  infoCards.innerHTML = openInfoForms.length
-    ? openInfoForms.map((infoForm) => infoFormCard(infoForm, "form")).join("")
+  const infoCardsToDisplay = [];
+  if (isAttestationVisibleForPharmacy()) {
+    infoCardsToDisplay.push(attestationCard());
+  }
+  infoCardsToDisplay.push(...openInfoForms.map((infoForm) => infoFormCard(infoForm, "form")));
+
+  infoCards.innerHTML = infoCardsToDisplay.length
+    ? infoCardsToDisplay.join("")
     : '<p class="empty-campaigns">Aucun document en attente pour le moment.</p>';
 
   if (batPickerBlock) batPickerBlock.hidden = true;
@@ -4554,6 +4973,17 @@ function renderCampaignPickers() {
     adminBatCards.innerHTML = (showDraftValidation || showActiveValidation || showArchivedValidation)
       ? adminBatOverviewCard()
       : `<p class="empty-campaigns">${emptyLabel}</p>`;
+  }
+
+  if (adminAttestationCards) {
+    const attestationCampaign = adminAttestationCampaign;
+    const matchesState = Boolean(attestationCampaign)
+      && (activeState === "draft" ? attestationCampaign.draft
+        : activeState === "archived" ? (!attestationCampaign.draft && attestationCampaign.archived)
+        : (!attestationCampaign.draft && !attestationCampaign.archived));
+    adminAttestationCards.innerHTML = matchesState
+      ? attestationSummaryCard(attestationCampaign, adminAttestationResponses)
+      : "";
   }
 
   showClosedCampaignsBtn.textContent = adminShowingClosedCampaigns ? "Campagnes actives" : "Campagnes clôturées";
@@ -4603,7 +5033,7 @@ function renderSatisfactionQuestions(poll) {
   if (satisfactionFreeTextBlock) {
     satisfactionFreeTextBlock.hidden = !poll.freeTextLabel;
     if (poll.freeTextLabel) {
-      satisfactionFreeTextLabel.innerHTML = formatRichText(poll.freeTextLabel);
+      satisfactionFreeTextLabel.textContent = poll.freeTextLabel;
       satisfactionFreeText.required = Boolean(poll.freeTextRequired);
     }
   }
@@ -4636,6 +5066,7 @@ function openSatisfactionPage(pollId) {
   if (sondagesListPage) sondagesListPage.hidden = true;
   if (pendingDocumentsListPage) pendingDocumentsListPage.hidden = true;
   if (upcomingListPage) upcomingListPage.hidden = true;
+  if (attestationPage) attestationPage.hidden = true;
   if (archivedOrdersPanel) archivedOrdersPanel.hidden = true;
 
   satisfactionForm.dataset.inlinePollForm = poll.id;
@@ -4675,10 +5106,11 @@ function selectCampaign(campaignId) {
   if (sondagesListPage) sondagesListPage.hidden = true;
   if (pendingDocumentsListPage) pendingDocumentsListPage.hidden = true;
   if (upcomingListPage) upcomingListPage.hidden = true;
+  if (attestationPage) attestationPage.hidden = true;
   document.querySelector("#formTitle").textContent = "Commande, précommande, confirmation";
   if (selectedCampaign.pharmacyMessage) {
     campaignNotice.hidden = false;
-    campaignNotice.innerHTML = formatRichText(selectedCampaign.pharmacyMessage);
+    campaignNotice.textContent = selectedCampaign.pharmacyMessage;
   } else {
     campaignNotice.hidden = true;
     campaignNotice.textContent = "";
@@ -4722,6 +5154,7 @@ function selectPoll(pollId) {
   if (sondagesListPage) sondagesListPage.hidden = true;
   if (pendingDocumentsListPage) pendingDocumentsListPage.hidden = true;
   if (upcomingListPage) upcomingListPage.hidden = true;
+  if (attestationPage) attestationPage.hidden = true;
   renderCampaignPickers();
   const openedCard = Array.from(pollCards.querySelectorAll("[data-inline-poll-form]"))
     .find((item) => item.dataset.inlinePollForm === selectedPoll.id);
@@ -4753,10 +5186,11 @@ function selectInfoForm(infoFormId) {
   if (sondagesListPage) sondagesListPage.hidden = true;
   if (pendingDocumentsListPage) pendingDocumentsListPage.hidden = true;
   if (upcomingListPage) upcomingListPage.hidden = true;
+  if (attestationPage) attestationPage.hidden = true;
 
   profileUpdateForm.reset();
   profileFormTitle.textContent = selectedInfoForm.title;
-  profileFormIntro.innerHTML = formatRichText(selectedInfoForm.intro || "Merci de noter vos coordonnées, réseaux sociaux, horaires et services proposés.");
+  profileFormIntro.textContent = selectedInfoForm.intro || "Merci de noter vos coordonnées, réseaux sociaux, horaires et services proposés.";
   profilePharmacyName.value = previousResponse?.pharmacyName || currentPharmacy?.name || "";
   profilePharmacyName.readOnly = Boolean(currentPharmacy?.name);
   profileAddress.value = previousResponse?.address || "";
@@ -4804,6 +5238,7 @@ function selectBat(documentId) {
   if (sondagesListPage) sondagesListPage.hidden = true;
   if (pendingDocumentsListPage) pendingDocumentsListPage.hidden = true;
   if (upcomingListPage) upcomingListPage.hidden = true;
+  if (attestationPage) attestationPage.hidden = true;
 
   batFormTitle.textContent = currentValidationConfig().title;
   batPdfTitle.textContent = `Document - ${selectedBatDocument.pharmacyName}`;
@@ -5079,6 +5514,7 @@ function showCampaignPicker() {
   if (sondagesListPage) sondagesListPage.hidden = true;
   if (pendingDocumentsListPage) pendingDocumentsListPage.hidden = true;
   if (upcomingListPage) upcomingListPage.hidden = true;
+  if (attestationPage) attestationPage.hidden = true;
   campaignNotice.hidden = true;
   campaignNotice.textContent = "";
   refreshCampaignImagePreview(null);
@@ -5102,6 +5538,7 @@ function showSuccessScreen() {
   if (sondagesListPage) sondagesListPage.hidden = true;
   if (pendingDocumentsListPage) pendingDocumentsListPage.hidden = true;
   if (upcomingListPage) upcomingListPage.hidden = true;
+  if (attestationPage) attestationPage.hidden = true;
 }
 
 async function selectAdminCampaign(campaignId) {
@@ -5200,13 +5637,7 @@ function isPriceColumn(column) {
 function displayColumnValue(column, value) {
   const text = value == null ? "" : String(value);
   if (!text || !isPriceColumn(column)) return text;
-  const alreadyHasEuro = /€/.test(text);
-  const numericText = alreadyHasEuro ? text.replace(/€/g, "").trim() : text;
-  const numericValue = Number(numericText.replace(",", "."));
-  const rounded = Number.isFinite(numericValue)
-    ? numericValue.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-    : text;
-  return `${rounded} €`;
+  return /€/.test(text) ? text : `${text} €`;
 }
 
 // Construit la ligne d'en-tête (<tr>) d'un tableau à colonnes libres : les colonnes
@@ -5762,6 +6193,7 @@ function showPublicPollResults(pollId) {
   if (sondagesListPage) sondagesListPage.hidden = true;
   if (pendingDocumentsListPage) pendingDocumentsListPage.hidden = true;
   if (upcomingListPage) upcomingListPage.hidden = true;
+  if (attestationPage) attestationPage.hidden = true;
   if (pharmacyGate) pharmacyGate.hidden = true;
 
   refreshPublicPollResults(pollId);
@@ -6764,6 +7196,39 @@ viewPendingDocumentsBtn?.addEventListener("click", () => {
   showPendingDocumentsListPage();
 });
 
+// Clic sur une carte de la tuile fusionnée "Document en attente" (BAT calendriers
+// ou attestation d'engagement).
+pendingDocumentsListRows?.addEventListener("click", (event) => {
+  if (event.target.closest("[data-preview-image], [data-bat-pdf-link]")) return;
+  const batButton = event.target.closest("[data-form-bat]");
+  if (batButton) {
+    selectBat(batButton.dataset.formBat);
+    return;
+  }
+  const attestationButton = event.target.closest("[data-open-attestation]");
+  if (attestationButton) {
+    showAttestationPage();
+    return;
+  }
+});
+
+pendingDocumentsListRows?.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter" && event.key !== " ") return;
+  if (event.target.closest("[data-preview-image], [data-bat-pdf-link], button, input, textarea")) return;
+  const batCard = event.target.closest("[data-form-bat]");
+  if (batCard) {
+    event.preventDefault();
+    selectBat(batCard.dataset.formBat);
+    return;
+  }
+  const attestationCardEl = event.target.closest("[data-open-attestation]");
+  if (attestationCardEl) {
+    event.preventDefault();
+    showAttestationPage();
+    return;
+  }
+});
+
 viewUpcomingBtn?.addEventListener("click", () => {
   showUpcomingListPage();
 });
@@ -6989,6 +7454,11 @@ satisfactionForm?.addEventListener("submit", async (event) => {
 });
 
 infoCards?.addEventListener("click", (event) => {
+  const attestationEl = event.target.closest("[data-open-attestation]");
+  if (attestationEl) {
+    showAttestationPage();
+    return;
+  }
   const button = event.target.closest("[data-info-form]");
   if (!button) return;
   selectInfoForm(button.dataset.infoForm);
@@ -6996,6 +7466,12 @@ infoCards?.addEventListener("click", (event) => {
 
 infoCards?.addEventListener("keydown", (event) => {
   if (event.key !== "Enter" && event.key !== " ") return;
+  const attestationEl = event.target.closest("[data-open-attestation]");
+  if (attestationEl) {
+    event.preventDefault();
+    showAttestationPage();
+    return;
+  }
   const card = event.target.closest("[data-info-form]");
   if (!card) return;
   event.preventDefault();
@@ -7278,6 +7754,16 @@ adminBatCards?.addEventListener("click", async (event) => {
   const button = event.target.closest("[data-admin-bat-overview], [data-admin-bat-document]");
   if (!button) return;
   await selectAdminBat();
+});
+
+adminAttestationCards?.addEventListener("click", async (event) => {
+  const button = event.target.closest("[data-admin-attestation-overview]");
+  if (!button) return;
+  await showAdminSectionFresh("attestation-main");
+});
+
+backToDocumentsFromAttestationBtn?.addEventListener("click", async () => {
+  await showAdminSectionFresh("document-current");
 });
 
 createValidationForm?.addEventListener("submit", async (event) => {
@@ -7913,7 +8399,7 @@ function showOrderImportConfirm(template) {
   }
   if (orderImportPreviewBody) {
     orderImportPreviewBody.innerHTML = template.rows.slice(0, 5).map((row) => `
-      <tr>${template.columns.map((column) => `<td>${escapeHtml(displayColumnValue(column, row.values?.[column]))}</td>`).join("")}</tr>
+      <tr>${template.columns.map((column) => `<td>${escapeHtml(row.values?.[column] || "")}</td>`).join("")}</tr>
     `).join("") || `<tr><td colspan="${Math.max(template.columns.length, 1)}" class="empty-state">Aucune ligne détectée.</td></tr>`;
   }
   if (orderImportRowCount) orderImportRowCount.textContent = String(template.rows.length);
@@ -8250,14 +8736,16 @@ async function unlockAdminPanel() {
   await showAdminCampaignPicker();
 }
 
-// Le code administrateur partagé n'ouvre plus l'espace admin directement
-// (13/10/2026) : chaque administrateur SOGUASPHAR a maintenant un compte
-// personnel (e-mail + mot de passe), c'est le seul moyen d'entrer, pour que
-// "Dernière connexion" reflète vraiment qui se connecte.
-adminLogin.addEventListener("submit", (event) => {
+adminLogin.addEventListener("submit", async (event) => {
   event.preventDefault();
-  adminMessage.textContent = "";
-  showNewAuthScreen();
+  const code = document.querySelector("#adminCode").value.trim();
+  if (code !== ADMIN_CODE) {
+    adminMessage.textContent = "Code administrateur incorrect.";
+    return;
+  }
+
+  await unlockAdminPanel();
+  adminMessage.textContent = "Accès administrateur ouvert.";
 });
 
 exportExcelBtn.addEventListener("click", exportToExcel);
@@ -8340,6 +8828,7 @@ async function init() {
   if (sondagesListPage) sondagesListPage.hidden = true;
   if (pendingDocumentsListPage) pendingDocumentsListPage.hidden = true;
   if (upcomingListPage) upcomingListPage.hidden = true;
+  if (attestationPage) attestationPage.hidden = true;
   campaigns = await getCampaigns();
   polls = await getPolls();
   infoForms = await getInfoForms();

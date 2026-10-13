@@ -162,6 +162,10 @@
             <span class="hero-menu-label">Précommande à venir</span>
             <span id="upcomingCountBadge" class="hero-menu-badge" hidden>0</span>
           </button>
+          <button id="viewAttestation" class="hero-menu-btn" type="button" hidden>
+            <span class="hero-menu-label">Attestation d'engagement</span>
+            <span id="attestationCountBadge" class="hero-menu-badge" hidden>0</span>
+          </button>
           <button id="viewArchives" class="hero-menu-btn" type="button">
             <span class="hero-menu-label">Archivés</span>
           </button>
@@ -201,6 +205,61 @@
         </div>
         <div id="upcomingListRows" class="campaign-list-container" aria-live="polite"></div>
         <p id="upcomingEmpty" class="empty-campaigns" hidden>Rien de programmé pour le moment.</p>
+      </section>
+
+      <section id="attestationPage" class="form-shell campaign-list-page" hidden>
+        <button id="backToAttestationMenuBtn" class="back-strong-btn" type="button">← Retour au menu</button>
+        <div class="section-head">
+          <div>
+            <h2 id="attestationPageTitle">Attestation d'engagement SOGUASPHAR 2027</h2>
+            <p id="attestationPageIntro">Ce document est indispensable pour permettre à SOGUASPHAR de négocier vos conditions commerciales auprès des laboratoires, d'accéder à vos données de ventes et d'assurer le suivi ainsi que le versement de vos RFA pour 2027.</p>
+            <p id="attestationPageInstructions">Merci de vérifier les informations préremplies, de les compléter ou corriger si nécessaire, puis d'ajouter une photo de votre signature et du cachet de votre pharmacie.</p>
+          </div>
+        </div>
+        <div id="attestationAlreadySigned" class="campaign-done-summary" hidden>
+          <strong>Déjà signée le <span id="attestationSignedDate"></span></strong>
+          <span>Vous pouvez la retélécharger, ou la signer à nouveau si une correction est nécessaire.</span>
+          <p><a id="attestationDownloadLink" class="ghost-btn" href="#" target="_blank" rel="noopener">⇩ Télécharger l'attestation signée</a></p>
+        </div>
+        <p class="form-help"><a id="attestationPreviewLink" href="#" target="_blank" rel="noopener" class="ghost-btn">📄 Voir le document complet avant de signer</a></p>
+        <p id="attestationViewRequiredNotice" class="status-message" role="status">⚠️ Ouvrez et lisez d'abord le document complet ci-dessus : la signature ne sera possible qu'ensuite.</p>
+        <form id="attestationForm" class="create-campaign-form">
+          <label for="attestationPharmacyName">Pharmacie</label>
+          <input id="attestationPharmacyName" type="text" readonly>
+
+          <label for="attestationSocieteExploitante">Société exploitante</label>
+          <input id="attestationSocieteExploitante" type="text" placeholder="Ex. SELARL PHARMACIE DU CENTRE" autocomplete="off">
+
+          <div class="create-campaign-row">
+            <div>
+              <label for="attestationSiren">SIREN</label>
+              <input id="attestationSiren" type="text" autocomplete="off">
+            </div>
+            <div>
+              <label for="attestationRepresentant">Représentée par</label>
+              <input id="attestationRepresentant" type="text" autocomplete="off">
+            </div>
+          </div>
+          <label for="attestationQualite">En qualité de</label>
+          <input id="attestationQualite" type="text" autocomplete="off">
+
+          <label for="attestationFaitA">Fait à (ville)</label>
+          <input id="attestationFaitA" type="text" placeholder="Ex. Pointe-à-Pitre" autocomplete="off">
+
+          <p class="form-help">Imprimez et signez à la main la mention « Lu et approuvé – Bon pour adhésion, engagement et mandat pour l'année <span id="attestationYearInline"></span> », avec votre cachet, puis prenez-en une photo nette.</p>
+          <label for="attestationSignatureFile">Photo de la signature et du cachet</label>
+          <div class="upload-actions">
+            <label class="file-btn" for="attestationSignatureFile">Choisir une photo</label>
+            <input id="attestationSignatureFile" type="file" accept="image/*">
+          </div>
+          <div id="attestationSignaturePreview" class="campaign-image-admin-preview" hidden>
+            <img id="attestationSignaturePreviewImg" alt="">
+          </div>
+
+          <p class="form-help"><strong>Merci de bien contrôler les informations ci-dessus avant de signer.</strong></p>
+          <button id="attestationSubmitBtn" class="primary-btn" type="submit" disabled>Signer et envoyer l'attestation</button>
+          <p id="attestationFormMessage" class="status-message" role="status"></p>
+        </form>
       </section>
 
       <section id="satisfactionListPage" class="form-shell campaign-list-page" hidden>
@@ -535,10 +594,12 @@
         <aside class="admin-panel">
           <p class="eyebrow">Espace administrateur</p>
           <h1 id="adminTitle">Récapitulatif</h1>
-          <p>Accès réservé aux administrateurs SOGUASPHAR, avec leur compte personnel (e-mail et mot de passe).</p>
+          <p>Accès réservé aux personnes disposant du code administrateur.</p>
 
           <form id="adminLogin" class="admin-login">
-            <button class="primary-btn" type="submit">Me connecter avec mon compte personnel</button>
+            <label for="adminCode">Code administrateur</label>
+            <input id="adminCode" type="password" autocomplete="current-password" placeholder="Saisir le code">
+            <button class="primary-btn" type="submit">Ouvrir le récap</button>
           </form>
           <p id="adminMessage" class="status-message" role="status"></p>
         </aside>
@@ -744,6 +805,10 @@
               <h2>Validations en attente</h2>
               <div id="adminBatCards" class="campaign-grid" aria-live="polite"></div>
             </div>
+            <div class="poll-picker-block" id="adminAttestationCardBlock">
+              <h2>Attestation d'engagement</h2>
+              <div id="adminAttestationCards" class="campaign-grid" aria-live="polite"></div>
+            </div>
             <div class="poll-picker-block" id="adminPollBlock">
               <h2>Sondages</h2>
               <div id="adminPollCards" class="campaign-grid" aria-live="polite"></div>
@@ -752,6 +817,39 @@
               <h2>Fiches pharmacies</h2>
               <div id="adminInfoCards" class="campaign-grid" aria-live="polite"></div>
             </div>
+
+            <section id="adminAttestationBlock" class="settings-panel" hidden>
+              <button id="backToDocumentsFromAttestationBtn" class="back-strong-btn" type="button">← Retour aux documents</button>
+              <div class="table-toolbar pharmacy-export-toolbar">
+                <div>
+                  <h2>Attestation d'engagement <span id="attestationStatusBadge" class="settings-count-badge">Brouillon</span></h2>
+                  <p id="attestationAdminIntro">44 pharmacies pré-remplies à partir du fichier adhérents. Vérifiez, puis publiez pour que les pharmacies puissent signer.</p>
+                </div>
+                <div class="settings-table-actions">
+                  <button id="attestationPublishBtn" class="primary-btn" type="button">Publier aux pharmacies</button>
+                  <button id="attestationArchiveBtn" class="ghost-btn" type="button" hidden>Archiver</button>
+                  <button id="attestationReopenBtn" class="ghost-btn" type="button" hidden>Rouvrir</button>
+                </div>
+              </div>
+              <p id="attestationSignedCount" class="form-help"></p>
+              <div class="table-wrap compact">
+                <table id="attestationTable">
+                  <thead>
+                    <tr>
+                      <th>Pharmacie</th>
+                      <th>Représentant</th>
+                      <th>SIREN</th>
+                      <th>Société exploitante</th>
+                      <th>Statut</th>
+                      <th>Document</th>
+                    </tr>
+                  </thead>
+                  <tbody id="attestationTableRows"></tbody>
+                </table>
+              </div>
+              <button id="attestationSaveEditsBtn" class="primary-btn" type="button">Enregistrer les modifications</button>
+              <p id="attestationAdminMessage" class="status-message" role="status"></p>
+            </section>
           </section>
 
           <div id="adminDetail" hidden>

@@ -945,6 +945,16 @@ main::before {
   background: #fffaf0 !important;
 }
 
+.status-ok {
+  color: #1d7a3b;
+  font-weight: 700;
+}
+
+.status-pending {
+  color: #7a3f00;
+  font-weight: 700;
+}
+
 .pharmacy-actions {
   display: flex;
   gap: 8px;
@@ -2782,6 +2792,13 @@ tbody tr:hover {
 .primary-btn:hover,
 .switch-btn.active:hover {
   background: var(--green-dark);
+}
+
+.primary-btn:disabled {
+  background: #9ca3af;
+  box-shadow: none;
+  cursor: not-allowed;
+  opacity: .7;
 }
 
 .primary-btn:hover {

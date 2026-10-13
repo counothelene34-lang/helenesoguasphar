@@ -18,6 +18,28 @@ if (!ADMIN_CODE) {
 // la clôture/sauvegarde de la campagne.
 const MAILER_URL = process.env.MAILER_URL || "http://sogua-mailer:8080";
 const MAILER_API_KEY = process.env.MAILER_API_KEY || "";
+// Service commun "sogua-connectors" : utilisé UNIQUEMENT pour transformer le
+// HTML de l'attestation d'engagement (texte pré-rempli + photo du tampon/
+// signature) en PDF final (route /html-to-pdf). Si la clé manque, la
+// signature échoue proprement (erreur claire), rien ne casse ailleurs.
+const CONNECTORS_URL = process.env.CONNECTORS_URL || "http://sogua-connectors:8090";
+const CONNECTORS_API_KEY = process.env.CONNECTORS_API_KEY || "";
+
+async function htmlToPdf(html) {
+  if (!CONNECTORS_API_KEY) {
+    throw new Error("CONNECTORS_API_KEY manquant dans .env : génération de PDF impossible");
+  }
+  const result = await fetch(`${CONNECTORS_URL}/html-to-pdf`, {
+    method: "POST",
+    headers: { "content-type": "application/json", "x-api-key": CONNECTORS_API_KEY },
+    body: JSON.stringify({ html })
+  });
+  const data = await result.json().catch(() => ({}));
+  if (!result.ok || !data.ok || !data.content) {
+    throw new Error(data.error || `service PDF : HTTP ${result.status}`);
+  }
+  return Buffer.from(data.content, "base64");
+}
 // Adresse publique de CE site (copie de test ou site en ligne), utilisée pour
 // construire les liens cliqués dans les e-mails (ex. réinitialisation de mot
 // de passe). À définir dans .env ; valeur par défaut = le site en ligne.
@@ -78,6 +100,9 @@ const PHARMACIES_FILE = path.join(DATA_DIR, "pharmacies.json");
 const VALIDATION_FILE = path.join(DATA_DIR, "validation.json");
 const VALIDATION_RESPONSES_FILE = path.join(DATA_DIR, "validation-responses.json");
 const BAT_DOCUMENTS_DIR = path.join(DATA_DIR, "bat-calendriers-2027");
+const ATTESTATIONS_FILE = path.join(DATA_DIR, "attestations.json");
+const ATTESTATION_RESPONSES_FILE = path.join(DATA_DIR, "attestation-responses.json");
+const ATTESTATION_PDF_DIR = path.join(DATA_DIR, "attestations-2027");
 const USERS_FILE = path.join(DATA_DIR, "users.json");
 const SESSIONS_FILE = path.join(DATA_DIR, "sessions.json");
 const SESSION_COOKIE_NAME = "preco_session";
@@ -722,6 +747,232 @@ function readValidationResponses() {
 function writeValidationResponses(responses) {
   if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
   fs.writeFileSync(VALIDATION_RESPONSES_FILE, JSON.stringify(responses, null, 2), "utf8");
+}
+
+// --- Attestation d'engagement (module séparé de "Validation" : une seule
+// campagne active à la fois là-bas, et elle est déjà occupée par les BAT
+// calendriers 2027). "documents" = la fiche pré-remplie par pharmacie
+// (préparée par l'admin, à partir des infos connues : SIREN, titulaire...).
+// Les réponses (attestation-responses.json) = ce que chaque pharmacie a
+// confirmé/complété + sa photo de signature/cachet + le PDF final généré.
+function defaultAttestation() {
+  return {
+    title: "",
+    year: new Date().getFullYear(),
+    description: "",
+    cotisationHT: 0,
+    echeances: [],
+    draft: true,
+    archived: false,
+    documents: []
+  };
+}
+
+function normalizeAttestationDocument(document, index = 0) {
+  return {
+    id: String(document.id || `attestation-document-${Date.now()}-${index}`),
+    pharmacyId: String(document.pharmacyId || "").trim(),
+    pharmacyName: String(document.pharmacyName || "").trim(),
+    societeExploitante: String(document.societeExploitante || "").trim(),
+    siren: String(document.siren || "").trim(),
+    siret: String(document.siret || "").trim(),
+    representant: String(document.representant || "").trim(),
+    qualite: String(document.qualite || "Titulaire").trim(),
+    adresse: String(document.adresse || "").trim(),
+    cp: String(document.cp || "").trim(),
+    ville: String(document.ville || "").trim(),
+    tel: String(document.tel || "").trim(),
+    mailTitulaire: String(document.mailTitulaire || "").trim()
+  };
+}
+
+function readAttestation() {
+  if (!fs.existsSync(ATTESTATIONS_FILE)) return defaultAttestation();
+  const attestation = JSON.parse(fs.readFileSync(ATTESTATIONS_FILE, "utf8") || "{}");
+  return {
+    ...defaultAttestation(),
+    ...attestation,
+    documents: Array.isArray(attestation.documents)
+      ? attestation.documents.map(normalizeAttestationDocument).filter((document) => document.pharmacyId)
+      : []
+  };
+}
+
+function writeAttestation(attestation) {
+  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+  const payload = {
+    title: String(attestation.title || "").trim(),
+    year: Number(attestation.year) || new Date().getFullYear(),
+    description: String(attestation.description || "").trim(),
+    cotisationHT: Number(attestation.cotisationHT) || 0,
+    echeances: Array.isArray(attestation.echeances)
+      ? attestation.echeances.map((item) => ({
+          label: String(item.label || "").trim(),
+          montantHT: Number(item.montantHT) || 0
+        }))
+      : [],
+    draft: Boolean(attestation.draft),
+    archived: Boolean(attestation.archived),
+    documents: Array.isArray(attestation.documents)
+      ? attestation.documents.map(normalizeAttestationDocument).filter((document) => document.pharmacyId)
+      : []
+  };
+  fs.writeFileSync(ATTESTATIONS_FILE, JSON.stringify(payload, null, 2), "utf8");
+  return payload;
+}
+
+function normalizeAttestationResponse(item = {}) {
+  return {
+    id: String(item.id || `attestation-response-${Date.now()}`),
+    documentId: String(item.documentId || "").trim(),
+    pharmacyId: String(item.pharmacyId || "").trim(),
+    pharmacyName: String(item.pharmacyName || "").trim(),
+    societeExploitante: String(item.societeExploitante || "").trim(),
+    siren: String(item.siren || "").trim(),
+    representant: String(item.representant || "").trim(),
+    qualite: String(item.qualite || "").trim(),
+    faitA: String(item.faitA || "").trim(),
+    signedAt: String(item.signedAt || ""),
+    pdfUrl: String(item.pdfUrl || ""),
+    createdAt: String(item.createdAt || new Date().toLocaleString("fr-FR")),
+    updatedAt: String(item.updatedAt || new Date().toLocaleString("fr-FR"))
+  };
+}
+
+function readAttestationResponses() {
+  if (!fs.existsSync(ATTESTATION_RESPONSES_FILE)) return [];
+  const responses = JSON.parse(fs.readFileSync(ATTESTATION_RESPONSES_FILE, "utf8") || "[]");
+  return Array.isArray(responses) ? responses.map(normalizeAttestationResponse) : [];
+}
+
+function writeAttestationResponses(responses) {
+  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+  fs.writeFileSync(ATTESTATION_RESPONSES_FILE, JSON.stringify(responses, null, 2), "utf8");
+}
+
+// Logo SOGUASPHAR affiché en en-tête du PDF de l'attestation (même fichier que
+// celui déjà utilisé ailleurs dans l'app). Lu une seule fois et mis en cache en
+// base64 (intégré directement dans le HTML : le service de conversion ne sait
+// pas résoudre un chemin de fichier local).
+let attestationLogoDataUrl = "";
+function getAttestationLogoDataUrl() {
+  if (attestationLogoDataUrl) return attestationLogoDataUrl;
+  try {
+    const logoPath = path.join(__dirname, "logo-soguasphar.png");
+    const base64 = fs.readFileSync(logoPath).toString("base64");
+    attestationLogoDataUrl = `data:image/png;base64,${base64}`;
+  } catch {
+    attestationLogoDataUrl = "";
+  }
+  return attestationLogoDataUrl;
+}
+
+// Construit le HTML du document final (texte pré-rempli + photo du tampon et
+// de la signature) envoyé au service commun sogua-connectors (/html-to-pdf).
+// Calqué sur le modèle exact fourni par Hélène (certificat 2027.pdf) : même
+// texte, même structure, logo SOGUASPHAR ajouté en en-tête.
+function buildAttestationHtml(doc, response, signatureDataUrl) {
+  const esc = (value) => String(value || "")
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const year = Number(doc.year) || new Date().getFullYear();
+  const formatEuros = (value) => Number(value || 0).toLocaleString("fr-FR");
+  const echeancesHtml = (doc.echeances || [])
+    .map((item) => `<li>${formatEuros(item.montantHT)} € HT le ${esc(item.label)}</li>`)
+    .join("");
+  const logoDataUrl = getAttestationLogoDataUrl();
+  return `<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><style>
+  body { font-family: "Calibri", "Helvetica", Arial, sans-serif; font-size: 12.5px; color: #1a1a1a; line-height: 1.42; padding: 28px 40px; }
+  .letterhead { text-align: center; margin-bottom: 16px; }
+  .letterhead img { max-height: 75px; }
+  h1 { font-size: 19px; text-align: left; margin: 0 0 8px; }
+  h2 { font-size: 13px; text-align: center; margin: 0 0 14px; font-weight: bold; }
+  .field { margin: 2px 0; }
+  h3 { font-size: 13px; margin-top: 14px; margin-bottom: 6px; }
+  p { margin: 8px 0; }
+  ul { margin: 4px 0; padding-left: 22px; }
+  li { margin: 4px 0; }
+  .signature-box { margin-top: 18px; }
+  .signature-box img { max-width: 260px; max-height: 160px; border: 1px solid #ddd; margin-top: 6px; display: block; }
+</style></head>
+<body>
+  ${logoDataUrl ? `<div class="letterhead"><img src="${logoDataUrl}" alt="SOGUASPHAR"></div>` : ""}
+  <h1>ATTESTATION D'ADHÉSION, D'ENGAGEMENT ET DE MANDAT</h1>
+  <h2>ANNÉE ${year}</h2>
+
+  <div class="field"><b>Pharmacie :</b> ${esc(doc.pharmacyName)}</div>
+  <div class="field"><b>Société exploitante :</b> ${esc(response.societeExploitante || doc.societeExploitante)}</div>
+  <div class="field"><b>SIREN :</b> ${esc(response.siren || doc.siren)}</div>
+  <div class="field"><b>Représentée par :</b> ${esc(response.representant || doc.representant)}</div>
+  <div class="field"><b>En qualité de :</b> ${esc(response.qualite || doc.qualite)}</div>
+
+  <p>Je confirme l'adhésion de la pharmacie au groupement <b>SOGUASPHAR pour la période du 1er janvier au 31 décembre ${year} inclus</b>.</p>
+  <p>Pendant cette période, je m'engage à ne pas adhérer à un autre groupement de pharmacies négociant des accords commerciaux concurrents portant sur les mêmes laboratoires ou fournisseurs.</p>
+
+  <h3><b>Mandat de négociation</b></h3>
+  <p>Je donne mandat à SOGUASPHAR pour me représenter et négocier, en mon nom et pour mon compte, les accords commerciaux avec les laboratoires, fournisseurs, grossistes-répartiteurs et partenaires.</p>
+  <p>Ce mandat autorise notamment SOGUASPHAR à négocier les remises, RFA, bonus, objectifs, paliers, budgets, prestations de services et autres avantages commerciaux, ainsi qu'à assurer leur suivi et leur contrôle.</p>
+  <p>Sauf mandat spécifique, SOGUASPHAR ne peut pas passer de commande ni engager directement une dépense au nom de la pharmacie.</p>
+
+  <h3><b>Données chiffrées</b></h3>
+  <p>J'autorise SOGUASPHAR à recueillir, recevoir, centraliser et analyser les données nécessaires aux négociations et au suivi des accords commerciaux, notamment :</p>
+  <ul>
+    <li>les achats et les ventes ;</li>
+    <li>les chiffres d'affaires et les volumes ;</li>
+    <li>les données de sell-out ;</li>
+    <li>les parts de marché et taux de pénétration ;</li>
+    <li>les objectifs, remises, bonus et RFA.</li>
+  </ul>
+  <p>Ces informations pourront être obtenues auprès de la pharmacie, de son LGO, de SOGUASTAT, des grossistes, laboratoires, fournisseurs et partenaires.</p>
+  <p>J'autorise expressément ces organismes à transmettre directement ces informations à SOGUASPHAR. Elles seront utilisées uniquement pour la négociation, le pilotage des accords, le contrôle des objectifs et le calcul des rémunérations.</p>
+  <p>SOGUASPHAR s'engage à préserver la confidentialité des données individuelles de la pharmacie.</p>
+
+  <h3><b>Cotisation et règlements</b></h3>
+  <p>Je m'engage à régler la cotisation annuelle de <b>${formatEuros(doc.cotisationHT)} € HT</b>, par prélèvement automatique en deux échéances :</p>
+  <ul>${echeancesHtml}</ul>
+  <p>J'autorise également le prélèvement automatique des factures émises par SOGUASPHAR selon les échéances indiquées.</p>
+
+  <h3><b>RFA et avantages commerciaux</b></h3>
+  <p>J'autorise les laboratoires et fournisseurs à verser directement à SOGUASPHAR les prestations de services, RFA, bonus et autres rémunérations négociées.</p>
+  <p>Les reversements éventuellement dus à la pharmacie restent soumis :</p>
+  <ul>
+    <li>au paiement effectif des sommes par le partenaire ;</li>
+    <li>au respect des objectifs et conditions prévus ;</li>
+    <li>au règlement des sommes dues à SOGUASPHAR.</li>
+  </ul>
+
+  <h3><b>Engagements de la pharmacie</b></h3>
+  <p>Je m'engage à :</p>
+  <ul>
+    <li>respecter les conditions des accords auxquels la pharmacie participe ;</li>
+    <li>transmettre des informations exactes et actualisées ;</li>
+    <li>ne pas rétrocéder à une pharmacie non adhérente les produits achetés auprès de la centrale SOGUASPHAR ;</li>
+    <li>ne pas divulguer les contrats, conditions commerciales et informations confidentielles du Groupement.</li>
+  </ul>
+  <p>Tout manquement pourra entraîner, après information de la pharmacie, la suspension de certains avantages ou l'exclusion du Groupement.</p>
+
+  <h3><b>Départ et changement d'exploitant</b></h3>
+  <p>Toute demande de départ devra être adressée par écrit à SOGUASPHAR avant le <b>30 septembre ${year}</b> et prendra effet au <b>31 décembre ${year}</b>.</p>
+  <p>Les obligations de la pharmacie et la cotisation annuelle resteront applicables jusqu'à cette date.</p>
+  <p>En cas de cession de l'officine ou de changement d'exploitant en cours d'année, aucuns frais supplémentaires d'adhésion ne seront facturés. Le nouvel exploitant devra cependant signer une nouvelle attestation pour confirmer la poursuite de l'adhésion.</p>
+  <p>Les associés investisseurs n'exerçant pas au sein de la pharmacie ne disposent d'aucun droit automatique de participation à la vie du Groupement.</p>
+
+  <p class="field"><b>Fait à :</b> ${esc(response.faitA)}</p>
+  <p class="field"><b>Le :</b> ${esc(response.signedAt)}</p>
+
+  <div class="signature-box">
+    <p><b>Pour la pharmacie</b></p>
+    <p>Mention manuscrite :<br><b>« Lu et approuvé – Bon pour adhésion, engagement et mandat pour l'année ${year} »</b></p>
+    <p>Signature et cachet :</p>
+    ${signatureDataUrl ? `<img src="${signatureDataUrl}" alt="Signature et cachet">` : ""}
+  </div>
+
+  <div class="signature-box">
+    <p><b>Pour SOGUASPHAR</b></p>
+    <p>Mention : <b>« Mandat accepté »</b></p>
+    <p>Signature et cachet :</p>
+  </div>
+</body></html>`;
 }
 
 function readBody(request) {
@@ -1785,6 +2036,26 @@ const server = http.createServer(async (request, response) => {
       return;
     }
 
+    if (url.pathname.startsWith("/attestations-2027/") && request.method === "GET") {
+      const requestedName = path.basename(url.pathname.slice("/attestations-2027/".length));
+      const filePath = path.join(ATTESTATION_PDF_DIR, requestedName);
+      if (!filePath.startsWith(ATTESTATION_PDF_DIR) || !/^pharmacy-[\w-]+\.pdf$/.test(requestedName)) {
+        response.writeHead(403);
+        response.end("Forbidden");
+        return;
+      }
+      fs.readFile(filePath, (error, data) => {
+        if (error) {
+          response.writeHead(404);
+          response.end("Not found");
+          return;
+        }
+        response.writeHead(200, { "Content-Type": "application/pdf" });
+        response.end(data);
+      });
+      return;
+    }
+
     if (url.pathname.startsWith("/captures-demo/") && request.method === "GET") {
       const requestedName = path.basename(url.pathname.slice("/captures-demo/".length));
       const capturesDir = path.join(ROOT, "data", "captures");
@@ -2037,28 +2308,95 @@ const server = http.createServer(async (request, response) => {
       return;
     }
 
-    // Ancien système (mot de passe unique par pharmacie) : fermé le 13/10/2026
-    // à la demande d'Hélène, maintenant que chaque pharmacie a un compte
-    // personnel (e-mail + mot de passe). On renvoie une erreur claire plutôt
-    // que de laisser cette ancienne porte fonctionner (l'écran correspondant
-    // n'est de toute façon plus accessible côté interface).
     if (url.pathname === "/api/pharmacy-password-reset-request" && request.method === "POST") {
-      sendJson(response, 410, { error: "Cet ancien accès n'est plus utilisé. Utilisez votre compte personnel (e-mail + mot de passe) ou le lien « Mot de passe oublié » de l'écran de connexion." });
+      const payload = JSON.parse(await readBody(request));
+      const pharmacyName = normalizeLookup(payload.pharmacyName);
+      if (!pharmacyName) {
+        sendJson(response, 400, { error: "Indiquez le nom de la pharmacie." });
+        return;
+      }
+
+      const pharmacies = readPharmacies();
+      const pharmacy = pharmacies.find((item) => item.active !== false && normalizeLookup(item.name) === pharmacyName)
+        || pharmacies.find((item) => {
+          const name = normalizeLookup(item.name);
+          return item.active !== false && (name.includes(pharmacyName) || pharmacyName.includes(name));
+        });
+      if (pharmacy) {
+        const updatedPharmacies = pharmacies.map((item) => item.id === pharmacy.id ? {
+          ...item,
+          passwordResetRequested: true,
+          passwordResetRequestedAt: new Date().toLocaleString("fr-FR")
+        } : item);
+        writePharmacies(updatedPharmacies);
+      }
+
+      sendJson(response, 200, { ok: true });
       return;
     }
 
-    // Ancien système (mot de passe unique par pharmacie) : fermé le 13/10/2026
-    // à la demande d'Hélène, maintenant que chaque pharmacie a un compte
-    // personnel (e-mail + mot de passe) — voir CLAUDE.md « Pièges connus ».
-    // On garde la route pour répondre proprement plutôt que de 404 à une
-    // éventuelle page restée ouverte dans un vieux navigateur.
     if (url.pathname === "/api/pharmacy-login" && request.method === "POST") {
-      sendJson(response, 410, { error: "Cet ancien accès n'est plus utilisé. Connectez-vous avec votre compte personnel (e-mail + mot de passe)." });
+      const bruteForceKey = `pharmacy-login:${getClientIp(request)}`;
+      if (isLocked(bruteForceKey)) {
+        sendJson(response, 429, { error: "Trop de tentatives. Réessayez dans quelques minutes." });
+        return;
+      }
+      const payload = JSON.parse(await readBody(request));
+      const password = String(payload.password || "").trim();
+      const pharmacy = readPharmacies().find((item) => item.active !== false && verifyPassword(password, item.passwordHash));
+      if (!pharmacy) {
+        registerFailure(bruteForceKey);
+        sendJson(response, 401, { error: "Mot de passe pharmacie incorrect" });
+        return;
+      }
+      registerSuccess(bruteForceKey);
+      const pharmacyToken = createSession(null, "pharmacy_legacy", pharmacy.id);
+      setSessionCookie(response, pharmacyToken, "pharmacy_legacy");
+      sendJson(response, 200, {
+        id: pharmacy.id,
+        name: pharmacy.name,
+        mustChangePassword: pharmacy.mustChangePassword !== false
+      });
       return;
     }
 
     if (url.pathname === "/api/pharmacy-password" && request.method === "PUT") {
-      sendJson(response, 410, { error: "Cet ancien accès n'est plus utilisé. Connectez-vous avec votre compte personnel (e-mail + mot de passe)." });
+      const payload = JSON.parse(await readBody(request));
+      const pharmacyId = String(payload.pharmacyId || "").trim();
+      const oldPassword = String(payload.oldPassword || "").trim();
+      const newPassword = String(payload.newPassword || "").trim();
+      const bruteForceKey = `pharmacy-password:${getClientIp(request)}:${pharmacyId}`;
+      if (isLocked(bruteForceKey)) {
+        sendJson(response, 429, { error: "Trop de tentatives. Réessayez dans quelques minutes." });
+        return;
+      }
+      const pharmacies = readPharmacies();
+      const pharmacy = pharmacies.find((item) => item.active !== false && item.id === pharmacyId && verifyPassword(oldPassword, item.passwordHash));
+
+      if (!pharmacy) {
+        registerFailure(bruteForceKey);
+        sendJson(response, 401, { error: "Mot de passe actuel incorrect" });
+        return;
+      }
+      registerSuccess(bruteForceKey);
+
+      const ruleError = passwordRuleError(newPassword);
+      if (ruleError) {
+        sendJson(response, 400, { error: ruleError });
+        return;
+      }
+
+      const updatedPharmacies = pharmacies.map((item) => item.id === pharmacy.id ? {
+        ...item,
+        passwordHash: hashPassword(newPassword),
+        mustChangePassword: false,
+        passwordResetRequested: false,
+        passwordResetRequestedAt: ""
+      } : item);
+      writePharmacies(updatedPharmacies);
+      const changeToken = createSession(null, "pharmacy_legacy", pharmacy.id);
+      setSessionCookie(response, changeToken, "pharmacy_legacy");
+      sendJson(response, 200, { id: pharmacy.id, name: pharmacy.name, mustChangePassword: false });
       return;
     }
 
@@ -2230,8 +2568,7 @@ const server = http.createServer(async (request, response) => {
         passwordHash: hashPassword(newPassword),
         mustChangePassword: false,
         resetTokenHash: null,
-        resetTokenExpiresAt: null,
-        lastLoginAt: new Date().toISOString()
+        resetTokenExpiresAt: null
       } : item);
       writeUsers(updatedUsers);
       const updatedUser = updatedUsers.find((item) => item.id === user.id);
@@ -3009,6 +3346,155 @@ const server = http.createServer(async (request, response) => {
         ? latestInfoResponses(readInfoResponses()).filter((item) => responseMatchesInfoForm(item, formId))
         : latestInfoResponses(readInfoResponses());
       sendInfoExcel(response, responses);
+      return;
+    }
+
+    // --- Attestation d'engagement (module séparé de "Validation") ---------
+
+    if (url.pathname === "/api/attestations" && request.method === "GET") {
+      if (!requireAdminCode(request, response)) return;
+      sendJson(response, 200, readAttestation());
+      return;
+    }
+
+    if (url.pathname === "/api/attestations" && request.method === "PUT") {
+      if (!requireAdminCode(request, response)) return;
+      const payload = JSON.parse(await readBody(request));
+      sendJson(response, 200, writeAttestation(payload));
+      return;
+    }
+
+    // Pharmacie : sa fiche pré-remplie + sa réponse (si déjà signée).
+    if (url.pathname === "/api/attestation" && request.method === "GET") {
+      const user = requireAuth(request, response, PHARMACY_SESSION_ROLES.concat(["soguasphar_admin"]));
+      if (!user) return;
+      const attestation = readAttestation();
+      const pharmacyId = url.searchParams.get("pharmacyId") || user.pharmacyId;
+      if (!requireSamePharmacy(user, pharmacyId)) {
+        sendJson(response, 403, { error: "Accès refusé" });
+        return;
+      }
+      const document = attestation.documents.find((item) => item.pharmacyId === pharmacyId) || null;
+      const existingResponse = readAttestationResponses().find((item) => item.pharmacyId === pharmacyId) || null;
+      sendJson(response, 200, {
+        title: attestation.title,
+        year: attestation.year,
+        description: attestation.description,
+        cotisationHT: attestation.cotisationHT,
+        echeances: attestation.echeances,
+        draft: attestation.draft,
+        archived: attestation.archived,
+        document,
+        response: existingResponse
+      });
+      return;
+    }
+
+    // Pharmacie : aperçu du document complet (texte entier de l'attestation),
+    // AVANT signature — pour qu'elle puisse le lire en entier et contrôler les
+    // informations, pas seulement remplir un petit formulaire à l'aveugle
+    // (demandé par Hélène le 13/10/2026). Ne sauvegarde rien, génère juste un
+    // PDF à la volée avec les informations actuelles (formulaire ou déjà
+    // enregistrées), sans signature.
+    if (url.pathname === "/api/attestation/preview" && request.method === "GET") {
+      const user = requireAuth(request, response, PHARMACY_SESSION_ROLES);
+      if (!user) return;
+      const pharmacyId = user.pharmacyId;
+      const attestation = readAttestation();
+      const document = attestation.documents.find((item) => item.pharmacyId === pharmacyId);
+      if (!document) {
+        sendJson(response, 404, { error: "Aucune attestation préparée pour votre pharmacie" });
+        return;
+      }
+      const existingResponse = readAttestationResponses().find((item) => item.pharmacyId === pharmacyId) || null;
+      const previewResponse = {
+        societeExploitante: url.searchParams.get("societeExploitante") || existingResponse?.societeExploitante || document.societeExploitante,
+        siren: url.searchParams.get("siren") || existingResponse?.siren || document.siren,
+        representant: url.searchParams.get("representant") || existingResponse?.representant || document.representant,
+        qualite: url.searchParams.get("qualite") || existingResponse?.qualite || document.qualite,
+        faitA: url.searchParams.get("faitA") || existingResponse?.faitA || "",
+        signedAt: existingResponse?.signedAt || "(à venir)"
+      };
+      let pdfBuffer;
+      try {
+        const html = buildAttestationHtml({ ...document, year: attestation.year, echeances: attestation.echeances, cotisationHT: attestation.cotisationHT }, previewResponse, "");
+        pdfBuffer = await htmlToPdf(html);
+      } catch (error) {
+        sendJson(response, 502, { error: `Aperçu du document impossible : ${error.message}` });
+        return;
+      }
+      response.writeHead(200, { "Content-Type": "application/pdf", "Content-Disposition": "inline; filename=\"attestation-apercu.pdf\"" });
+      response.end(pdfBuffer);
+      return;
+    }
+
+    // Pharmacie : confirme/complète ses infos, ajoute la photo du tampon et
+    // de la signature -> génère le PDF final via le service commun PDF.
+    if (url.pathname === "/api/attestation/sign" && request.method === "POST") {
+      const user = requireAuth(request, response, PHARMACY_SESSION_ROLES);
+      if (!user) return;
+      const payload = JSON.parse(await readBody(request));
+      const pharmacyId = user.pharmacyId;
+      const attestation = readAttestation();
+      const document = attestation.documents.find((item) => item.pharmacyId === pharmacyId);
+      if (!document) {
+        sendJson(response, 404, { error: "Aucune attestation préparée pour votre pharmacie" });
+        return;
+      }
+      if (attestation.draft || attestation.archived) {
+        sendJson(response, 409, { error: "Cette attestation n'est pas ouverte à la signature" });
+        return;
+      }
+      const signatureDataUrl = String(payload.signatureImage || "");
+      if (!/^data:image\/(png|jpe?g);base64,/.test(signatureDataUrl)) {
+        sendJson(response, 400, { error: "Photo de signature/tampon manquante ou invalide" });
+        return;
+      }
+      const nowLabel = new Date().toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" });
+      const responses = readAttestationResponses();
+      const existing = responses.find((item) => item.pharmacyId === pharmacyId);
+      const savedResponse = normalizeAttestationResponse({
+        ...existing,
+        id: existing?.id,
+        documentId: document.id,
+        pharmacyId,
+        pharmacyName: document.pharmacyName,
+        societeExploitante: payload.societeExploitante || document.societeExploitante,
+        siren: payload.siren || document.siren,
+        representant: payload.representant || document.representant,
+        qualite: payload.qualite || document.qualite,
+        faitA: payload.faitA || "",
+        signedAt: nowLabel,
+        createdAt: existing?.createdAt,
+        updatedAt: new Date().toLocaleString("fr-FR")
+      });
+
+      let pdfBuffer;
+      try {
+        const html = buildAttestationHtml({ ...document, year: attestation.year, echeances: attestation.echeances, cotisationHT: attestation.cotisationHT }, savedResponse, signatureDataUrl);
+        pdfBuffer = await htmlToPdf(html);
+      } catch (error) {
+        sendJson(response, 502, { error: `Génération du PDF impossible : ${error.message}` });
+        return;
+      }
+
+      if (!fs.existsSync(ATTESTATION_PDF_DIR)) fs.mkdirSync(ATTESTATION_PDF_DIR, { recursive: true });
+      const pdfFileName = `${pharmacyId}.pdf`;
+      fs.writeFileSync(path.join(ATTESTATION_PDF_DIR, pdfFileName), pdfBuffer);
+      savedResponse.pdfUrl = `/attestations-2027/${pdfFileName}`;
+
+      const updatedResponses = existing
+        ? responses.map((item) => (item.pharmacyId === pharmacyId ? savedResponse : item))
+        : [...responses, savedResponse];
+      writeAttestationResponses(updatedResponses);
+      sendJson(response, 200, savedResponse);
+      return;
+    }
+
+    // Admin : suivi de qui a signé / pas encore.
+    if (url.pathname === "/api/attestation-responses" && request.method === "GET") {
+      if (!requireAdminCode(request, response)) return;
+      sendJson(response, 200, readAttestationResponses());
       return;
     }
 
