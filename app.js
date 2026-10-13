@@ -5178,7 +5178,13 @@ function isPriceColumn(column) {
 function displayColumnValue(column, value) {
   const text = value == null ? "" : String(value);
   if (!text || !isPriceColumn(column)) return text;
-  return /€/.test(text) ? text : `${text} €`;
+  const alreadyHasEuro = /€/.test(text);
+  const numericText = alreadyHasEuro ? text.replace(/€/g, "").trim() : text;
+  const numericValue = Number(numericText.replace(",", "."));
+  const rounded = Number.isFinite(numericValue)
+    ? numericValue.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    : text;
+  return `${rounded} €`;
 }
 
 // Construit la ligne d'en-tête (<tr>) d'un tableau à colonnes libres : les colonnes
@@ -7885,7 +7891,7 @@ function showOrderImportConfirm(template) {
   }
   if (orderImportPreviewBody) {
     orderImportPreviewBody.innerHTML = template.rows.slice(0, 5).map((row) => `
-      <tr>${template.columns.map((column) => `<td>${escapeHtml(row.values?.[column] || "")}</td>`).join("")}</tr>
+      <tr>${template.columns.map((column) => `<td>${escapeHtml(displayColumnValue(column, row.values?.[column]))}</td>`).join("")}</tr>
     `).join("") || `<tr><td colspan="${Math.max(template.columns.length, 1)}" class="empty-state">Aucune ligne détectée.</td></tr>`;
   }
   if (orderImportRowCount) orderImportRowCount.textContent = String(template.rows.length);
