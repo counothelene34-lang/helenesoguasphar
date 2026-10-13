@@ -4093,11 +4093,11 @@ function renderCampaignPickers() {
   const openPollsRecentFirst = [...openPolls].reverse();
   pollCards.innerHTML = openPollsRecentFirst.length
     ? openPollsRecentFirst.map((poll) => pollCard(poll, "form")).join("")
-    : '<p class="empty-campaigns">Aucun sondage disponible pour le moment.</p>';
+    : '<p class="empty-campaigns">Aucun sondage en attente pour le moment.</p>';
 
   infoCards.innerHTML = openInfoForms.length
     ? openInfoForms.map((infoForm) => infoFormCard(infoForm, "form")).join("")
-    : '<p class="empty-campaigns">Aucune mise à jour de fiche pharmacie disponible pour le moment.</p>';
+    : '<p class="empty-campaigns">Aucun document en attente pour le moment.</p>';
 
   if (batPickerBlock) batPickerBlock.hidden = true;
 
