@@ -403,6 +403,8 @@ const imagePreviewModal = document.querySelector("#imagePreviewModal");
 const imagePreviewImg = document.querySelector("#imagePreviewImg");
 const imagePreviewClose = document.querySelector("#imagePreviewClose");
 const imagePreviewCloseBtn = document.querySelector("#imagePreviewCloseBtn");
+const adminPreviewPicker = document.querySelector("#adminPreviewPicker");
+const adminPreviewSelect = document.querySelector("#adminPreviewSelect");
 let preserveSubmitMessage = false;
 let adminUnlocked = false;
 let campaigns = [];
@@ -1612,6 +1614,36 @@ function pharmacyAccessRequired() {
   return pharmacies.length > 0 && (!currentPharmacy || pendingPasswordPharmacy);
 }
 
+// Une administratrice SOGUASPHAR peut choisir de "voir comme" une pharmacie
+// (menu déroulant #adminPreviewSelect) pour vérifier ce qui est en ligne côté
+// pharmacie, SANS compte pharmacie de test : on réutilise currentPharmacy (tout
+// l'affichage existant marche donc tel quel), avec ce marqueur `isAdminPreview`
+// qui sert à bloquer tout envoi réel (voir blockIfAdminPreview) — lecture seule.
+function isAdminPreviewMode() {
+  return Boolean(currentPharmacy && currentPharmacy.isAdminPreview);
+}
+
+function blockIfAdminPreview(messageEl) {
+  if (!isAdminPreviewMode()) return false;
+  if (messageEl) {
+    messageEl.textContent = "Mode aperçu administrateur : lecture seule, rien n'est envoyé ni enregistré.";
+  }
+  return true;
+}
+
+function renderAdminPreviewPharmacyOptions() {
+  if (!adminPreviewSelect) return;
+  const previousValue = adminPreviewSelect.value;
+  const sorted = pharmacies
+    .filter((pharmacy) => pharmacy && pharmacy.id)
+    .slice()
+    .sort((a, b) => String(a.name || "").localeCompare(String(b.name || ""), "fr"));
+  adminPreviewSelect.innerHTML = `<option value="">— Choisir une pharmacie —</option>${sorted
+    .map((pharmacy) => `<option value="${escapeHtml(pharmacy.id)}">${escapeHtml(pharmacy.name || pharmacy.id)}</option>`)
+    .join("")}`;
+  adminPreviewSelect.value = previousValue && sorted.some((pharmacy) => pharmacy.id === previousValue) ? previousValue : "";
+}
+
 async function getOrderTemplate() {
   if (!API_AVAILABLE) return localOrderTemplate();
 
@@ -2479,7 +2511,12 @@ function showUpcomingListPage() {
 
 async function getAttestation() {
   try {
-    return await requestJson("/api/attestation");
+    // Pour une pharmacie connectée normalement, le serveur retrouve son
+    // pharmacyId via la session. Pour une administratrice SOGUASPHAR qui
+    // "voit comme" une pharmacie (currentPharmacy, lecture seule), il faut le
+    // préciser explicitement : son compte admin n'a pas de pharmacyId propre.
+    const params = currentPharmacy?.id ? `?pharmacyId=${encodeURIComponent(currentPharmacy.id)}` : "";
+    return await requestJson(`/api/attestation${params}`);
   } catch {
     return null;
   }
@@ -2616,6 +2653,7 @@ attestationSignatureFile?.addEventListener("change", async () => {
 
 attestationForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
+  if (blockIfAdminPreview(attestationFormMessage)) return;
   if (!attestationDocumentViewed) {
     attestationFormMessage.textContent = "Merci d'abord d'ouvrir et de lire le document complet (lien ci-dessus) avant de signer.";
     if (attestationViewRequiredNotice) attestationViewRequiredNotice.hidden = false;
@@ -3411,11 +3449,22 @@ function renderPharmacyAccess() {
   // SOGUASPHAR qui prévisualise différentes pharmacies). Elle se déconnecte
   // via le menu ⚙️ en haut à droite.
   const isNewSystemPharmacy = Boolean(currentUser) && (currentUser.role === "pharmacy_admin" || currentUser.role === "pharmacy_collaborator");
+  const isAdmin = Boolean(currentUser && currentUser.role === "soguasphar_admin");
   pharmacySessionBar.hidden = !currentPharmacy;
   currentPharmacyName.textContent = currentPharmacy
-    ? `Connecté : ${isNewSystemPharmacy ? formatUserFullName(currentUser) : currentPharmacy.name}`
+    ? `Connecté : ${isNewSystemPharmacy ? formatUserFullName(currentUser) : currentPharmacy.name}${isAdminPreviewMode() ? " (aperçu administrateur, lecture seule)" : ""}`
     : "";
   if (logoutPharmacyBtn) logoutPharmacyBtn.hidden = isNewSystemPharmacy;
+
+  // Sélecteur "Voir comme pharmacie" : seulement pour une administratrice
+  // SOGUASPHAR qui n'a pas encore choisi de pharmacie à prévisualiser (une
+  // fois choisie, le bandeau pharmacySessionBar ci-dessus prend le relais).
+  if (adminPreviewPicker) adminPreviewPicker.hidden = !(isAdmin && !currentPharmacy);
+  if (newAuthAdminStatus) newAuthAdminStatus.hidden = !isAdmin || Boolean(currentPharmacy);
+  // Grise les boutons d'envoi/signature du formulaire pharmacie tant qu'une
+  // administratrice SOGUASPHAR est en train de "voir comme" une pharmacie
+  // (voir isAdminPreviewMode / styles.css .admin-preview-mode) : lecture seule.
+  document.body.classList.toggle("admin-preview-mode", isAdminPreviewMode());
 
   // Idem pour l'onglet "Administration" : une pharmacie (ancien ou nouveau
   // système) ne doit pas le voir. Une administratrice SOGUASPHAR qui
@@ -6853,20 +6902,55 @@ pharmacyPasswordChangeForm.addEventListener("submit", async (event) => {
 });
 
 logoutPharmacyBtn.addEventListener("click", async () => {
-  try {
-    await requestJson("/api/auth/logout", { method: "POST" });
-  } catch {
-    // Non bloquant : on efface quand même la session côté navigateur.
+  // Une administratrice SOGUASPHAR qui quitte son aperçu "voir comme
+  // pharmacie" ne doit SURTOUT PAS appeler /api/auth/logout : ça la
+  // déconnecterait elle-même (sa session admin), pas une session pharmacie
+  // qui n'a jamais existé ici.
+  if (!isAdminPreviewMode()) {
+    try {
+      await requestJson("/api/auth/logout", { method: "POST" });
+    } catch {
+      // Non bloquant : on efface quand même la session côté navigateur.
+    }
   }
   currentPharmacy = null;
   pendingPasswordPharmacy = null;
   pendingInitialPassword = "";
   pharmacyPollAnswers = {};
   pharmacyCampaignResponses = {};
+  currentAttestation = null;
+  currentAttestationResponse = null;
   archivedOrdersVisible = false;
   localStorage.removeItem(PHARMACY_SESSION_KEY);
+  if (adminPreviewSelect) adminPreviewSelect.value = "";
   renderCampaignPickers();
+  renderPharmacyAccess();
   showCampaignPicker();
+});
+
+// Administratrice SOGUASPHAR : choisir une pharmacie dans la liste pour voir
+// exactement ce qu'elle voit (lecture seule, voir isAdminPreviewMode /
+// blockIfAdminPreview) — sans jamais créer de vrai compte/session pharmacie.
+adminPreviewSelect?.addEventListener("change", async () => {
+  const pharmacyId = adminPreviewSelect.value;
+  if (!pharmacyId) return;
+  const pharmacy = pharmacies.find((item) => item && item.id === pharmacyId);
+  if (!pharmacy) return;
+  currentPharmacy = { id: pharmacy.id, name: pharmacy.name, isAdminPreview: true };
+  pendingPasswordPharmacy = null;
+  pharmacyPollAnswers = {};
+  pharmacyCampaignResponses = {};
+  currentAttestation = null;
+  currentAttestationResponse = null;
+  renderCampaignPickers();
+  renderPharmacyAccess();
+  showCampaignPicker();
+  await refreshPharmacyPollAnswers();
+  await refreshPharmacyCampaignResponses();
+  await refreshPharmacyInfoResponses();
+  await refreshPharmacyValidationResponses();
+  renderCampaignPickers();
+  showRequestedOperationOrMenu();
 });
 
 // --- Nouveau système de connexion (email + mot de passe), en test ----------
@@ -6953,6 +7037,7 @@ resetPasswordForm?.addEventListener("submit", async (event) => {
       if (newAuthAdminStatus) newAuthAdminStatus.hidden = false;
       renderPharmacyAccess();
       if (!adminUnlocked) await unlockAdminPanel();
+      renderAdminPreviewPharmacyOptions();
       await activateAdminView();
     }
   } catch (error) {
@@ -7012,6 +7097,7 @@ newAuthLoginForm?.addEventListener("submit", async (event) => {
       if (newAuthAdminStatus) newAuthAdminStatus.hidden = false;
       renderPharmacyAccess();
       if (!adminUnlocked) await unlockAdminPanel();
+      renderAdminPreviewPharmacyOptions();
       await activateAdminView();
     }
   } catch (error) {
@@ -7069,6 +7155,7 @@ newAuthPasswordChangeForm?.addEventListener("submit", async (event) => {
       if (newAuthAdminStatus) newAuthAdminStatus.hidden = false;
       renderPharmacyAccess();
       if (!adminUnlocked) await unlockAdminPanel();
+      renderAdminPreviewPharmacyOptions();
     }
   } catch (error) {
     newAuthLoginMessage.textContent = error.message || "Impossible d'enregistrer ce mot de passe. Réessayez.";
@@ -8481,6 +8568,7 @@ downloadTemplateBtn.addEventListener("click", () => {
 
 batValidationForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
+  if (blockIfAdminPreview(batMessage)) return;
   if (!selectedBatDocument) {
     batMessage.textContent = "Veuillez choisir un document avant d'envoyer une réponse.";
     return;
@@ -8532,6 +8620,7 @@ batValidationForm?.addEventListener("submit", async (event) => {
 
 pollForm.addEventListener("submit", async (event) => {
   event.preventDefault();
+  if (blockIfAdminPreview(pollMessage)) return;
   if (!selectedPoll) {
     pollMessage.textContent = "Veuillez choisir un sondage avant d'envoyer une réponse.";
     return;
@@ -8565,6 +8654,7 @@ pollForm.addEventListener("submit", async (event) => {
 
 profileUpdateForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
+  if (blockIfAdminPreview(profileMessage)) return;
   if (!selectedInfoForm) {
     profileMessage.textContent = "Veuillez choisir une mise à jour avant d'envoyer votre fiche.";
     return;
@@ -8643,6 +8733,7 @@ profileHoursGrid?.addEventListener("change", (event) => {
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
+  if (blockIfAdminPreview(formMessage)) return;
   if (!selectedCampaign) {
     formMessage.textContent = "Veuillez choisir une commande avant d'envoyer une réponse.";
     return;
@@ -8875,6 +8966,7 @@ async function init() {
   } else if (currentUser && currentUser.role === "soguasphar_admin") {
     if (newAuthAdminStatus) newAuthAdminStatus.hidden = false;
     if (!adminUnlocked) await unlockAdminPanel();
+    renderAdminPreviewPharmacyOptions();
     // Une administratrice déjà connectée doit arriver directement sur le
     // tableau de bord "Administration" (précommandes, sondages, validations
     // en cours), sans avoir à cliquer manuellement sur l'onglet. Exception :

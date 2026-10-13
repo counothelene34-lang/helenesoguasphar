@@ -3787,3 +3787,18 @@ main,
   top: 18px;
   right: 18px;
 }
+
+/* Aperçu "voir comme pharmacie" pour une administratrice SOGUASPHAR : lecture
+   seule, aucun envoi/signature réel ne doit être possible (voir
+   isAdminPreviewMode() dans app.js). Limité aux formulaires de réponse
+   pharmacie eux-mêmes (pas aux formulaires d'administration qui vivent aussi
+   dans #formView, rubrique Paramètres, ex: createCampaignForm). */
+body.admin-preview-mode #requestForm button[type="submit"],
+body.admin-preview-mode #pollForm button[type="submit"],
+body.admin-preview-mode #profileUpdateForm button[type="submit"],
+body.admin-preview-mode #batValidationForm button[type="submit"],
+body.admin-preview-mode #attestationForm button[type="submit"] {
+  opacity: 0.5;
+  pointer-events: none;
+  cursor: not-allowed;
+}
