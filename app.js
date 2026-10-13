@@ -2322,11 +2322,36 @@ function updatePendingDocumentsCountBadge() {
   pendingDocumentsCountBadge.hidden = !isPending;
 }
 
+// Chiffre sur l'icône de l'appli (écran d'accueil du téléphone), quand le téléphone le
+// permet (iPhone récent iOS 16.4+, Android avec Chrome, appli "ajoutée à l'écran
+// d'accueil"). Reprend le total des pastilles "non lu" déjà affichées dans le menu
+// (précommandes + sondages + document en attente). Ne compte pas "à venir" : rien à
+// faire tant que ce n'est pas ouvert. Se met à jour à chaque ouverture/rafraîchissement
+// de l'appli ; ne se met pas à jour tout seul si l'appli reste fermée (ça demanderait des
+// notifications push, pas en place).
+function updateAppIconBadge() {
+  if (!("setAppBadge" in navigator)) return;
+  let total = 0;
+  [precommandesCountBadge, sondagesCountBadge, pendingDocumentsCountBadge].forEach((badge) => {
+    if (badge && !badge.hidden) total += Number(badge.textContent) || 0;
+  });
+  try {
+    if (total > 0) {
+      navigator.setAppBadge(total).catch(() => {});
+    } else {
+      navigator.clearAppBadge().catch(() => {});
+    }
+  } catch (e) {
+    // Téléphone/navigateur qui dit supporter la fonction mais refuse à l'usage : on ignore.
+  }
+}
+
 function updateAllMenuCountBadges() {
   updatePrecommandesCountBadge();
   updateSondagesCountBadge();
   updatePendingDocumentsCountBadge();
   updateUpcomingCountBadge();
+  updateAppIconBadge();
 }
 
 // "Bientôt disponible" : précommandes dont la pharmacie peut voir l'existence (périodes
@@ -6647,6 +6672,9 @@ teamAddForm?.addEventListener("submit", async (event) => {
 userMenuLogoutBtn?.addEventListener("click", async () => {
   const wasPharmacyRole = currentUser && (currentUser.role === "pharmacy_admin" || currentUser.role === "pharmacy_collaborator");
   await logoutNewAuth();
+  if ("clearAppBadge" in navigator) {
+    try { navigator.clearAppBadge().catch(() => {}); } catch (e) {}
+  }
   currentUser = null;
   renderUserMenu();
   closeTeamModal();
