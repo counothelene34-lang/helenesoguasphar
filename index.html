@@ -823,6 +823,33 @@
               </div>
             </div>
 
+            <section id="teamOverviewSection" class="settings-panel" hidden>
+              <div class="table-toolbar pharmacy-export-toolbar">
+                <div>
+                  <h2>Utilisateurs - Équipe <span id="teamOverviewCount" class="settings-count-badge">0</span></h2>
+                </div>
+                <div class="settings-table-actions">
+                  <input id="teamOverviewSearch" type="search" placeholder="Rechercher un compte équipe…">
+                  <button id="teamOverviewExportBtn" class="primary-btn" type="button">⇩ Exporter Excel</button>
+                </div>
+              </div>
+              <div class="table-wrap compact">
+                <table id="teamOverviewTable">
+                  <thead>
+                    <tr>
+                      <th data-sort-key="pharmacyName">Pharmacie ↕</th>
+                      <th data-sort-key="name">Responsable ↕</th>
+                      <th data-sort-key="email">E-mail (identifiant) ↕</th>
+                      <th data-sort-key="lastLoginAt">Dernière connexion ↕</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="teamOverviewRows"></tbody>
+                </table>
+              </div>
+              <p class="form-help">Comptes équipe créés depuis « Rajouter un compte équipe » ci-dessus, rattachés chacun à une pharmacie.</p>
+            </section>
+
             <section id="adminAccountsSection" class="settings-panel" hidden>
               <h2>Utilisateurs administrateurs</h2>
               <div id="adminAccountsList" class="pharmacy-accounts-list"></div>

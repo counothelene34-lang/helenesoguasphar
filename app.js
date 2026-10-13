@@ -302,6 +302,12 @@ const pharmacyOverviewRows = document.querySelector("#pharmacyOverviewRows");
 const pharmacyOverviewDetail = document.querySelector("#pharmacyOverviewDetail");
 const pharmacyOverviewDetailBody = document.querySelector("#pharmacyOverviewDetailBody");
 const pharmacyOverviewDetailClose = document.querySelector("#pharmacyOverviewDetailClose");
+const teamOverviewSection = document.querySelector("#teamOverviewSection");
+const teamOverviewCount = document.querySelector("#teamOverviewCount");
+const teamOverviewSearch = document.querySelector("#teamOverviewSearch");
+const teamOverviewExportBtn = document.querySelector("#teamOverviewExportBtn");
+const teamOverviewTable = document.querySelector("#teamOverviewTable");
+const teamOverviewRows = document.querySelector("#teamOverviewRows");
 const showClosedCampaignsBtn = document.querySelector("#showClosedCampaignsBtn");
 const adminPollCards = document.querySelector("#adminPollCards");
 const adminPollBlock = document.querySelector("#adminPollBlock");
@@ -3732,6 +3738,17 @@ async function refreshPharmacyOverview() {
   renderPharmacyOverviewTable();
   renderPharmacyAccessSelect();
   renderTeamAccessPharmacySelect();
+  renderTeamOverviewTable();
+}
+
+// Liste à plat de tous les comptes équipe (pharmacy_collaborator), tous
+// réseaux confondus, avec le nom de la pharmacie rattachée — calculée à
+// partir des mêmes données que le tableau "Utilisateurs - Pharmacies"
+// (pas d'appel serveur séparé).
+function allTeamAccounts() {
+  return pharmacyOverview.flatMap((pharmacy) => (pharmacy.accounts || [])
+    .filter((account) => account.role === "pharmacy_collaborator")
+    .map((account) => ({ ...account, pharmacyName: pharmacy.name, pharmacyId: pharmacy.id })));
 }
 
 function renderPharmacyAccessSelect() {
@@ -3939,6 +3956,146 @@ pharmacyOverviewDetailBody?.addEventListener("click", async (event) => {
       if (message) message.textContent = error.message || "Impossible de modifier ce compte.";
     }
   }
+});
+
+// --- Rubrique "Paramètres" : tableau "Utilisateurs - Équipe" ---------------
+
+let teamOverviewSearchTerm = "";
+let teamOverviewSort = { key: "pharmacyName", direction: "asc" };
+
+function sortedFilteredTeamAccounts() {
+  const term = normalizeSearchText(teamOverviewSearchTerm);
+  const filtered = allTeamAccounts().filter((account) => {
+    if (!term) return true;
+    const haystack = normalizeSearchText(`${account.pharmacyName || ""} ${formatUserFullName(account)} ${account.email || ""}`);
+    return haystack.includes(term);
+  });
+  const { key, direction } = teamOverviewSort;
+  const factor = direction === "desc" ? -1 : 1;
+  return filtered.sort((a, b) => {
+    if (key === "name") return factor * formatUserFullName(a).localeCompare(formatUserFullName(b), "fr");
+    if (key === "email") return factor * String(a.email || "").localeCompare(String(b.email || ""), "fr");
+    if (key === "lastLoginAt") return factor * String(a.lastLoginAt || "").localeCompare(String(b.lastLoginAt || ""), "fr");
+    return factor * String(a.pharmacyName || "").localeCompare(String(b.pharmacyName || ""), "fr");
+  });
+}
+
+function renderTeamOverviewTable() {
+  if (!teamOverviewRows) return;
+  const all = allTeamAccounts();
+  if (teamOverviewCount) teamOverviewCount.textContent = String(all.length);
+  const rows = sortedFilteredTeamAccounts();
+  if (!rows.length) {
+    teamOverviewRows.innerHTML = `<tr><td colspan="5" class="empty-campaigns">${all.length ? "Aucun compte équipe ne correspond à la recherche." : "Aucun compte équipe créé pour le moment."}</td></tr>`;
+    return;
+  }
+  teamOverviewRows.innerHTML = rows.map((account) => `
+    <tr class="${account.active === false ? "account-inactive" : ""}">
+      <td><strong>${escapeHtml(account.pharmacyName || "")}</strong></td>
+      <td>${escapeHtml(formatUserFullName(account))}</td>
+      <td>${escapeHtml(account.email)}</td>
+      <td>${escapeHtml(formatLastLogin(account.lastLoginAt))}</td>
+      <td class="pharmacy-actions">
+        ${account.active === false ? "<span class=\"request-badge\">Désactivé</span>" : ""}
+        <button class="ghost-btn small-btn" type="button" data-resend-team="${escapeHtml(account.id)}">Renvoyer l'invitation</button>
+        <button class="ghost-btn small-btn" type="button" data-edit-team-email="${escapeHtml(account.id)}">Modifier l'e-mail</button>
+        <button class="ghost-btn small-btn" type="button" data-toggle-team-active="${escapeHtml(account.id)}">${account.active === false ? "Réactiver" : "Désactiver"}</button>
+      </td>
+    </tr>
+  `).join("");
+}
+
+teamOverviewSearch?.addEventListener("input", () => {
+  teamOverviewSearchTerm = teamOverviewSearch.value;
+  renderTeamOverviewTable();
+});
+
+teamOverviewTable?.addEventListener("click", async (event) => {
+  const sortHeader = event.target.closest("[data-sort-key]");
+  if (sortHeader) {
+    const key = sortHeader.dataset.sortKey;
+    teamOverviewSort = {
+      key,
+      direction: teamOverviewSort.key === key && teamOverviewSort.direction === "asc" ? "desc" : "asc"
+    };
+    renderTeamOverviewTable();
+    return;
+  }
+
+  const resendBtn = event.target.closest("[data-resend-team]");
+  if (resendBtn) {
+    try {
+      await resendUserInvite(resendBtn.dataset.resendTeam);
+      await refreshPharmacyOverview();
+    } catch (error) {
+      alert(error.message || "Impossible de renvoyer l'invitation.");
+    }
+    return;
+  }
+
+  const editBtn = event.target.closest("[data-edit-team-email]");
+  if (editBtn) {
+    const account = allTeamAccounts().find((item) => item.id === editBtn.dataset.editTeamEmail);
+    if (!account) return;
+    const nextEmail = prompt("Nouvelle adresse e-mail pour ce compte équipe :", account.email);
+    if (!nextEmail || !nextEmail.trim()) return;
+    try {
+      await updateUserAccount(account.id, { email: nextEmail.trim() });
+      await refreshPharmacyOverview();
+    } catch (error) {
+      alert(error.message || "Impossible de modifier cette adresse.");
+    }
+    return;
+  }
+
+  const toggleBtn = event.target.closest("[data-toggle-team-active]");
+  if (toggleBtn) {
+    const account = allTeamAccounts().find((item) => item.id === toggleBtn.dataset.toggleTeamActive);
+    if (!account) return;
+    const nextActive = account.active === false;
+    const confirmed = confirm(nextActive ? "Réactiver ce compte équipe ?" : "Désactiver ce compte équipe ? Cette personne ne pourra plus se connecter.");
+    if (!confirmed) return;
+    try {
+      await updateUserAccount(account.id, { active: nextActive });
+      await refreshPharmacyOverview();
+    } catch (error) {
+      alert(error.message || "Impossible de modifier ce compte.");
+    }
+  }
+});
+
+teamOverviewExportBtn?.addEventListener("click", () => {
+  const rows = sortedFilteredTeamAccounts();
+  if (!rows.length) return;
+  const headings = ["Pharmacie", "Responsable", "E-mail (identifiant)", "Dernière connexion"];
+  const body = rows.map((account) => `
+    <tr>
+      <td>${escapeHtml(account.pharmacyName || "")}</td>
+      <td>${escapeHtml(formatUserFullName(account))}</td>
+      <td>${escapeHtml(account.email || "")}</td>
+      <td>${escapeHtml(formatLastLogin(account.lastLoginAt))}</td>
+    </tr>
+  `).join("");
+  const workbook = `
+    <html>
+      <head><meta charset="utf-8"></head>
+      <body>
+        <table border="1">
+          <thead><tr>${headings.map((heading) => `<th>${heading}</th>`).join("")}</tr></thead>
+          <tbody>${body}</tbody>
+        </table>
+      </body>
+    </html>
+  `;
+  const blob = new Blob([workbook], { type: "application/vnd.ms-excel;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "preco-utilisateurs-equipe.xls";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
 });
 
 // --- Rubrique "Paramètres" : cartes "Créer un nouvel accès" ----------------
@@ -4940,6 +5097,7 @@ function showAdminSection(section) {
   if (createAdminAccountForm) createAdminAccountForm.hidden = true;
   if (createTeamAccessForm) createTeamAccessForm.hidden = true;
   if (pharmacyOverviewSection) pharmacyOverviewSection.hidden = !showPharmacies;
+  if (teamOverviewSection) teamOverviewSection.hidden = !showPharmacies;
   if (adminAccountsSection) adminAccountsSection.hidden = !showPharmacies;
   closePharmacyOverviewDetail();
   if (showPharmacies) {
