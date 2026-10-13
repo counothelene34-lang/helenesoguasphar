@@ -1707,12 +1707,25 @@ function escapeHtml(value) {
 }
 
 // Pour les textes libres écrits par l'admin (message pharmacie, description...) :
-// échappe le HTML (sécurité) puis transforme *mot* en gras, comme sur WhatsApp.
+// échappe le HTML (sécurité), transforme *mot* en gras (comme sur WhatsApp), puis
+// rend cliquable tout lien http(s)://... qui traîne dans le texte.
 // À utiliser à la place d'escapeHtml() quand le texte doit être inséré en HTML
 // (innerHTML), jamais avec .textContent (qui afficherait les balises en brut).
 function formatRichText(value) {
   const escaped = escapeHtml(value);
-  return escaped.replace(/\*([^*\n]+)\*/g, "<strong>$1</strong>");
+  const bolded = escaped.replace(/\*([^*\n]+)\*/g, "<strong>$1</strong>");
+  return bolded.replace(/(https?:\/\/[^\s<]+)/g, (match) => {
+    // Laisse dehors la ponctuation de fin de phrase (. , ; : ! ? ) qui suit
+    // souvent un lien, pour ne pas l'inclure dans l'adresse cliquable.
+    let url = match;
+    let trailing = "";
+    while (url && /[.,;:!?)\]]$/.test(url)) {
+      trailing = url.slice(-1) + trailing;
+      url = url.slice(0, -1);
+    }
+    if (!url) return match;
+    return `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>${trailing}`;
+  });
 }
 
 function safeDownloadName(value, fallback = "document.pdf") {
