@@ -15,25 +15,36 @@ Propriétaire : Hélène (partagée avec Chantal).
 ## Où elle vit
 | | En ligne | Copie de test |
 |---|---|---|
-| Adresse | https://preco.soguasphar.fr | https://apps.soguasphar.fr/preco-test/ |
+| Adresse | https://preco.soguasphar.fr | https://apps.soguasphar.fr/preco-test/ (**en pause depuis le 13/10/2026**, voir ci-dessous) |
 | Dossier | `/opt/apps/soguasphar-preco` | `/opt/apps/soguasphar-preco-test` |
 | Git | oui : `git@gh-preco:counothelene34-lang/helenesoguasphar.git`, branche `main` | non |
 | Données | `data/` (JSON, volume persistant) | `data/` à part (données de test) |
 
 Déploiement automatique : un push sur `main` → webhook → `git pull` + reconstruction.
 
-## Comment on travaille (IMPORTANT)
-1. **Avant de toucher la copie de test**, vérifie qu'elle n'est pas en retard sur le
-   site en ligne : `sudo appctl publier preco --essai`. S'il signale des fichiers
-   modifiés en ligne après la copie, fais d'abord `sudo appctl rafraichir-test preco`.
-2. Travaille et fais valider **sur la copie de test** (`verifier preco-test`).
-3. Publie avec `sudo appctl publier preco` (sauvegarde automatique, vérification du site).
-   En cas de souci : `sudo appctl annuler-publication preco`.
-4. Enregistre dans git (commit + push sur `main`) : Hélène l'a demandé pour toute
-   modification terminée. Préviens-la en une phrase.
-5. Petite correction urgente directement en ligne : possible, mais pense à
-   `rafraichir-test` ensuite, sinon la copie de test prend du retard (c'est arrivé
-   le 17/09/2026 : trois fichiers modifiés en ligne après la copie).
+## Comment on travaille (IMPORTANT — changé le 13/10/2026)
+Hélène a demandé d'arrêter d'utiliser la copie de test publique (elle a été mise en
+pause avec `sudo appctl stop preco-test` : conteneur arrêté, dossier et données
+conservés). Désormais on publie directement sur le site en ligne. Pour garder un
+minimum de filet de sécurité (vu les incidents de septembre-octobre 2026 ci-dessous) :
+1. Modifie le code dans `/opt/apps/soguasphar-preco` (le dossier en ligne — plus de
+   copie de test à part). Vérifie la syntaxe avant toute publication :
+   `node --check server.js && node --check app.js`.
+2. Avant une manipulation risquée sur les données (`data/*.json`), fais une copie
+   datée dans `data-backups/` (la sauvegarde nocturne ne suffit pas pour une
+   manip en cours de journée).
+3. Publie/relance avec `sudo appctl rebuild preco` si besoin (ou laisse le
+   déploiement automatique faire son travail après un push sur `main`), puis
+   vérifie avec `verifier preco`.
+4. Enregistre dans git (commit + push sur `main`) à la fin de tout vrai travail et
+   préviens Hélène en une phrase.
+5. En cas de souci, il n'y a plus de `appctl publier`/`annuler-publication` à
+   utiliser (ça ne marche qu'avec une copie de test active) : restaure depuis une
+   sauvegarde (`sauvegardes liste|diff|restaurer preco`) ou depuis `data-backups/`.
+6. Si un vrai filet de test redevient nécessaire (gros changement, données
+   sensibles) : redémarrer la copie avec `sudo appctl start preco-test`, et bien
+   penser à `rafraichir-test` avant de l'utiliser (elle a pu prendre du retard
+   pendant la pause).
 
 ## Architecture
 - **Node.js pur, sans dépendance** (modules natifs `http`, `fs`, `path`). CommonJS.
