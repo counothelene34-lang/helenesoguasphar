@@ -8250,16 +8250,14 @@ async function unlockAdminPanel() {
   await showAdminCampaignPicker();
 }
 
-adminLogin.addEventListener("submit", async (event) => {
+// Le code administrateur partagé n'ouvre plus l'espace admin directement
+// (13/10/2026) : chaque administrateur SOGUASPHAR a maintenant un compte
+// personnel (e-mail + mot de passe), c'est le seul moyen d'entrer, pour que
+// "Dernière connexion" reflète vraiment qui se connecte.
+adminLogin.addEventListener("submit", (event) => {
   event.preventDefault();
-  const code = document.querySelector("#adminCode").value.trim();
-  if (code !== ADMIN_CODE) {
-    adminMessage.textContent = "Code administrateur incorrect.";
-    return;
-  }
-
-  await unlockAdminPanel();
-  adminMessage.textContent = "Accès administrateur ouvert.";
+  adminMessage.textContent = "";
+  showNewAuthScreen();
 });
 
 exportExcelBtn.addEventListener("click", exportToExcel);
