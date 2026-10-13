@@ -1706,6 +1706,15 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
+// Pour les textes libres écrits par l'admin (message pharmacie, description...) :
+// échappe le HTML (sécurité) puis transforme *mot* en gras, comme sur WhatsApp.
+// À utiliser à la place d'escapeHtml() quand le texte doit être inséré en HTML
+// (innerHTML), jamais avec .textContent (qui afficherait les balises en brut).
+function formatRichText(value) {
+  const escaped = escapeHtml(value);
+  return escaped.replace(/\*([^*\n]+)\*/g, "<strong>$1</strong>");
+}
+
 function safeDownloadName(value, fallback = "document.pdf") {
   const cleaned = String(value || fallback)
     .replace(/[\\/:*?"<>|]+/g, "-")
@@ -3964,7 +3973,7 @@ function campaignCard(campaign, target) {
         </div>
         <h3>${escapeHtml(campaign.title)}</h3>
         ${isAdmin ? `<p class="campaign-direct-link"><a href="${escapeHtml(`${window.location.origin}${window.location.pathname}?operation=${slugify(campaign.title)}`)}" target="_blank" rel="noopener">${escapeHtml(`${window.location.origin}${window.location.pathname}?operation=${slugify(campaign.title)}`)}</a></p>` : ""}
-        <p>${escapeHtml(campaign.description || campaign.pharmacyMessage || "")}</p>
+        <p>${formatRichText(campaign.description || campaign.pharmacyMessage || "")}</p>
         ${deliveryDateMarkup}
         ${periodInfoMarkup}
         ${isCompleted ? `<div class="campaign-done-summary"><strong>${escapeHtml(doneSummaryTitle)}</strong><span>${escapeHtml(summary)}</span></div>` : ""}
@@ -4202,7 +4211,7 @@ function pollCard(poll, target) {
   const optionsPreview = buildPollAnswersPreviewMarkup(questionList, showQuestionLabels, localAnswers);
   const inlineQuestions = buildPollQuestionsFormMarkup(questionList, showQuestionLabels);
   const inlineFreeText = poll.freeTextLabel ? `
-    <label class="inline-poll-free-label" for="inlineFreeText-${escapeHtml(poll.id)}">${escapeHtml(poll.freeTextLabel)}</label>
+    <label class="inline-poll-free-label" for="inlineFreeText-${escapeHtml(poll.id)}">${formatRichText(poll.freeTextLabel)}</label>
     <textarea id="inlineFreeText-${escapeHtml(poll.id)}" name="inlinePollFreeText" rows="3" ${poll.freeTextRequired ? "required" : ""}></textarea>
   ` : "";
   const pollImage = poll.imageData
@@ -4257,7 +4266,7 @@ function pollCard(poll, target) {
           <button class="delete-campaign-btn" type="button" title="Supprimer le sondage" aria-label="Supprimer le sondage ${escapeHtml(poll.question)}" data-delete-poll="${escapeHtml(poll.id)}">&#128465;</button>
         </div>
         <h3>${escapeHtml(poll.question)}</h3>
-        <p>${escapeHtml(poll.freeTextLabel || "Réponse rapide en un clic.")}</p>
+        <p>${formatRichText(poll.freeTextLabel || "Réponse rapide en un clic.")}</p>
       </div>
       <div class="campaign-foot">
         <span>${responseCount} réponse${responseCount > 1 ? "s" : ""}</span>
@@ -4291,7 +4300,7 @@ function infoFormCard(infoForm, target) {
           ${isAdmin ? `<button class="delete-campaign-btn" type="button" title="Supprimer la demande" aria-label="Supprimer ${escapeHtml(infoForm.title)}" data-delete-info="${escapeHtml(infoForm.id)}">&#128465;</button>` : ""}
         </div>
         <h3>${escapeHtml(infoForm.title)}</h3>
-        <p>${escapeHtml(infoForm.intro || "Mettez à jour les informations de votre pharmacie.")}</p>
+        <p>${formatRichText(infoForm.intro || "Mettez à jour les informations de votre pharmacie.")}</p>
         ${currentResponse ? `<div class="campaign-done-summary"><strong>Fiche déjà transmise</strong><span>Vous pouvez la modifier si nécessaire.</span></div>` : ""}
       </div>
       <div class="campaign-foot">
@@ -4321,7 +4330,7 @@ function batValidationCard(document, target) {
           <span class="campaign-type bat-type">Validation de précommande</span>
         </div>
         <h3>${escapeHtml(validationConfig.title)}</h3>
-        <p>${escapeHtml(validationConfig.description)}</p>
+        <p>${formatRichText(validationConfig.description)}</p>
         ${response ? `
           <div class="campaign-done-summary">
             <strong>${escapeHtml(displayStatus)}</strong>
@@ -4355,7 +4364,7 @@ function adminBatOverviewCard() {
           <button class="delete-campaign-btn" type="button" title="Supprimer la validation" aria-label="Supprimer la validation" data-delete-validation>&#128465;</button>
         </div>
         <h3>${escapeHtml(validationConfig.title)}</h3>
-        <p>${escapeHtml(validationConfig.description)}</p>
+        <p>${formatRichText(validationConfig.description)}</p>
       </div>
       <div class="campaign-foot">
         <strong>${batDocuments.length} document${batDocuments.length > 1 ? "s" : ""} importé${batDocuments.length > 1 ? "s" : ""}</strong>
@@ -4581,7 +4590,7 @@ function renderSatisfactionQuestions(poll) {
   if (satisfactionFreeTextBlock) {
     satisfactionFreeTextBlock.hidden = !poll.freeTextLabel;
     if (poll.freeTextLabel) {
-      satisfactionFreeTextLabel.textContent = poll.freeTextLabel;
+      satisfactionFreeTextLabel.innerHTML = formatRichText(poll.freeTextLabel);
       satisfactionFreeText.required = Boolean(poll.freeTextRequired);
     }
   }
@@ -4656,7 +4665,7 @@ function selectCampaign(campaignId) {
   document.querySelector("#formTitle").textContent = "Commande, précommande, confirmation";
   if (selectedCampaign.pharmacyMessage) {
     campaignNotice.hidden = false;
-    campaignNotice.textContent = selectedCampaign.pharmacyMessage;
+    campaignNotice.innerHTML = formatRichText(selectedCampaign.pharmacyMessage);
   } else {
     campaignNotice.hidden = true;
     campaignNotice.textContent = "";
@@ -4734,7 +4743,7 @@ function selectInfoForm(infoFormId) {
 
   profileUpdateForm.reset();
   profileFormTitle.textContent = selectedInfoForm.title;
-  profileFormIntro.textContent = selectedInfoForm.intro || "Merci de noter vos coordonnées, réseaux sociaux, horaires et services proposés.";
+  profileFormIntro.innerHTML = formatRichText(selectedInfoForm.intro || "Merci de noter vos coordonnées, réseaux sociaux, horaires et services proposés.");
   profilePharmacyName.value = previousResponse?.pharmacyName || currentPharmacy?.name || "";
   profilePharmacyName.readOnly = Boolean(currentPharmacy?.name);
   profileAddress.value = previousResponse?.address || "";
