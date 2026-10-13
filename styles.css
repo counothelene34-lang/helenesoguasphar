@@ -255,6 +255,7 @@ main::before {
 }
 
 .hero-menu-btn {
+  position: relative;
   padding: 24px 20px;
   background: var(--green);
   color: white;
@@ -266,6 +267,25 @@ main::before {
   text-align: center;
   transition: all 0.2s ease;
   box-shadow: 0 2px 8px rgba(0, 140, 69, 0.2);
+}
+
+.hero-menu-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #e05353;
+  color: white;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  line-height: 1;
 }
 
 .hero-menu-btn:hover {
@@ -288,6 +308,26 @@ main::before {
 #viewSondages:hover {
   background: #3d8760;
   box-shadow: 0 4px 12px rgba(79, 157, 116, 0.4);
+}
+
+#viewPendingDocuments {
+  background: #d98c2b;
+  box-shadow: 0 2px 8px rgba(217, 140, 43, 0.3);
+}
+
+#viewPendingDocuments:hover {
+  background: #bd7622;
+  box-shadow: 0 4px 12px rgba(217, 140, 43, 0.4);
+}
+
+#viewUpcoming {
+  background: #4a7fb5;
+  box-shadow: 0 2px 8px rgba(74, 127, 181, 0.3);
+}
+
+#viewUpcoming:hover {
+  background: #3b6898;
+  box-shadow: 0 4px 12px rgba(74, 127, 181, 0.4);
 }
 
 #viewArchives {
@@ -729,6 +769,67 @@ main::before {
   cursor: pointer;
 }
 
+.auth-switch-link {
+  display: block;
+  margin-top: 18px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.user-menu {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.user-menu-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  color: var(--green-dark);
+  background: var(--green-soft);
+  border: 1px solid #c7ead9;
+  border-radius: 50%;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.user-menu-panel {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 20;
+  width: 260px;
+  padding: 16px;
+  display: grid;
+  gap: 8px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+}
+
+.user-menu-name {
+  margin: 0;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.user-menu-email,
+.user-menu-pharmacy {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.user-menu-panel .small-btn {
+  width: 100%;
+  margin-top: 4px;
+}
+
 .pharmacy-password-change {
   display: grid;
   gap: 10px;
@@ -748,6 +849,24 @@ main::before {
   background: var(--soft);
   border: 1px solid var(--line);
   border-radius: 10px;
+}
+
+.team-add-form {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 14px;
+  background: var(--soft);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.team-add-form[hidden] {
+  display: none !important;
+}
+
+.team-modal-dialog {
+  width: min(760px, 96vw);
 }
 
 .pharmacy-session-bar {
@@ -2812,10 +2931,10 @@ tbody tr:hover {
 }
 
 .admin-main-btn {
-  min-width: 130px;
+  min-width: 140px;
   min-height: 48px;
   padding-inline: 20px;
-  font-size: 16px;
+  font-size: 18px;
 }
 
 .admin-sub-nav {
@@ -2830,6 +2949,20 @@ tbody tr:hover {
   min-height: 38px;
   padding: 7px 13px;
   font-size: 13px;
+}
+
+.admin-sub-btn-danger {
+  color: #bf5d4f;
+  background: #fff0ef;
+  border-color: #ffd0cc;
+}
+
+.admin-sub-btn-danger:hover,
+.admin-sub-btn-danger.active {
+  color: #fff;
+  background: #bf5d4f;
+  border-color: #bf5d4f;
+  box-shadow: 0 10px 24px rgba(191, 93, 79, .25);
 }
 
 .metrics {
