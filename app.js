@@ -2919,13 +2919,12 @@ function renderPharmacyAccess() {
     if (pharmacyGate) pharmacyGate.hidden = true;
     return;
   }
-  // Un administrateur SOGUASPHAR (nouveau système) peut, sur l'onglet
-  // « Formulaire », choisir une pharmacie pour voir l'écran tel qu'une
-  // pharmacie le voit (même sélecteur/connexion que pour une vraie
-  // pharmacie) — on ne le masque donc plus pour lui.
+  // Une administratrice SOGUASPHAR n'a pas de mot de passe pharmacie : cet
+  // écran de connexion (ancien système) ne doit jamais lui être montré,
+  // elle doit directement voir le contenu (précommandes, sondages…) pour
+  // vérifier que ses publications sont bien passées.
   const requiresLogin = pharmacyAccessRequired();
-  const isSoguasphar = Boolean(currentUser) && currentUser.role === "soguasphar_admin";
-  pharmacyGate.hidden = !requiresLogin && !isSoguasphar;
+  pharmacyGate.hidden = !requiresLogin;
 
   // Une vraie pharmacie connectée (nouveau système, compte nominatif) voit
   // son nom complet, sans bouton "Changer de pharmacie" (elle n'a qu'une
@@ -5761,8 +5760,8 @@ document.querySelectorAll(".switch-btn").forEach((button) => {
     button.classList.add("active");
     document.querySelector(`#${button.dataset.view}`).classList.add("active");
     if (button.dataset.view === "formView") {
-      // Un administrateur SOGUASPHAR revenant sur "Formulaire" doit pouvoir
-      // choisir/voir une pharmacie comme elle le ferait elle-même.
+      // Une administratrice SOGUASPHAR revenant sur "Formulaire" voit
+      // directement le contenu (pas d'écran de connexion pharmacie).
       renderPharmacyAccess();
     } else {
       await renderAdmin();
