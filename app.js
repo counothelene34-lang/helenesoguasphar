@@ -2616,7 +2616,11 @@ function renderAttestationPage() {
   // pharmacie puisse le lire avant de signer, pas seulement les quelques
   // champs du formulaire (demandé par Hélène le 13/10/2026). Tant qu'elle n'a
   // pas cliqué ce lien, le bouton de signature reste désactivé.
-  if (attestationPreviewLink) attestationPreviewLink.href = `${BASE_PREFIX}api/attestation/preview`;
+  if (attestationPreviewLink) {
+    attestationPreviewLink.href = isAdminPreviewMode()
+      ? `${BASE_PREFIX}api/attestation/preview?pharmacyId=${encodeURIComponent(currentPharmacy.id)}`
+      : `${BASE_PREFIX}api/attestation/preview`;
+  }
   attestationDocumentViewed = false;
   if (attestationSubmitBtn) attestationSubmitBtn.disabled = true;
   if (attestationViewRequiredNotice) attestationViewRequiredNotice.hidden = false;
@@ -2646,6 +2650,7 @@ function updateAttestationPreviewLink() {
     qualite: attestationQualite?.value || "",
     faitA: attestationFaitA?.value || ""
   });
+  if (isAdminPreviewMode()) params.set("pharmacyId", currentPharmacy.id);
   attestationPreviewLink.href = `${BASE_PREFIX}api/attestation/preview?${params.toString()}`;
 }
 [attestationSocieteExploitante, attestationSiren, attestationRepresentant, attestationQualite, attestationFaitA]

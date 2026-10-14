@@ -3520,9 +3520,17 @@ const server = http.createServer(async (request, response) => {
     // PDF à la volée avec les informations actuelles (formulaire ou déjà
     // enregistrées), sans signature.
     if (url.pathname === "/api/attestation/preview" && request.method === "GET") {
-      const user = requireAuth(request, response, PHARMACY_SESSION_ROLES);
+      // Autorise aussi un admin SOGUASPHAR en mode "aperçu pharmacie" (voir
+      // isAdminPreviewMode côté client) : son compte n'a pas de pharmacyId
+      // propre, donc on accepte un pharmacyId explicite en paramètre, comme
+      // pour la route /api/attestation (même piège, corrigé le 14/10/2026).
+      const user = requireAuth(request, response, PHARMACY_SESSION_ROLES.concat(["soguasphar_admin"]));
       if (!user) return;
-      const pharmacyId = user.pharmacyId;
+      const pharmacyId = url.searchParams.get("pharmacyId") || user.pharmacyId;
+      if (!requireSamePharmacy(user, pharmacyId)) {
+        sendJson(response, 403, { error: "Accès refusé" });
+        return;
+      }
       const attestation = readAttestation();
       const document = attestation.documents.find((item) => item.pharmacyId === pharmacyId);
       if (!document) {
