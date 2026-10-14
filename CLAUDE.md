@@ -213,6 +213,20 @@ Avant de modifier des données à la main : copie datée dans `data-backups/`.
   la fermeture du raccourci "taper le code → accès anonyme". Si un vrai renforcement est
   nécessaire un jour, il faudrait remplacer les vérifications `requireAdminCode` côté
   serveur par `requireAuth(["soguasphar_admin"])` — chantier plus large, pas fait ici.
+- **14/10/2026 : « Accès refusé » (403) sur l'aperçu PDF de l'attestation 2027**
+  (`GET /api/attestation/preview`, cliqué via « Voir le document complet avant
+  de signer »). Cause : exactement le piège déjà noté plus haut (section
+  « Aperçu voir comme pharmacie ») — cette route n'acceptait que les rôles
+  pharmacie (`PHARMACY_SESSION_ROLES`), jamais `soguasphar_admin`, et lisait
+  uniquement `user.pharmacyId` (vide pour un admin) au lieu d'un `pharmacyId`
+  explicite en paramètre. Donc un admin en mode « aperçu pharmacie » (ou testant
+  l'URL directement avec son propre compte admin) se faisait systématiquement
+  rejeter. Corrigé en alignant la route sur `/api/attestation` : rôle admin
+  accepté + `pharmacyId` lu en paramètre (`requireSamePharmacy`), et côté
+  client `updateAttestationPreviewLink()` / le lien initial ajoutent
+  `?pharmacyId=<currentPharmacy.id>` quand `isAdminPreviewMode()` est vrai.
+  **À vérifier systématiquement sur toute nouvelle route de lecture d'un
+  document/réponse** (le même oubli s'est produit deux fois sur l'attestation).
 - **13/10/2026 : ancien accès pharmacie (mot de passe unique par pharmacie) fermé**
   à la demande d'Hélène, pour que "Dernière connexion" soit fiable partout (pas
   seulement côté admin). Routes désactivées dans `server.js` (répondent 410) :
