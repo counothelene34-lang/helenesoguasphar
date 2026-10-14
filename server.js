@@ -59,15 +59,15 @@ const ARCHIVE_NOTIFY_EMAILS = String(process.env.ARCHIVE_NOTIFY_EMAILS || "")
 // dans le .env UNIQUEMENT du site en ligne, jamais sur une copie de test.
 const AUTO_REMINDERS_ENABLED = String(process.env.ENABLE_AUTO_REMINDERS || "").trim().toLowerCase() === "true";
 
-async function sendMail({ to, subject, text, html, attachments }) {
+async function sendMail({ to, subject, text, html, attachments, from, fromName }) {
   const recipients = to || ARCHIVE_NOTIFY_EMAILS.join(", ");
   if (!MAILER_API_KEY || !recipients) {
     console.error("[preco] e-mail non envoyé : MAILER_API_KEY ou destinataire manquant dans .env");
     return;
   }
   const payload = {
-    from: "helene.counot@soguasphar.com",
-    fromName: "Préco SOGUASPHAR",
+    from: from || "helene.counot@soguasphar.com",
+    fromName: fromName || "Préco SOGUASPHAR",
     to: recipients,
     subject,
     text,
@@ -1795,6 +1795,12 @@ function pharmacyRespondedToPoll(poll, pharmacy, pollResponses) {
   });
 }
 
+// Adresse d'envoi dédiée aux relances automatiques (pas un vrai compte lu par
+// quelqu'un : les pharmacies ne doivent jamais y répondre). Toujours avec le
+// logo SOGUASPHAR (jamais le logo "compta", utilisé ailleurs dans Soguaspilot).
+const REMINDER_FROM = "ne_pas_repondre@soguasphar.com";
+const REMINDER_FROM_NAME = "SOGUASPHAR";
+
 async function sendReminderEmail({ emails, kind, operationType, title, closingDate, link }) {
   const isLast = kind === "veille";
   const typeLabel = operationType === "poll" ? "sondage" : "précommande";
@@ -1803,9 +1809,25 @@ async function sendReminderEmail({ emails, kind, operationType, title, closingDa
     ? `Dernière relance avant clôture : "${title}"`
     : `Rappel : réponse attendue pour "${title}"`;
   const text = isLast
-    ? `Bonjour,\n\nCeci est la dernière relance : vous n'avez pas encore répondu au ${typeLabel} "${title}".${closingPart} Passé ce délai, il ne sera plus possible de répondre.\n\nMerci de répondre dès aujourd'hui : ${link}\n\n— Préco SOGUASPHAR`
-    : `Bonjour,\n\nVous n'avez pas encore répondu au ${typeLabel} "${title}".${closingPart}\n\nRépondre ici : ${link}\n\n— Préco SOGUASPHAR`;
-  await sendMail({ to: emails.join(", "), subject, text });
+    ? `Bonjour,\n\nCeci est la dernière relance : vous n'avez pas encore répondu au ${typeLabel} "${title}".${closingPart} Passé ce délai, il ne sera plus possible de répondre.\n\nMerci de répondre dès aujourd'hui : ${link}\n\n— Préco SOGUASPHAR\n\nCeci est un message automatique, merci de ne pas y répondre.`
+    : `Bonjour,\n\nVous n'avez pas encore répondu au ${typeLabel} "${title}".${closingPart}\n\nRépondre ici : ${link}\n\n— Préco SOGUASPHAR\n\nCeci est un message automatique, merci de ne pas y répondre.`;
+  const bodyMessage = isLast
+    ? `Ceci est la <strong>dernière relance</strong> : vous n'avez pas encore répondu au ${typeLabel} « ${title} ».${closingPart} Passé ce délai, il ne sera plus possible de répondre.`
+    : `Vous n'avez pas encore répondu au ${typeLabel} « ${title} ».${closingPart}`;
+  const html = `
+    <div style="font-family: Arial, Helvetica, sans-serif; max-width: 480px; margin: 0 auto; color: #1f2937;">
+      <div style="text-align: center; padding: 16px 0;">
+        <img src="${PRECO_BASE_URL}/logo-soguasphar.png" alt="SOGUASPHAR" style="height: 56px;" />
+      </div>
+      <p>Bonjour,</p>
+      <p>${bodyMessage}</p>
+      <p style="text-align: center; margin: 24px 0;">
+        <a href="${link}" style="background:#0f766e; color:#ffffff; text-decoration:none; padding:12px 20px; border-radius:6px; display:inline-block;">Répondre maintenant</a>
+      </p>
+      <p>— Préco SOGUASPHAR</p>
+      <p style="font-size: 12px; color: #6b7280; margin-top: 24px;">Ceci est un message automatique, merci de ne pas y répondre.</p>
+    </div>`;
+  await sendMail({ to: emails.join(", "), subject, text, html, from: REMINDER_FROM, fromName: REMINDER_FROM_NAME });
 }
 
 async function checkReminders() {
@@ -3613,10 +3635,24 @@ server.listen(PORT, () => {
 // une fois par jour — UNIQUEMENT si explicitement activé (voir
 // AUTO_REMINDERS_ENABLED tout en haut du fichier). Par défaut, désactivé :
 // rien ne part tout seul tant qu'on ne l'a pas sciemment allumé en ligne.
+// Heure Guadeloupe = UTC-4 toute l'année (pas de changement d'heure été/hiver
+// là-bas) -> 8h00 Guadeloupe = 12h00 UTC. Calcule le délai jusqu'à la
+// prochaine occurrence de 12h00 UTC (aujourd'hui si pas encore passé, sinon
+// demain), puis reprogramme toutes les 24h pile à cette même heure.
+function msUntilNextGuadeloupe8am() {
+  const now = new Date();
+  let target = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 12, 0, 0, 0));
+  if (target.getTime() <= now.getTime()) target = new Date(target.getTime() + 24 * 60 * 60 * 1000);
+  return target.getTime() - now.getTime();
+}
+
 if (AUTO_REMINDERS_ENABLED) {
-  console.log("[preco] relances automatiques ACTIVÉES (ENABLE_AUTO_REMINDERS=true)");
-  setTimeout(() => { checkReminders(); }, 15000);
-  setInterval(() => { checkReminders(); }, 24 * 60 * 60 * 1000);
+  const delay = msUntilNextGuadeloupe8am();
+  console.log(`[preco] relances automatiques ACTIVÉES (ENABLE_AUTO_REMINDERS=true) : prochaine vérification dans ${Math.round(delay / 60000)} min (8h00 heure Guadeloupe)`);
+  setTimeout(() => {
+    checkReminders();
+    setInterval(() => { checkReminders(); }, 24 * 60 * 60 * 1000);
+  }, delay);
 } else {
   console.log("[preco] relances automatiques désactivées (ENABLE_AUTO_REMINDERS absent ou différent de \"true\")");
 }
