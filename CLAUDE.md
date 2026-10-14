@@ -25,6 +25,26 @@ cotisation 3 000 €/1 500 €) fusionné dans la tuile **« Document en attente
 - Pharmacie : doit cliquer « Voir le document complet avant de signer » (aperçu
   PDF généré à la volée, route `/api/attestation/preview`) avant que le bouton de
   signature se débloque — champ `attestationDocumentViewed` côté client.
+  **14/10/2026** : ce lien ouvre désormais le PDF dans une fenêtre DANS le site
+  (modale `#pdfPreviewModal`, `<iframe id="pdfPreviewFrame">`, fonctions
+  `openPdfPreview()`/`closePdfPreview()` dans `app.js`) au lieu de naviguer
+  directement vers l'URL du PDF — naviguer directement déclenchait un
+  téléchargement dans le dossier Téléchargements du navigateur (réglage Chrome
+  "toujours télécharger les PDF"), même avec `Content-Disposition: inline`
+  côté serveur. Testé avec Playwright (iframe + cookie de session) : aucun
+  événement `download` déclenché. **Si un autre PDF doit un jour s'afficher
+  en direct (pas juste être téléchargé), réutiliser `openPdfPreview()`** plutôt
+  qu'un lien `<a href>` classique vers la route PDF.
+  **Même jour** : après signature (`POST /api/attestation/sign`), la pharmacie
+  reçoit automatiquement une copie du PDF signé par e-mail (adresse normale
+  `helene.counot@soguasphar.com`, **pas** `ne_pas_repondre@...` — elle doit
+  pouvoir répondre). A nécessité de corriger `sendMail()` : les pièces jointes
+  étaient toujours ré-encodées en base64 depuis du texte UTF-8
+  (`Buffer.from(content, "utf8")`), ce qui aurait corrompu un PDF binaire déjà
+  en base64. Ajouté un flag `encoding: "base64"` par pièce jointe pour l'envoyer
+  telle quelle. Testé isolément (sans toucher aux vraies signatures) en
+  envoyant un PDF factice en pièce jointe vers une adresse de test — reçu
+  correctement.
 - Carte affichée à DEUX endroits dans `app.js` : `renderPendingDocumentsListPage()`
   (page dédiée « Document en attente ») ET `renderCampaignPickers()` (colonne de
   gauche du menu principal, à la place de « Aucun document en attente pour le
