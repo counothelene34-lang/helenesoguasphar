@@ -227,6 +227,21 @@ Avant de modifier des données à la main : copie datée dans `data-backups/`.
   `?pharmacyId=<currentPharmacy.id>` quand `isAdminPreviewMode()` est vrai.
   **À vérifier systématiquement sur toute nouvelle route de lecture d'un
   document/réponse** (le même oubli s'est produit deux fois sur l'attestation).
+  **Suite (même jour) : ce correctif seul n'a pas suffi, le problème persistait**
+  (Rémi, toujours "Accès refusé" puis en creusant l'erreur CONNECTORS_API_KEY
+  reproduisait). Vraie cause additionnelle : `CONNECTORS_API_KEY` avait bien été
+  ajoutée dans `.env` lors d'un 1er correctif plus tôt le 14/10, mais **jamais
+  déclarée dans `docker-compose.yml`** (`environment:`) — ce fichier liste
+  explicitement les variables transmises au conteneur, le reste de `.env` est
+  ignoré (`env_file:` n'est pas utilisé ici). Donc `docker exec ... env` ne
+  montrait pas la clé même après `appctl rebuild`. Corrigé en ajoutant
+  `CONNECTORS_URL`/`CONNECTORS_API_KEY` dans `docker-compose.yml`. **Testé pour
+  de vrai cette fois** : session admin injectée temporairement dans
+  `data/sessions.json` (supprimée après coup) + `curl` sur la route avec
+  `pharmacyId`, PDF `%PDF-1.4` bien reçu (67 Ko). **Leçon : toute nouvelle
+  variable `.env` doit AUSSI être ajoutée dans `docker-compose.yml` pour
+  arriver jusqu'au conteneur — vérifier avec `docker exec <conteneur> env` et
+  pas seulement en lisant `.env` avant de dire "c'est corrigé".**
 - **13/10/2026 : ancien accès pharmacie (mot de passe unique par pharmacie) fermé**
   à la demande d'Hélène, pour que "Dernière connexion" soit fiable partout (pas
   seulement côté admin). Routes désactivées dans `server.js` (répondent 410) :
