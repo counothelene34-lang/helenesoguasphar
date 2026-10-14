@@ -74,7 +74,13 @@ async function sendMail({ to, subject, text, html, attachments, from, fromName }
     html,
     attachments: (attachments || []).map((attachment) => ({
       filename: attachment.filename,
-      content: Buffer.from(String(attachment.content || ""), "utf8").toString("base64"),
+      // Par défaut, "content" est du texte à encoder en base64 (ex. export
+      // Excel/CSV). Pour un binaire déjà en base64 (ex. PDF), passer
+      // encoding: "base64" pour l'envoyer tel quel, sans ré-encoder (sinon le
+      // fichier est corrompu).
+      content: attachment.encoding === "base64"
+        ? String(attachment.content || "")
+        : Buffer.from(String(attachment.content || ""), "utf8").toString("base64"),
       contentType: attachment.contentType || "application/vnd.ms-excel"
     }))
   };
@@ -3619,6 +3625,36 @@ const server = http.createServer(async (request, response) => {
         : [...responses, savedResponse];
       writeAttestationResponses(updatedResponses);
       sendJson(response, 200, savedResponse);
+
+      // Copie du PDF signé envoyée à la pharmacie, par e-mail normal (pas
+      // "ne_pas_repondre" : elle doit pouvoir répondre si besoin). Après avoir
+      // répondu au navigateur : un échec d'envoi ne doit jamais empêcher la
+      // signature d'être enregistrée.
+      const pharmacy = readPharmacies().find((item) => item.id === pharmacyId);
+      const emails = activePharmacyEmails(pharmacy);
+      if (emails.length) {
+        sendMail({
+          to: emails.join(", "),
+          subject: `Votre attestation d'engagement SOGUASPHAR ${attestation.year || "2027"} signée`,
+          text: `Bonjour,\n\nVoici en pièce jointe une copie de l'attestation d'engagement SOGUASPHAR ${attestation.year || "2027"} que vous venez de signer pour ${document.pharmacyName}, le ${nowLabel}.\n\n— Préco SOGUASPHAR`,
+          html: `<div style="font-family: Arial, Helvetica, sans-serif; max-width: 480px; margin: 0 auto; color: #1f2937;">
+            <div style="text-align: center; padding: 16px 0;"><img src="${PRECO_BASE_URL}/logo-soguasphar.png" alt="SOGUASPHAR" style="height: 56px;" /></div>
+            <p>Bonjour,</p>
+            <p>Voici en pièce jointe une copie de l'attestation d'engagement SOGUASPHAR ${attestation.year || "2027"} que vous venez de signer pour <strong>${document.pharmacyName}</strong>, le ${nowLabel}.</p>
+            <p>— Préco SOGUASPHAR</p>
+          </div>`,
+          attachments: [{
+            filename: `attestation-${attestation.year || "2027"}-${document.pharmacyName}.pdf`,
+            content: pdfBuffer.toString("base64"),
+            contentType: "application/pdf",
+            encoding: "base64"
+          }]
+        }).catch((error) => {
+          console.error(`[preco] copie de l'attestation signée non envoyée (pharmacie ${document.pharmacyName}) :`, error.message || error);
+        });
+      } else {
+        console.log(`[preco] attestation signée mais aucune adresse e-mail connue pour ${document.pharmacyName}, copie non envoyée`);
+      }
       return;
     }
 

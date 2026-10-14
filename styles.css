@@ -1847,6 +1847,19 @@ main::before {
   min-width: 160px;
 }
 
+.pdf-preview-dialog {
+  width: min(900px, 96vw);
+  height: 92vh;
+}
+
+#pdfPreviewFrame {
+  width: 100%;
+  height: calc(92vh - 150px);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--soft);
+}
+
 .campaign-image-block {
   width: min(920px, 100%);
   margin: 0 auto 14px;

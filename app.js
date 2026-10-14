@@ -415,6 +415,10 @@ const imagePreviewModal = document.querySelector("#imagePreviewModal");
 const imagePreviewImg = document.querySelector("#imagePreviewImg");
 const imagePreviewClose = document.querySelector("#imagePreviewClose");
 const imagePreviewCloseBtn = document.querySelector("#imagePreviewCloseBtn");
+const pdfPreviewModal = document.querySelector("#pdfPreviewModal");
+const pdfPreviewFrame = document.querySelector("#pdfPreviewFrame");
+const pdfPreviewClose = document.querySelector("#pdfPreviewClose");
+const pdfPreviewCloseBtn = document.querySelector("#pdfPreviewCloseBtn");
 const adminPreviewPicker = document.querySelector("#adminPreviewPicker");
 const adminPreviewSelect = document.querySelector("#adminPreviewSelect");
 let preserveSubmitMessage = false;
@@ -2659,7 +2663,9 @@ function updateAttestationPreviewLink() {
 // Débloque le bouton de signature seulement une fois que la pharmacie a
 // cliqué pour ouvrir le document complet (lecture obligatoire avant de
 // signer — demandé par Hélène le 13/10/2026).
-attestationPreviewLink?.addEventListener("click", () => {
+attestationPreviewLink?.addEventListener("click", (event) => {
+  event.preventDefault();
+  openPdfPreview(attestationPreviewLink.href, "Attestation d'engagement SOGUASPHAR — aperçu");
   attestationDocumentViewed = true;
   if (attestationSubmitBtn) attestationSubmitBtn.disabled = false;
   if (attestationViewRequiredNotice) attestationViewRequiredNotice.hidden = true;
@@ -3250,6 +3256,35 @@ function closeImagePreview() {
   imagePreviewImg.alt = "";
   document.body.classList.remove("modal-open");
 }
+
+// Affiche un document PDF directement dans une fenêtre du site (au lieu de le
+// télécharger dans le dossier Téléchargements du navigateur) — demandé par
+// Hélène le 14/10/2026, pour l'attestation d'engagement 2027.
+function openPdfPreview(src, title = "Document") {
+  if (!src || !pdfPreviewModal || !pdfPreviewFrame) return;
+  pdfPreviewFrame.src = src;
+  const titleEl = document.querySelector("#pdfPreviewTitle");
+  if (titleEl) titleEl.textContent = title;
+  pdfPreviewModal.hidden = false;
+  document.body.classList.add("modal-open");
+  pdfPreviewClose?.focus();
+}
+
+function closePdfPreview() {
+  if (!pdfPreviewModal || pdfPreviewModal.hidden) return;
+  pdfPreviewModal.hidden = true;
+  pdfPreviewFrame.src = "about:blank";
+  document.body.classList.remove("modal-open");
+}
+
+pdfPreviewClose?.addEventListener("click", closePdfPreview);
+pdfPreviewCloseBtn?.addEventListener("click", closePdfPreview);
+pdfPreviewModal?.addEventListener("click", (event) => {
+  if (event.target.closest("[data-close-pdf-preview]")) closePdfPreview();
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && pdfPreviewModal && !pdfPreviewModal.hidden) closePdfPreview();
+});
 
 // Nom complet d'une personne (titulaire ou membre d'équipe), avec civilité si
 // connue (ex. "Mme Isabelle AZAR"). Repli sur l'e-mail si aucun nom n'est
