@@ -2209,18 +2209,54 @@ const server = http.createServer(async (request, response) => {
       return;
     }
 
+    // Renvoie la liste des commandes SANS les photos en base64 (remplacées par
+    // une petite adresse /api/orders/<id>/image[2]) : avant ce changement, cette
+    // route renvoyait tout le JSON y compris les photos (plusieurs Mo) à CHAQUE
+    // ouverture de l'application, pour chaque pharmacie — gros ralentissement
+    // repéré le 15/10/2026. Le navigateur ne va chercher la vraie photo que
+    // lorsqu'elle est réellement affichée (et la garde en cache une heure).
     if (url.pathname === "/api/orders" && request.method === "GET") {
-      sendJson(response, 200, readOrders());
+      const orders = readOrders().map((order) => ({
+        ...order,
+        imageData: order.imageData ? `/api/orders/${order.id}/image` : "",
+        imageData2: order.imageData2 ? `/api/orders/${order.id}/image2` : ""
+      }));
+      sendJson(response, 200, orders);
       return;
     }
 
     // Sert la seule image d'une opération (sans renvoyer tout le JSON en base64),
-    // utilisée notamment par Soguaspilot pour afficher les vignettes des tâches en attente.
+    // utilisée notamment par Soguaspilot pour afficher les vignettes des tâches en attente,
+    // et par Préco lui-même depuis le 15/10/2026 (voir GET /api/orders ci-dessus).
     const orderImageMatch = url.pathname.match(/^\/api\/orders\/([^/]+)\/image$/);
     if (orderImageMatch && request.method === "GET") {
       const orderId = decodeURIComponent(orderImageMatch[1]);
       const order = readOrders().find((item) => item.id === orderId);
       const dataUrl = order && (order.imageData || order.imageData2);
+      const match = typeof dataUrl === "string" && dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+      if (!match) {
+        response.writeHead(404);
+        response.end("Not found");
+        return;
+      }
+      const buffer = Buffer.from(match[2], "base64");
+      response.writeHead(200, {
+        "Content-Type": match[1],
+        "Cache-Control": "public, max-age=3600",
+        "Content-Length": buffer.length
+      });
+      response.end(buffer);
+      return;
+    }
+
+    // Deuxième photo d'une opération (pendant du bloc ci-dessus, mais strictement
+    // imageData2 — nécessaire depuis que la liste /api/orders ne renvoie plus les
+    // photos en direct : le site a besoin de pouvoir demander la 2e photo précisément).
+    const orderImage2Match = url.pathname.match(/^\/api\/orders\/([^/]+)\/image2$/);
+    if (orderImage2Match && request.method === "GET") {
+      const orderId = decodeURIComponent(orderImage2Match[1]);
+      const order = readOrders().find((item) => item.id === orderId);
+      const dataUrl = order && order.imageData2;
       const match = typeof dataUrl === "string" && dataUrl.match(/^data:([^;]+);base64,(.+)$/);
       if (!match) {
         response.writeHead(404);
@@ -3084,15 +3120,33 @@ const server = http.createServer(async (request, response) => {
 
       const previousOrders = readOrders();
       const payload = JSON.parse(await readBody(request));
-      const orders = Array.isArray(payload) ? payload.map((order) => ({
-        id: String(order.id || Date.now()),
+      // Depuis le 15/10/2026, GET /api/orders ne renvoie plus les photos en base64
+      // mais une petite adresse (/api/orders/<id>/image[2]) — voir plus haut. Donc
+      // quand l'admin enregistre (même pour une commande dont la photo n'a pas été
+      // touchée), le champ imageData reçu ici est souvent cette adresse, pas la
+      // vraie photo. Il faut repérer ce cas et garder la vraie photo déjà stockée,
+      // sinon toutes les photos des commandes non modifiées seraient effacées au
+      // prochain enregistrement.
+      const orders = Array.isArray(payload) ? payload.map((order) => {
+        const id = String(order.id || Date.now());
+        const previous = previousOrders.find((item) => item.id === id);
+        const incomingImage = String(order.imageData || "");
+        const incomingImage2 = String(order.imageData2 || "");
+        const imageData = incomingImage === `/api/orders/${id}/image`
+          ? (previous ? previous.imageData : "")
+          : incomingImage;
+        const imageData2 = incomingImage2 === `/api/orders/${id}/image2`
+          ? (previous ? previous.imageData2 : "")
+          : incomingImage2;
+        return {
+        id,
         title: String(order.title || "Commande").trim(),
         type: String(order.type || "Commande").trim(),
         description: String(order.description || "").trim(),
         pharmacyMessage: String(order.pharmacyMessage || "").trim(),
         deliveryDate: String(order.deliveryDate || "").trim(),
-        imageData: String(order.imageData || ""),
-        imageData2: String(order.imageData2 || ""),
+        imageData,
+        imageData2,
         closed: Boolean(order.closed),
         draft: Boolean(order.draft),
         periods: Array.isArray(order.periods) ? order.periods.map((period) => ({
@@ -3101,7 +3155,8 @@ const server = http.createServer(async (request, response) => {
           endDate: String(period.endDate || "").trim()
         })).filter((period) => period.startDate) : [],
         template: normalizeTemplate(order.template)
-      })) : [];
+        };
+      }) : [];
       writeOrders(orders);
       sendJson(response, 200, orders);
 

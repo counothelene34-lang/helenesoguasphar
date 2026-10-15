@@ -2171,7 +2171,7 @@ function archivedOperationsForCurrentPharmacy() {
 function archivedOperationCard({ campaign, period, response }) {
   const imageMarkup = [campaign.imageData, campaign.imageData2]
     .filter(Boolean)
-    .map((imageData, index) => `<a class="campaign-card-image" href="${imageData}" data-preview-image title="Voir la photo ${index + 1}"><img src="${imageData}" alt="Image ${index + 1} ${escapeHtml(campaign.title)}"></a>`)
+    .map((imageData, index) => `<a class="campaign-card-image" href="${resolveBatDocumentUrl(imageData)}" data-preview-image title="Voir la photo ${index + 1}"><img src="${resolveBatDocumentUrl(imageData)}" alt="Image ${index + 1} ${escapeHtml(campaign.title)}"></a>`)
     .join("");
   const operationLabel = `${response.campaignTitle || campaign.title || "Précommande"}${period.id ? ` — ${periodLabel(period)}` : ""}`;
   const completedDate = response.updatedAt
@@ -3203,29 +3203,29 @@ function refreshCampaignImagePreview(campaign) {
   const imageData2 = campaign?.imageData2 || "";
   if (campaignImageBlock && campaignImage) {
     campaignImageBlock.hidden = !imageData;
-    campaignImageLink.href = imageData || "#";
-    campaignImage.src = imageData;
+    campaignImageLink.href = imageData ? resolveBatDocumentUrl(imageData) : "#";
+    campaignImage.src = resolveBatDocumentUrl(imageData);
     campaignImage.alt = imageData ? `Image ${campaign?.title || "commande"}` : "";
   }
 
   if (campaignImageBlock2 && campaignImage2) {
     campaignImageBlock2.hidden = !imageData2;
-    campaignImageLink2.href = imageData2 || "#";
-    campaignImage2.src = imageData2;
+    campaignImageLink2.href = imageData2 ? resolveBatDocumentUrl(imageData2) : "#";
+    campaignImage2.src = resolveBatDocumentUrl(imageData2);
     campaignImage2.alt = imageData2 ? `Deuxième image ${campaign?.title || "commande"}` : "";
   }
 
   if (campaignImageAdminPreview && campaignImageAdmin) {
     campaignImageAdminPreview.hidden = !imageData;
-    campaignImageAdminLink.href = imageData || "#";
-    campaignImageAdmin.src = imageData;
+    campaignImageAdminLink.href = imageData ? resolveBatDocumentUrl(imageData) : "#";
+    campaignImageAdmin.src = resolveBatDocumentUrl(imageData);
     campaignImageAdmin.alt = imageData ? `Image ${campaign?.title || "commande"}` : "";
   }
 
   if (campaignImageAdminPreview2 && campaignImageAdmin2) {
     campaignImageAdminPreview2.hidden = !imageData2;
-    campaignImageAdminLink2.href = imageData2 || "#";
-    campaignImageAdmin2.src = imageData2;
+    campaignImageAdminLink2.href = imageData2 ? resolveBatDocumentUrl(imageData2) : "#";
+    campaignImageAdmin2.src = resolveBatDocumentUrl(imageData2);
     campaignImageAdmin2.alt = imageData2 ? `Deuxième image ${campaign?.title || "commande"}` : "";
   }
 }
@@ -4594,7 +4594,7 @@ function campaignCard(campaign, target) {
   const isCompleted = Boolean(completedResponse);
   const imageMarkup = [campaign.imageData, campaign.imageData2]
     .filter(Boolean)
-    .map((imageData, index) => `<a class="campaign-card-image" href="${imageData}" data-preview-image title="Voir la photo ${index + 1}"><img src="${imageData}" alt="Image ${index + 1} ${escapeHtml(campaign.title)}"></a>`)
+    .map((imageData, index) => `<a class="campaign-card-image" href="${resolveBatDocumentUrl(imageData)}" data-preview-image title="Voir la photo ${index + 1}"><img src="${resolveBatDocumentUrl(imageData)}" alt="Image ${index + 1} ${escapeHtml(campaign.title)}"></a>`)
     .join("");
   const isOpenNow = isAdmin || campaignIsOpenForPharmacy(campaign);
   const isEffectivelyClosed = campaignIsEffectivelyClosed(campaign);
@@ -7118,10 +7118,12 @@ pharmacyLoginForm.addEventListener("submit", async (event) => {
     renderCampaignPickers();
     showCampaignPicker();
     renderPharmacyAccess();
-    await refreshPharmacyPollAnswers();
-    await refreshPharmacyCampaignResponses();
-    await refreshPharmacyInfoResponses();
-    await refreshPharmacyValidationResponses();
+    await Promise.all([
+      refreshPharmacyPollAnswers(),
+      refreshPharmacyCampaignResponses(),
+      refreshPharmacyInfoResponses(),
+      refreshPharmacyValidationResponses()
+    ]);
     renderCampaignPickers();
     showRequestedOperationOrMenu();
     renderPharmacyAccess();
@@ -7166,10 +7168,12 @@ pharmacyPasswordChangeForm.addEventListener("submit", async (event) => {
     renderCampaignPickers();
     showCampaignPicker();
     renderPharmacyAccess();
-    await refreshPharmacyPollAnswers();
-    await refreshPharmacyCampaignResponses();
-    await refreshPharmacyInfoResponses();
-    await refreshPharmacyValidationResponses();
+    await Promise.all([
+      refreshPharmacyPollAnswers(),
+      refreshPharmacyCampaignResponses(),
+      refreshPharmacyInfoResponses(),
+      refreshPharmacyValidationResponses()
+    ]);
     renderCampaignPickers();
     showRequestedOperationOrMenu();
     renderPharmacyAccess();
@@ -7222,10 +7226,12 @@ adminPreviewSelect?.addEventListener("change", async () => {
   renderCampaignPickers();
   renderPharmacyAccess();
   showCampaignPicker();
-  await refreshPharmacyPollAnswers();
-  await refreshPharmacyCampaignResponses();
-  await refreshPharmacyInfoResponses();
-  await refreshPharmacyValidationResponses();
+  await Promise.all([
+    refreshPharmacyPollAnswers(),
+    refreshPharmacyCampaignResponses(),
+    refreshPharmacyInfoResponses(),
+    refreshPharmacyValidationResponses()
+  ]);
   renderCampaignPickers();
   showRequestedOperationOrMenu();
 });
@@ -7320,10 +7326,12 @@ resetPasswordForm?.addEventListener("submit", async (event) => {
       renderCampaignPickers();
       showCampaignPicker();
       renderPharmacyAccess();
-      await refreshPharmacyPollAnswers();
-      await refreshPharmacyCampaignResponses();
-      await refreshPharmacyInfoResponses();
-      await refreshPharmacyValidationResponses();
+      await Promise.all([
+        refreshPharmacyPollAnswers(),
+        refreshPharmacyCampaignResponses(),
+        refreshPharmacyInfoResponses(),
+        refreshPharmacyValidationResponses()
+      ]);
       renderCampaignPickers();
       showRequestedOperationOrMenu();
       renderPharmacyAccess();
@@ -7376,10 +7384,12 @@ newAuthLoginForm?.addEventListener("submit", async (event) => {
       renderCampaignPickers();
       showCampaignPicker();
       renderPharmacyAccess();
-      await refreshPharmacyPollAnswers();
-      await refreshPharmacyCampaignResponses();
-      await refreshPharmacyInfoResponses();
-      await refreshPharmacyValidationResponses();
+      await Promise.all([
+        refreshPharmacyPollAnswers(),
+        refreshPharmacyCampaignResponses(),
+        refreshPharmacyInfoResponses(),
+        refreshPharmacyValidationResponses()
+      ]);
       renderCampaignPickers();
       showRequestedOperationOrMenu();
       renderPharmacyAccess();
@@ -7438,10 +7448,12 @@ newAuthPasswordChangeForm?.addEventListener("submit", async (event) => {
       renderCampaignPickers();
       showCampaignPicker();
       renderPharmacyAccess();
-      await refreshPharmacyPollAnswers();
-      await refreshPharmacyCampaignResponses();
-      await refreshPharmacyInfoResponses();
-      await refreshPharmacyValidationResponses();
+      await Promise.all([
+        refreshPharmacyPollAnswers(),
+        refreshPharmacyCampaignResponses(),
+        refreshPharmacyInfoResponses(),
+        refreshPharmacyValidationResponses()
+      ]);
       renderCampaignPickers();
       showRequestedOperationOrMenu();
       renderPharmacyAccess();
@@ -9185,11 +9197,21 @@ async function init() {
     if (pharmacyGate) pharmacyGate.hidden = true;
     if (newAuthGate) newAuthGate.hidden = true;
     resetPasswordGate.hidden = false;
-    campaigns = await getCampaigns();
-    polls = await getPolls();
-    infoForms = await getInfoForms();
     infoResponses = localInfoResponses();
-    const validationState = await getValidationState();
+    // Les 5 chargements ci-dessous ne dépendent pas les uns des autres : on les
+    // lance en même temps (au lieu de les attendre l'un après l'autre) pour que
+    // l'ouverture de l'application ne cumule pas leurs temps de réponse réseau
+    // (optimisation du 15/10/2026, l'appli était lente à s'ouvrir).
+    const [campaignsResult, pollsResult, infoFormsResult, validationState, batResponsesResult] = await Promise.all([
+      getCampaigns(),
+      getPolls(),
+      getInfoForms(),
+      getValidationState(),
+      getValidationResponses()
+    ]);
+    campaigns = campaignsResult;
+    polls = pollsResult;
+    infoForms = infoFormsResult;
     validationConfigState = {
       title: validationState.title || "",
       description: validationState.description || "",
@@ -9197,7 +9219,7 @@ async function init() {
       archived: Boolean(validationState.archived)
     };
     batDocuments = Array.isArray(validationState.documents) ? validationState.documents : [];
-    batResponses = await getValidationResponses();
+    batResponses = batResponsesResult;
     return;
   }
 
@@ -9214,19 +9236,29 @@ async function init() {
   if (pendingDocumentsListPage) pendingDocumentsListPage.hidden = true;
   if (upcomingListPage) upcomingListPage.hidden = true;
   if (attestationPage) attestationPage.hidden = true;
-  campaigns = await getCampaigns();
-  polls = await getPolls();
-  infoForms = await getInfoForms();
   infoResponses = localInfoResponses();
-  const validationState = await getValidationState();
-  validationConfigState = {
-    title: validationState.title || "",
-    description: validationState.description || "",
-    draft: Boolean(validationState.draft),
-    archived: Boolean(validationState.archived)
-  };
-  batDocuments = Array.isArray(validationState.documents) ? validationState.documents : [];
-  batResponses = await getValidationResponses();
+  // Même optimisation que ci-dessus (voir le commentaire du 15/10/2026) : ces 5
+  // chargements sont indépendants, on les lance en même temps.
+  {
+    const [campaignsResult, pollsResult, infoFormsResult, validationState, batResponsesResult] = await Promise.all([
+      getCampaigns(),
+      getPolls(),
+      getInfoForms(),
+      getValidationState(),
+      getValidationResponses()
+    ]);
+    campaigns = campaignsResult;
+    polls = pollsResult;
+    infoForms = infoFormsResult;
+    validationConfigState = {
+      title: validationState.title || "",
+      description: validationState.description || "",
+      draft: Boolean(validationState.draft),
+      archived: Boolean(validationState.archived)
+    };
+    batDocuments = Array.isArray(validationState.documents) ? validationState.documents : [];
+    batResponses = batResponsesResult;
+  }
   const params = new URLSearchParams(window.location.search);
   requestedOperationId = String(params.get("operation") || "").trim();
   if (params.get("resetValidation") === "1") {
@@ -9276,10 +9308,14 @@ async function init() {
     localStorage.removeItem(PHARMACY_SESSION_KEY);
   }
 
-  await refreshPharmacyPollAnswers();
-  await refreshPharmacyCampaignResponses();
-  await refreshPharmacyInfoResponses();
-  await refreshPharmacyValidationResponses();
+  // Ces 4 rafraîchissements sont indépendants entre eux : lancés en même temps
+  // (optimisation du 15/10/2026).
+  await Promise.all([
+    refreshPharmacyPollAnswers(),
+    refreshPharmacyCampaignResponses(),
+    refreshPharmacyInfoResponses(),
+    refreshPharmacyValidationResponses()
+  ]);
   renderCampaignPickers();
   showRequestedOperationOrMenu();
   await showAdminCampaignPicker();
