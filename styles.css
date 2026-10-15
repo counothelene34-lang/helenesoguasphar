@@ -2061,6 +2061,19 @@ main::before {
   white-space: pre-line;
 }
 
+.campaign-dates-info {
+  margin-bottom: 14px;
+}
+
+.campaign-dates-info .delivery-date-info,
+.campaign-dates-info .period-closing-info {
+  margin-top: 0;
+}
+
+.campaign-dates-info .delivery-date-info + .period-closing-info {
+  margin-top: 4px;
+}
+
 .selected-campaign-title {
   margin-bottom: 14px;
   padding: 18px 20px;

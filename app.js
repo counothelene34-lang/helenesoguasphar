@@ -167,6 +167,7 @@ const satisfactionSubmitRow = document.querySelector("#satisfactionSubmitRow");
 const satisfactionFormMessage = document.querySelector("#satisfactionFormMessage");
 const backToCampaignsBtn = document.querySelector("#backToCampaignsBtn");
 const campaignNotice = document.querySelector("#campaignNotice");
+const campaignDatesInfo = document.querySelector("#campaignDatesInfo");
 const campaignDirectLink = document.querySelector("#campaignDirectLink");
 const satisfactionDirectLink = document.querySelector("#satisfactionDirectLink");
 const responseSuccess = document.querySelector("#responseSuccess");
@@ -5423,6 +5424,23 @@ function selectCampaign(campaignId) {
   } else {
     campaignNotice.hidden = true;
     campaignNotice.textContent = "";
+  }
+  // Mêmes informations (et même format) que sur la carte de la précommande dans
+  // le menu principal — affichées ici aussi, entre le descriptif et la/les
+  // photo(s), pour qu'elles restent visibles une fois sur la fiche (demande du
+  // 15/10/2026, elles n'apparaissaient qu'au menu).
+  if (campaignDatesInfo) {
+    const activePeriod = currentPeriod(selectedCampaign);
+    const datesMarkup = [
+      selectedCampaign.deliveryDate
+        ? `<p class="delivery-date-info">Livraison prévue le <strong>${escapeHtml(formatDateFr(selectedCampaign.deliveryDate))}</strong></p>`
+        : "",
+      activePeriod?.endDate
+        ? `<p class="period-closing-info">Clôture le <strong>${escapeHtml(formatDateFr(activePeriod.endDate))}</strong></p>`
+        : ""
+    ].join("");
+    campaignDatesInfo.innerHTML = datesMarkup;
+    campaignDatesInfo.hidden = !datesMarkup;
   }
   refreshCampaignImagePreview(selectedCampaign);
   const operationSlug = slugify(selectedCampaign.title);
