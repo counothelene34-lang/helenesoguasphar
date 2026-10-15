@@ -196,6 +196,26 @@ Avant de modifier des données à la main : copie datée dans `data-backups/`.
   `sendPollExcel`, `sendInfoExcel`, colonnes libres vers la ligne 673 de `server.js`
 
 ## Pièges connus
+- **15/10/2026 : fenêtre "Mon équipe" (ajout d'une personne) inutilisable sur
+  petit écran**, bouton "Créer l'accès" inaccessible sans réduire la fenêtre du
+  navigateur. Cause : `.image-preview-dialog` (styles.css, classe partagée par
+  la modale équipe, l'aperçu image et l'aperçu PDF) avait `max-height: 92vh`
+  mais **aucun `overflow-y`** — le contenu qui dépasse était simplement coupé,
+  sans ascenseur. Corrigé en ajoutant `overflow-y: auto` sur `.image-preview-dialog`
+  (une seule ligne, s'applique automatiquement à toutes les modales qui
+  partagent cette classe). Vérifié avec Playwright à 1024×350 px (plus petit
+  qu'un écran réel) : le bouton devient atteignable par défilement. **Si une
+  nouvelle modale basée sur `.image-preview-dialog` déborde un jour, ne pas
+  recréer un correctif à part : c'est déjà géré par cette règle commune.**
+- **15/10/2026 : pas d'œil pour voir le mot de passe** lors de la création du
+  mot de passe après l'e-mail d'invitation (`#resetPasswordForm` /
+  `#resetPasswordNew`), ni lors du changement d'un mot de passe provisoire
+  (`#newAuthPasswordChangeForm`). Seul le formulaire de connexion normale avait
+  ce bouton (`#toggleNewAuthPassword`). Corrigé en généralisant le mécanisme :
+  tout bouton avec l'attribut `data-toggle-password="<id du champ>"` active
+  automatiquement l'affichage/masquage (app.js, juste après le handler de
+  `toggleNewAuthPassword`). **Pour tout nouveau champ mot de passe à l'avenir**,
+  réutiliser cet attribut plutôt que redévelopper un bouton à la main.
 - **15/10/2026 : prix à plus de 2 décimales dans les précommandes** (ex : opération
   ORAL-B, "22.965300000000003" ou "15.326" au lieu de "22,97"/"15,33"). Cause :
   import Excel — `XLSX.utils.sheet_to_json()` renvoie des cellules de prix comme

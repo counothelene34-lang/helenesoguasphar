@@ -7247,6 +7247,23 @@ toggleNewAuthPassword?.addEventListener("click", () => {
   toggleNewAuthPassword.setAttribute("aria-label", isPassword ? "Masquer le mot de passe" : "Afficher le mot de passe");
 });
 
+// Bouton "œil" générique pour tout champ mot de passe marqué
+// data-toggle-password="<id du champ>" (création de mot de passe après
+// invitation par e-mail, changement de mot de passe provisoire...). Ajouté
+// le 15/10/2026 : une personne de l'équipe ne pouvait pas vérifier ce
+// qu'elle tapait en créant son compte. Si un nouveau champ mot de passe est
+// ajouté un jour, réutiliser ce même attribut plutôt que recréer un bouton.
+document.querySelectorAll("[data-toggle-password]").forEach((button) => {
+  const field = document.querySelector(`#${button.dataset.togglePassword}`);
+  if (!field) return;
+  button.addEventListener("click", () => {
+    const isPassword = field.type === "password";
+    field.type = isPassword ? "text" : "password";
+    button.textContent = isPassword ? "Masquer" : "Voir";
+    button.setAttribute("aria-label", isPassword ? "Masquer le mot de passe" : "Afficher le mot de passe");
+  });
+});
+
 forgotNewAuthPasswordBtn?.addEventListener("click", () => {
   forgotNewAuthPasswordForm.hidden = !forgotNewAuthPasswordForm.hidden;
   if (!forgotNewAuthPasswordForm.hidden) {

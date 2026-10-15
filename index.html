@@ -105,9 +105,15 @@
           <form id="newAuthPasswordChangeForm" class="pharmacy-password-change" hidden>
             <p>Ce mot de passe est provisoire : choisissez-en un nouveau pour continuer.</p>
             <label for="newAuthNewPassword">Nouveau mot de passe</label>
-            <input id="newAuthNewPassword" type="password" autocomplete="new-password" placeholder="Nouveau mot de passe" minlength="6">
+            <div class="password-field">
+              <input id="newAuthNewPassword" type="password" autocomplete="new-password" placeholder="Nouveau mot de passe" minlength="6">
+              <button class="password-toggle" type="button" data-toggle-password="newAuthNewPassword" aria-label="Afficher le mot de passe">Voir</button>
+            </div>
             <label for="newAuthConfirmPassword">Confirmer le mot de passe</label>
-            <input id="newAuthConfirmPassword" type="password" autocomplete="new-password" placeholder="Confirmer le mot de passe" minlength="6">
+            <div class="password-field">
+              <input id="newAuthConfirmPassword" type="password" autocomplete="new-password" placeholder="Confirmer le mot de passe" minlength="6">
+              <button class="password-toggle" type="button" data-toggle-password="newAuthConfirmPassword" aria-label="Afficher le mot de passe">Voir</button>
+            </div>
             <button class="primary-btn" type="submit">Enregistrer mon mot de passe</button>
           </form>
           <p id="newAuthLoginMessage" class="status-message" role="status"></p>
@@ -121,9 +127,15 @@
           <p>Ce lien vous a été envoyé par e-mail et reste valable 2 heures.</p>
           <form id="resetPasswordForm">
             <label for="resetPasswordNew">Nouveau mot de passe</label>
-            <input id="resetPasswordNew" type="password" autocomplete="new-password" placeholder="Nouveau mot de passe" minlength="6">
+            <div class="password-field">
+              <input id="resetPasswordNew" type="password" autocomplete="new-password" placeholder="Nouveau mot de passe" minlength="6">
+              <button class="password-toggle" type="button" data-toggle-password="resetPasswordNew" aria-label="Afficher le mot de passe">Voir</button>
+            </div>
             <label for="resetPasswordConfirm">Confirmer le mot de passe</label>
-            <input id="resetPasswordConfirm" type="password" autocomplete="new-password" placeholder="Confirmer le mot de passe" minlength="6">
+            <div class="password-field">
+              <input id="resetPasswordConfirm" type="password" autocomplete="new-password" placeholder="Confirmer le mot de passe" minlength="6">
+              <button class="password-toggle" type="button" data-toggle-password="resetPasswordConfirm" aria-label="Afficher le mot de passe">Voir</button>
+            </div>
             <button class="primary-btn" type="submit">Enregistrer mon mot de passe</button>
           </form>
           <p id="resetPasswordMessage" class="status-message" role="status"></p>

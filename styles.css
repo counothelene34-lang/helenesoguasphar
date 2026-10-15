@@ -1801,6 +1801,11 @@ main::before {
   border: 1px solid var(--line);
   border-radius: 12px;
   box-shadow: 0 26px 70px rgba(0, 0, 0, .34);
+  /* Quelle que soit la taille de l'écran (petit ordinateur, fenêtre réduite),
+     le contenu qui dépasse de la hauteur disponible devient défilant au lieu
+     d'être coupé avec le bouton du bas inaccessible (incident "création de
+     compte équipe" du 15/10/2026, ne pas retirer). */
+  overflow-y: auto;
 }
 
 .image-preview-head {
