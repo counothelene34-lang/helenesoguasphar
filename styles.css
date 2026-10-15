@@ -1654,13 +1654,13 @@ main::before {
 
 .period-closing-info {
   margin: 4px 0 0;
-  font-size: 14px;
+  font-size: 16px;
   color: var(--red);
 }
 
 .delivery-date-info {
   margin: 4px 0 0;
-  font-size: 14px;
+  font-size: 16px;
   color: var(--green-dark, #006633);
 }
 
