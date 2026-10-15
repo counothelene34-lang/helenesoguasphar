@@ -2175,7 +2175,7 @@ function archivedOperationCard({ campaign, period, response }) {
     : `Réalisée le ${escapeHtml(response.createdAt || "")}`;
   const summary = campaignResponseSummary(response);
   const deliveryDateMarkup = campaign.deliveryDate
-    ? `<p class="delivery-date-info">Livraison prévue le <strong>${escapeHtml(formatDateFr(campaign.deliveryDate))}</strong></p>`
+    ? `<p class="delivery-date-info">Livraison prévisionnelle le <strong>${escapeHtml(formatDateFr(campaign.deliveryDate))}</strong></p>`
     : "";
   return `
     <article class="campaign-card completed archived-order-card">
@@ -4620,7 +4620,7 @@ function campaignCard(campaign, target) {
   const upcomingPeriods = futurePeriods(campaign);
   const periodInfoMarkup = !isAdmin && Array.isArray(campaign.periods) && campaign.periods.length
     ? `
-      ${activePeriod?.endDate ? `<p class="period-closing-info">Clôture le <strong>${escapeHtml(formatDateFr(activePeriod.endDate))}</strong></p>` : ""}
+      ${activePeriod?.endDate ? `<p class="period-closing-info">Clôture précommande le <strong>${escapeHtml(formatDateFr(activePeriod.endDate))}</strong></p>` : ""}
       ${upcomingPeriods.length ? `
         <div class="next-periods-block">
           <strong>Prochaine${upcomingPeriods.length > 1 ? "s" : ""} précommande${upcomingPeriods.length > 1 ? "s" : ""} programmée${upcomingPeriods.length > 1 ? "s" : ""} :</strong>
@@ -4630,7 +4630,7 @@ function campaignCard(campaign, target) {
     `
     : "";
   const deliveryDateMarkup = campaign.deliveryDate
-    ? `<p class="delivery-date-info">Livraison prévue le <strong>${escapeHtml(formatDateFr(campaign.deliveryDate))}</strong></p>`
+    ? `<p class="delivery-date-info">Livraison prévisionnelle le <strong>${escapeHtml(formatDateFr(campaign.deliveryDate))}</strong></p>`
     : "";
   return `
     <article class="campaign-card ${isCompleted ? "completed" : ""} ${cardAction ? "clickable" : ""}" ${cardAction}>
@@ -5433,10 +5433,10 @@ function selectCampaign(campaignId) {
     const activePeriod = currentPeriod(selectedCampaign);
     const datesMarkup = [
       selectedCampaign.deliveryDate
-        ? `<p class="delivery-date-info">Livraison prévue le <strong>${escapeHtml(formatDateFr(selectedCampaign.deliveryDate))}</strong></p>`
+        ? `<p class="delivery-date-info">Livraison prévisionnelle le <strong>${escapeHtml(formatDateFr(selectedCampaign.deliveryDate))}</strong></p>`
         : "",
       activePeriod?.endDate
-        ? `<p class="period-closing-info">Clôture le <strong>${escapeHtml(formatDateFr(activePeriod.endDate))}</strong></p>`
+        ? `<p class="period-closing-info">Clôture précommande le <strong>${escapeHtml(formatDateFr(activePeriod.endDate))}</strong></p>`
         : ""
     ].join("");
     campaignDatesInfo.innerHTML = datesMarkup;
