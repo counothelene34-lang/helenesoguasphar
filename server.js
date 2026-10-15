@@ -2609,7 +2609,8 @@ const server = http.createServer(async (request, response) => {
         passwordHash: hashPassword(newPassword),
         mustChangePassword: false,
         resetTokenHash: null,
-        resetTokenExpiresAt: null
+        resetTokenExpiresAt: null,
+        lastLoginAt: new Date().toISOString()
       } : item);
       writeUsers(updatedUsers);
       const updatedUser = updatedUsers.find((item) => item.id === user.id);

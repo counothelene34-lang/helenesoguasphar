@@ -404,3 +404,32 @@ Avant de modifier des données à la main : copie datée dans `data-backups/`.
   automatisé — si un futur contrôle de sécurité est fait, revérifier par un
   vrai appel (`curl -X POST .../api/pharmacy-login`) que les routes fermées le
   sont VRAIMENT, ne pas se fier au commit qui les a fermées un jour.**
+- **15/10/2026 : "Jamais connecté" affiché à tort pour des comptes qui s'étaient
+  pourtant déjà connectés** (titulaires ET comptes équipe) — signalé par Hélène
+  pour le compte équipe de DU GOSIER (Pascale DONGAL), qu'elle avait vu se
+  connecter elle-même. Même cause que le point juste au-dessus : le correctif
+  du 13/10 sur `/api/auth/reset-password` (mise à jour de `lastLoginAt` au tout
+  premier login via le lien d'invitation, pas seulement à `/api/auth/login`)
+  avait disparu du code — très probablement effacé par le même commit `644f5c1`.
+  Recorrigé (`lastLoginAt: new Date().toISOString()` ajouté dans le bloc de
+  `/api/auth/reset-password`, server.js ~ligne 2607), republié.
+  **Conséquence concrète découverte en vérifiant** : avant de corriger, une
+  recherche sur toutes les pharmacies a trouvé **4 titulaires qui avaient déjà
+  créé leur mot de passe mais apparaissaient "jamais connecté"** à cause de ce
+  bug (DORVILLE, EBOUE, GIRARD DUGAMIN, LA LICORNE) — la relance d'activation
+  envoyée le 15/10 au soir (voir plus bas) les a donc ciblées par erreur et a
+  **invalidé leur mot de passe déjà créé** (nouveau lien envoyé, mot de passe
+  précédent remplacé par un aléatoire). Pas grave en soi (il leur suffit de
+  cliquer le nouveau lien reçu pour recréer leur mot de passe), mais à
+  mentionner si l'une d'elles signale une confusion ("j'avais déjà un compte").
+  Le compte équipe DU GOSIER a été corrigé à la main (lastLoginAt mis à la
+  date du jour, date exacte réelle inconnue — approximation assumée, comme les
+  12 comptes corrigés le 13/10).
+  **Leçon pour toute relance future : avant d'envoyer un e-mail basé sur
+  `lastLoginAt === null`, vérifier d'abord qu'aucun compte n'a `resetTokenHash`
+  vide + `mustChangePassword: false` + `lastLoginAt` vide en même temps (signe
+  que le compte a bien fini sa création mais que l'enregistrement a raté) —
+  sinon on peut réinviter / invalider le mot de passe de quelqu'un qui est déjà
+  inscrit.** Le script de relance du lundi 19/10 (`data/relance-lundi.js`,
+  programmé via cron le 15/10) recalcule `lastLoginAt` en direct au moment de
+  l'envoi, donc profite automatiquement de ce correctif.
