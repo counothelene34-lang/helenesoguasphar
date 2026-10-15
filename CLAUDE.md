@@ -489,3 +489,22 @@ Avant de modifier des données à la main : copie datée dans `data-backups/`.
   avait déjà un mot de passe actif), même traitement : restaurer depuis la
   sauvegarde la plus récente d'avant l'incident plutôt que de lui faire
   recréer un mot de passe.
+- **15/10/2026 (suite, dans l'après-midi) : EBOUE, GIRARD DUGAMIN et LA
+  LICORNE réapparaissaient "Jamais connecté" dans l'export Excel admin**,
+  malgré la restauration de leur mot de passe le matin même. Cause : la
+  restauration du matin n'avait remis que `passwordHash` / `mustChangePassword`
+  / `resetTokenHash` / `resetTokenExpiresAt` — pas `lastLoginAt`, qui était
+  déjà `null` dans TOUTES les sauvegardes disponibles (y compris celle d'avant
+  la relance foireuse) puisque le bug du 15/10 ci-dessus ne l'avait jamais
+  enregistré pour elles. DORVILLE, elle, avait un `lastLoginAt` valide (login
+  après le correctif) donc n'était pas concernée. Corrigé à la main dans
+  `data/users.json` (sauvegarde avant dans `data-backups/users-before-fix-
+  lastlogin-3-pharmacies-*.json`) : `lastLoginAt` posé à la date/heure du
+  correctif (15/10 après-midi), **date exacte réelle inconnue — approximation
+  assumée**, même principe que DU GOSIER et les 12 comptes du 13/10 (ces
+  pharmacies s'étaient réellement déjà connectées avant, seul le champ était
+  resté vide). Pas de redémarrage nécessaire (`data/users.json` relu à chaque
+  requête). **Si un autre compte signale le même écart** (export Excel dit
+  "jamais connecté" alors que la pharmacie confirme s'être déjà connectée) :
+  vérifier d'abord `mustChangePassword === false` + `lastLoginAt` vide dans
+  `data/users.json` (signe du même bug), pas la peine de chercher plus loin.
