@@ -196,6 +196,24 @@ Avant de modifier des données à la main : copie datée dans `data-backups/`.
   `sendPollExcel`, `sendInfoExcel`, colonnes libres vers la ligne 673 de `server.js`
 
 ## Pièges connus
+- **15/10/2026 : prix à plus de 2 décimales dans les précommandes** (ex : opération
+  ORAL-B, "22.965300000000003" ou "15.326" au lieu de "22,97"/"15,33"). Cause :
+  import Excel — `XLSX.utils.sheet_to_json()` renvoie des cellules de prix comme
+  nombres JS bruts (parfois « cassés » par l'arithmétique flottante, parfois
+  réellement saisis à 3+ décimales côté fournisseur), et `cleanTemplateCell()`
+  (app.js) faisait `String(value)` sans arrondir. **Règle stricte et définitive,
+  ne plus jamais y toucher : un prix affiché = 2 décimales maximum, jamais plus.**
+  Corrigé à deux niveaux : 1) `cleanTemplateCell()` arrondit désormais tout nombre
+  JS à 2 décimales dès l'import (les entiers comme CIP/EAN ne sont pas affectés,
+  `Number.isInteger` reste vrai) ; 2) filet de sécurité à l'affichage dans
+  `displayColumnValue()`/`roundPriceText()` qui arrondit aussi toute valeur texte
+  à plus de 2 décimales dans une colonne « prix/tarif/PU », au cas où une
+  mauvaise donnée existerait déjà ou arriverait par un autre chemin (ne pas
+  retirer ce filet, c'est la 2ᵉ ligne de défense). Données déjà importées de
+  l'opération ORAL-B corrigées à la main dans `data/orders.json` et
+  `data/responses.json` (24 + 4 valeurs, sauvegarde avant dans `data-backups/`).
+  **Si un nouveau cas de prix à 3+ décimales est signalé un jour**, vérifier
+  d'abord que ces deux arrondis sont toujours en place avant de chercher ailleurs.
 - **`/data/*` est bloqué par Traefik** sur preco.soguasphar.fr (protège
   `pharmacies.json`) : ne jamais retirer ce blocage. Pour servir de gros fichiers,
   utiliser une route dédiée comme `/bat-2027/<fichier>.pdf` dans `server.js`.

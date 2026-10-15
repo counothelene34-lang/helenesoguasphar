@@ -4290,8 +4290,20 @@ function findTemplateColumn(headers, kind) {
   return index;
 }
 
+// Règle stricte et définitive : un nombre importé (prix, tarif...) ne doit
+// JAMAIS afficher plus de 2 décimales. Excel renvoie parfois des nombres
+// "cassés" par l'arithmétique flottante (ex: 22.965300000000003 au lieu de
+// 22.97, ou un prix saisi à 3 décimales comme 15.326) : on arrondit toujours
+// à 2 décimales ici, au moment de l'import, avant toute sauvegarde. Les
+// entiers (CIP, EAN, colisage) ne sont pas affectés (Number.isInteger reste
+// vrai après l'arrondi). Ne jamais retirer cet arrondi (incident du
+// 15/10/2026 : opération ORAL-B importée avec des prix à 4+ décimales).
 function cleanTemplateCell(value) {
   if (value === null || value === undefined) return "";
+  if (typeof value === "number" && Number.isFinite(value)) {
+    const rounded = Math.round(value * 100) / 100;
+    return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(2);
+  }
   return String(value).replace(/\s+/g, " ").trim();
 }
 
@@ -5936,10 +5948,22 @@ function isPriceColumn(column) {
   return /prix|tarif|\bpu\b/i.test(column || "");
 }
 
+// Filet de sécurité à l'AFFICHAGE : même si une valeur à plus de 2 décimales
+// arrivait jusqu'ici (ancienne donnée, import futur imparfait...), on ne
+// montre jamais plus de 2 décimales sur un prix. Règle stricte, ne pas
+// retirer (incident ORAL-B du 15/10/2026 : prix affichés à 4+ décimales).
+function roundPriceText(text) {
+  const match = text.match(/^(\d+)[.,](\d{3,})$/);
+  if (!match) return text;
+  const rounded = Math.round(Number(`${match[1]}.${match[2]}`) * 100) / 100;
+  return rounded.toFixed(2).replace(".", text.includes(",") ? "," : ".");
+}
+
 function displayColumnValue(column, value) {
   const text = value == null ? "" : String(value);
   if (!text || !isPriceColumn(column)) return text;
-  return /€/.test(text) ? text : `${text} €`;
+  const safeText = roundPriceText(text.replace(/\s*€\s*$/, "").trim());
+  return /€/.test(safeText) ? safeText : `${safeText} €`;
 }
 
 // Construit la ligne d'en-tête (<tr>) d'un tableau à colonnes libres : les colonnes
