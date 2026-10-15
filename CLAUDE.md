@@ -196,6 +196,48 @@ Avant de modifier des données à la main : copie datée dans `data-backups/`.
   `sendPollExcel`, `sendInfoExcel`, colonnes libres vers la ligne 673 de `server.js`
 
 ## Pièges connus
+- **15/10/2026 : ouverture de l'application lente — photos des précommandes
+  envoyées en entier à chaque chargement.** `GET /api/orders` (appelé par
+  `getCampaigns()` à CHAQUE ouverture de l'appli, pour les 44 pharmacies et
+  l'admin) renvoyait tout `data/orders.json`, **y compris les photos en
+  base64** (2,5 Mo sur 3,4 Mo au moment du diagnostic, jusqu'à 210 Ko par
+  photo) — alors que la plupart ne sont jamais regardées à l'ouverture. Même
+  principe que le correctif déjà fait pour Soguaspilot (route
+  `/api/orders/:id/image`, créée le 13/10/2026) mais Préco lui-même ne
+  l'utilisait pas encore pour son propre affichage.
+  **Corrigé** : `GET /api/orders` renvoie maintenant `imageData`/`imageData2`
+  sous forme de petites adresses (`/api/orders/<id>/image` et
+  `/api/orders/<id>/image2`, la 2ᵉ route est nouvelle) au lieu du base64
+  complet ; le navigateur ne va chercher la vraie photo que lorsqu'elle est
+  réellement affichée (mise en cache 1h côté navigateur). Résultat mesuré :
+  liste passée de ~3,4 Mo à ~56 Ko pour 26 commandes.
+  **Piège évité (le plus important)** : `PUT /api/orders` envoie TOUJOURS le
+  tableau COMPLET des commandes (même pour modifier une seule), reconstitué
+  côté client à partir de ce que `GET /api/orders` a renvoyé. Si on n'avait pas
+  fait attention, chaque enregistrement admin aurait réécrit `imageData` avec
+  la petite adresse au lieu de la vraie photo → **toutes les photos auraient
+  disparu au 1er enregistrement suivant**. Corrigé côté serveur : si le champ
+  reçu est exactement `/api/orders/<id>/image` (ou `/image2`), on garde la
+  vraie photo déjà enregistrée au lieu de l'écraser ; une vraie nouvelle photo
+  (`data:image/...`) ou une suppression explicite (`""`) sont bien prises en
+  compte. Testé par un aller-retour complet (GET → PUT sans rien changer →
+  relecture de `data/orders.json`) : photo intacte, même longueur qu'avant.
+  Côté affichage (`app.js`), ces petites adresses doivent passer par
+  `resolveBatDocumentUrl()` (comme les documents BAT) pour fonctionner aussi
+  sur la copie de test (`/preco-test/...`) — oublié une 1ʳᵉ fois, corrigé
+  (4 endroits : `campaignCard`, `archivedOperationCard`,
+  `refreshCampaignImagePreview`).
+  **Au passage** : les 2 blocs de chargement au démarrage (`init()` dans
+  `app.js`, plus les 4 rafraîchissements après connexion pharmacie/admin,
+  répétés à 7 endroits) attendaient chaque information l'une après l'autre
+  (`await` en série) alors qu'elles sont indépendantes — remplacé par
+  `Promise.all([...])` partout où c'était le cas, pour ne pas cumuler les
+  temps de réponse réseau à l'ouverture.
+  **Si un nouveau champ image est ajouté un jour** (sur les sondages par
+  exemple, `poll.imageData`, pas encore optimisé — 126 Ko seulement au moment
+  du diagnostic, jugé pas prioritaire) : reproduire ce même principe (route
+  dédiée + préservation au `PUT` + `resolveBatDocumentUrl()` à l'affichage)
+  plutôt que d'improviser un autre mécanisme.
 - **15/10/2026 : fenêtre "Mon équipe" (ajout d'une personne) inutilisable sur
   petit écran**, bouton "Créer l'accès" inaccessible sans réduire la fenêtre du
   navigateur. Cause : `.image-preview-dialog` (styles.css, classe partagée par
