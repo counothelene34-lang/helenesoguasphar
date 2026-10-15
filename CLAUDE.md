@@ -393,3 +393,14 @@ Avant de modifier des données à la main : copie datée dans `data-backups/`.
   cliqué ce lien. Si une pharmacie signale qu'elle ne peut plus entrer, renvoyer
   son lien d'activation (bouton "Renvoyer l'invitation" dans Paramètres > vue
   d'ensemble des pharmacies) plutôt que de rouvrir l'ancien système.
+  **15/10/2026 : cette fermeture avait été effacée par erreur** par le commit
+  qui a ajouté l'attestation 2027 (`644f5c1`, le 13/10 en fin de journée) — le
+  code complet de l'ancien système (mot de passe unique, encore valable pour
+  les 44 pharmacies) était redevenu actif sans que personne ne s'en rende
+  compte, pendant un contrôle de sécurité. Refermé (3 routes → 410 à nouveau),
+  republié et vérifié par `curl` en direct. **Leçon : une fermeture de route
+  « protection par sécurité » peut être silencieusement annulée par un merge/
+  une réécriture de bloc de code sur un gros `server.js` sans dépôt de test
+  automatisé — si un futur contrôle de sécurité est fait, revérifier par un
+  vrai appel (`curl -X POST .../api/pharmacy-login`) que les routes fermées le
+  sont VRAIMENT, ne pas se fier au commit qui les a fermées un jour.**
