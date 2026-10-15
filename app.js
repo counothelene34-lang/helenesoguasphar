@@ -497,11 +497,6 @@ let currentOrderTemplate = emptyOrderTemplate();
 let adminShowingClosedCampaigns = false;
 let pollResponseCounts = {};
 let activeAdminSection = "campaign-new";
-// La deuxième ligne du menu admin (Nouveau/Brouillon/En cours/Archivé) ne
-// s'affiche qu'après un clic explicite sur une rubrique de la première ligne
-// (Précommandes/Sondages/Documents/Paramètres) — remis à false à chaque
-// ouverture du tableau de bord admin (voir unlockAdminPanel).
-let adminGroupChosen = false;
 let archivedOrdersVisible = false;
 let archivedOrdersFilterId = "";
 let archivedOrdersSearchTerm = "";
@@ -5168,7 +5163,7 @@ function showAdminSection(section) {
     button.classList.toggle("active", button.dataset.adminGroup === activeGroup);
   });
   adminDashboardNav?.querySelectorAll("[data-admin-subnav]").forEach((subNav) => {
-    subNav.hidden = !adminGroupChosen || subNav.dataset.adminSubnav !== activeGroup;
+    subNav.hidden = subNav.dataset.adminSubnav !== activeGroup;
   });
   adminDashboardNav?.querySelectorAll("[data-admin-section]").forEach((button) => {
     button.classList.toggle("active", button.dataset.adminSection === activeAdminSection);
@@ -7040,7 +7035,6 @@ productRows?.addEventListener("change", (event) => {
 adminDashboardNav?.addEventListener("click", async (event) => {
   const groupButton = event.target.closest("[data-admin-group]");
   if (groupButton) {
-    adminGroupChosen = true;
     const nextSection = ADMIN_GROUP_DEFAULT_SECTION[groupButton.dataset.adminGroup] || "campaign-new";
     await showAdminSectionFresh(nextSection);
     return;
@@ -9119,7 +9113,6 @@ form.addEventListener("reset", () => {
 // qui n'a pas à ressaisir le code.
 async function unlockAdminPanel() {
   adminUnlocked = true;
-  adminGroupChosen = false;
   adminPanel.hidden = true;
   document.querySelector(".admin-layout").classList.add("unlocked");
   adminContent.hidden = false;
