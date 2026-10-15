@@ -436,10 +436,22 @@ function generateResetToken() {
 function issueAccountPasswordLink(user, { isNewAccount }) {
   const token = generateResetToken();
   const users = readUsers();
+  // Si la personne a déjà créé elle-même son mot de passe (mustChangePassword
+  // === false), renvoyer un lien ne doit JAMAIS invalider ce mot de passe
+  // tant qu'elle n'a pas réellement cliqué le lien et choisi un nouveau mot
+  // de passe (route /api/auth/reset-password, seule à pouvoir changer
+  // passwordHash/mustChangePassword à partir de ce moment-là). On se contente
+  // donc de poser un nouveau jeton, sans toucher au mot de passe existant.
+  // Correctif du 15/10/2026 : avant, le mot de passe était systématiquement
+  // écrasé par un mot de passe aléatoire inconnu, ce qui déconnectait des
+  // comptes déjà actifs à chaque renvoi/relance.
+  const alreadyHasOwnPassword = user.mustChangePassword === false;
   const updatedUsers = users.map((item) => item.id === user.id ? {
     ...item,
-    passwordHash: hashPassword(crypto.randomBytes(24).toString("hex")), // mot de passe inconnu de tous tant que le lien n'est pas utilisé
-    mustChangePassword: true,
+    ...(alreadyHasOwnPassword ? {} : {
+      passwordHash: hashPassword(crypto.randomBytes(24).toString("hex")), // mot de passe inconnu de tous tant que le lien n'est pas utilisé
+      mustChangePassword: true
+    }),
     resetTokenHash: hashResetToken(token),
     resetTokenExpiresAt: Date.now() + INVITE_TOKEN_VALIDITY_MS
   } : item);
