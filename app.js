@@ -147,6 +147,7 @@ const attestationYearInline = document.querySelector("#attestationYearInline");
 const attestationSignatureFile = document.querySelector("#attestationSignatureFile");
 const attestationSignaturePreview = document.querySelector("#attestationSignaturePreview");
 const attestationSignaturePreviewImg = document.querySelector("#attestationSignaturePreviewImg");
+const attestationSignaturePreviewPdfLabel = document.querySelector("#attestationSignaturePreviewPdfLabel");
 const attestationFormMessage = document.querySelector("#attestationFormMessage");
 const batCards = document.querySelector("#batCards");
 const batPickerBlock = document.querySelector("#batPickerBlock");
@@ -2670,9 +2671,18 @@ attestationPreviewLink?.addEventListener("click", (event) => {
 attestationSignatureFile?.addEventListener("change", async () => {
   const file = attestationSignatureFile.files?.[0];
   if (!file) return;
-  currentAttestationSignatureDataUrl = await imageFileToDataUrl(file);
+  try {
+    currentAttestationSignatureDataUrl = await attestationSignatureFileToDataUrl(file);
+  } catch (error) {
+    attestationFormMessage.textContent = error.message || "Fichier invalide. Choisissez une photo ou un PDF.";
+    attestationSignatureFile.value = "";
+    return;
+  }
+  const isPdf = file.type === "application/pdf";
   if (attestationSignaturePreview && attestationSignaturePreviewImg) {
-    attestationSignaturePreviewImg.src = currentAttestationSignatureDataUrl;
+    attestationSignaturePreviewImg.hidden = isPdf;
+    attestationSignaturePreviewImg.src = isPdf ? "" : currentAttestationSignatureDataUrl;
+    if (attestationSignaturePreviewPdfLabel) attestationSignaturePreviewPdfLabel.hidden = !isPdf;
     attestationSignaturePreview.hidden = false;
   }
 });
@@ -2686,7 +2696,7 @@ attestationForm?.addEventListener("submit", async (event) => {
     return;
   }
   if (!currentAttestationSignatureDataUrl) {
-    attestationFormMessage.textContent = "Ajoutez une photo de votre signature et cachet avant d'envoyer.";
+    attestationFormMessage.textContent = "Ajoutez une photo (ou un PDF) de votre signature et cachet avant d'envoyer.";
     return;
   }
   attestationFormMessage.textContent = "Envoi en cours...";
@@ -4204,6 +4214,26 @@ createPharmacyAccessForm?.addEventListener("submit", async (event) => {
     createPharmacyAccessMessage.textContent = error.message || "Impossible de créer cet accès.";
   }
 });
+
+function rawFileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Fichier impossible à lire."));
+    reader.onload = () => resolve(reader.result);
+    reader.readAsDataURL(file);
+  });
+}
+
+// Signature/tampon de l'attestation : accepte une photo (redimensionnée comme
+// les autres images de l'appli) OU un PDF (envoyé tel quel, converti en image
+// côté serveur via le service commun sogua-connectors avant d'être inséré
+// dans l'attestation finale — voir /api/attestation/sign dans server.js).
+function attestationSignatureFileToDataUrl(file) {
+  if (file && file.type === "application/pdf") {
+    return rawFileToDataUrl(file);
+  }
+  return imageFileToDataUrl(file);
+}
 
 function imageFileToDataUrl(file) {
   return new Promise((resolve, reject) => {

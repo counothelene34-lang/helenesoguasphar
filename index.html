@@ -265,14 +265,15 @@
           <label for="attestationFaitA">Fait à (ville)</label>
           <input id="attestationFaitA" type="text" placeholder="Ex. Pointe-à-Pitre" autocomplete="off">
 
-          <p class="form-help">Imprimez et signez à la main la mention « Lu et approuvé – Bon pour adhésion, engagement et mandat pour l'année <span id="attestationYearInline"></span> », avec votre cachet, puis prenez-en une photo nette.</p>
-          <label for="attestationSignatureFile">Photo de la signature et du cachet</label>
+          <p class="form-help">Imprimez et signez à la main la mention « Lu et approuvé – Bon pour adhésion, engagement et mandat pour l'année <span id="attestationYearInline"></span> », avec votre cachet, puis prenez-en une photo nette (ou scannez-la en PDF).</p>
+          <label for="attestationSignatureFile">Photo (ou PDF) de la signature et du cachet</label>
           <div class="upload-actions">
-            <label class="file-btn" for="attestationSignatureFile">Choisir une photo</label>
-            <input id="attestationSignatureFile" type="file" accept="image/*">
+            <label class="file-btn" for="attestationSignatureFile">Choisir une photo ou un PDF</label>
+            <input id="attestationSignatureFile" type="file" accept="image/*,application/pdf">
           </div>
           <div id="attestationSignaturePreview" class="campaign-image-admin-preview" hidden>
             <img id="attestationSignaturePreviewImg" alt="">
+            <p id="attestationSignaturePreviewPdfLabel" hidden>📄 Fichier PDF chargé</p>
           </div>
 
           <p class="form-help"><strong>Merci de bien contrôler les informations ci-dessus avant de signer.</strong></p>

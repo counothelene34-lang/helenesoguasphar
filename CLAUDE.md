@@ -453,3 +453,39 @@ Avant de modifier des données à la main : copie datée dans `data-backups/`.
   inscrit.** Le script de relance du lundi 19/10 (`data/relance-lundi.js`,
   programmé via cron le 15/10) recalcule `lastLoginAt` en direct au moment de
   l'envoi, donc profite automatiquement de ce correctif.
+- **15/10/2026 (suite, corrigé pour de bon) : un nouveau lien d'invitation ne doit
+  JAMAIS invalider un mot de passe déjà créé.** Suite au point ci-dessus (4
+  titulaires déjà actives invalidées par erreur par la relance du 15/10 au
+  soir), corrigé à la racine : `issueAccountPasswordLink()` (`server.js`,
+  utilisée par le bouton admin « Renvoyer l'invitation » ET par tout envoi de
+  lien à la création d'un compte) n'écrase plus `passwordHash`/
+  `mustChangePassword` quand le compte a déjà `mustChangePassword === false`
+  (= la personne a déjà elle-même choisi son mot de passe) : seul un nouveau
+  jeton de lien est posé, le mot de passe actuel continue de fonctionner tant
+  qu'elle n'a pas cliqué ce nouveau lien et choisi un mot de passe elle-même.
+  Même garde-fou ajouté dans `data/relance-lundi.js` (script programmé pour
+  le 19/10) : le filtre des cibles exclut maintenant aussi
+  `mustChangePassword !== false`, en plus de `!lastLoginAt`, et une double
+  vérification au moment d'écrire les données passe un compte déjà actif
+  sans y toucher même si le filtre changeait un jour. **Toute nouvelle
+  fonctionnalité qui renvoie/régénère un lien de mot de passe doit réutiliser
+  `issueAccountPasswordLink()` plutôt que de recopier la logique à la main —
+  c'est exactement cette duplication (le script de relance avait sa propre
+  copie du code) qui avait permis au bug de passer inaperçu une fois corrigé
+  ailleurs.**
+  **Réparation des 4 comptes déjà touchés** : avant le correctif, DORVILLE,
+  EBOUE, GIRARD DUGAMIN et LA LICORNE avaient reçu la relance du 15/10 au soir
+  et leur mot de passe avait déjà été invalidé. Restauré `passwordHash` /
+  `mustChangePassword` / `resetTokenHash` / `resetTokenExpiresAt` de leurs 4
+  comptes titulaires dans `data/users.json` à partir de la sauvegarde prise
+  juste avant cette relance (`data-backups/users-before-relance-20261015-013714.json`),
+  sans toucher aux autres comptes (sauvegarde de sécurité prise avant dans
+  `data-backups/users-before-restore-4-pharmacies-*.json`). Résultat : leur
+  ancien mot de passe fonctionne à nouveau, le nouveau lien envoyé par erreur
+  est annulé. Un e-mail d'excuse (« erreur d'envoi, ignorez le lien, votre mot
+  de passe actuel fonctionne toujours ») leur a été envoyé depuis
+  `helene.counot@soguasphar.com` pour qu'elles ne refassent pas la procédure.
+  **Si une autre pharmacie signale le même souci** (lien reçu alors qu'elle
+  avait déjà un mot de passe actif), même traitement : restaurer depuis la
+  sauvegarde la plus récente d'avant l'incident plutôt que de lui faire
+  recréer un mot de passe.

@@ -40,6 +40,26 @@ async function htmlToPdf(html) {
   }
   return Buffer.from(data.content, "base64");
 }
+// Signature/tampon de l'attestation envoyée en PDF (au lieu d'une photo) :
+// on convertit sa 1ère page en image via le service commun sogua-connectors
+// (route /pdf-to-image), pour pouvoir l'insérer dans le PDF final exactement
+// comme une photo (buildAttestationHtml ne sait insérer que des images).
+async function pdfSignatureToImageDataUrl(pdfDataUrl) {
+  if (!CONNECTORS_API_KEY) {
+    throw new Error("CONNECTORS_API_KEY manquant dans .env : conversion du PDF impossible");
+  }
+  const base64 = pdfDataUrl.replace(/^data:application\/pdf;base64,/, "");
+  const result = await fetch(`${CONNECTORS_URL}/pdf-to-image`, {
+    method: "POST",
+    headers: { "content-type": "application/json", "x-api-key": CONNECTORS_API_KEY },
+    body: JSON.stringify({ content: base64, page: 1 })
+  });
+  const data = await result.json().catch(() => ({}));
+  if (!result.ok || !data.ok || !data.content) {
+    throw new Error(data.error || `service de conversion PDF : HTTP ${result.status}`);
+  }
+  return `data:${data.contentType || "image/png"};base64,${data.content}`;
+}
 // Adresse publique de CE site (copie de test ou site en ligne), utilisée pour
 // construire les liens cliqués dans les e-mails (ex. réinitialisation de mot
 // de passe). À définir dans .env ; valeur par défaut = le site en ligne.
@@ -467,9 +487,15 @@ function issueAccountPasswordLink(user, { isNewAccount }) {
     : "Votre mot de passe Préco vient d'être réinitialisé.";
   sendMail({
     to: user.email,
+    // Invitation/réinitialisation automatique : expéditeur "ne_pas_repondre"
+    // (demande explicite d'Hélène le 15/10/2026 — jamais helene.counot ni
+    // compta pour ces e-mails-là, réservés aux cas où une vraie réponse est
+    // attendue, ex. l'attestation 2027).
+    from: "ne_pas_repondre@soguasphar.com",
+    fromName: "SOGUASPHAR",
     subject,
-    text: `Bonjour,\n\n${intro}\n\nCliquez sur ce lien dans les 7 jours pour choisir votre mot de passe :\n${resetLink}\n\nSi vous ne vous attendiez pas à ce message, ignorez-le simplement.\n\n— Préco SOGUASPHAR`,
-    html: `<p>Bonjour,</p><p>${intro}</p><p><a href="${resetLink}">Cliquez ici pour choisir votre mot de passe</a> (lien valable 7 jours).</p><p>Si vous ne vous attendiez pas à ce message, ignorez-le simplement.</p><p>— Préco SOGUASPHAR</p>`
+    text: `Bonjour,\n\n${intro}\n\nCliquez sur ce lien dans les 7 jours pour choisir votre mot de passe :\n${resetLink}\n\nSi vous ne vous attendiez pas à ce message, ignorez-le simplement.\n\nCeci est un message automatique, merci de ne pas y répondre.\n\n— Préco SOGUASPHAR`,
+    html: `<p>Bonjour,</p><p>${intro}</p><p><a href="${resetLink}">Cliquez ici pour choisir votre mot de passe</a> (lien valable 7 jours).</p><p>Si vous ne vous attendiez pas à ce message, ignorez-le simplement.</p><p style="font-size:12px;color:#6b7280;">Ceci est un message automatique, merci de ne pas y répondre.</p><p>— Préco SOGUASPHAR</p>`
   }).catch((error) => {
     console.error(`[preco] échec de l'e-mail de création/réinitialisation pour "${user.email}" :`, error.message);
   });
@@ -2572,9 +2598,13 @@ const server = http.createServer(async (request, response) => {
           console.error(`[preco][debug] lien de réinitialisation pour ${user.email} : ${resetLink}`);
           sendMail({
             to: user.email,
+            // Même règle que issueAccountPasswordLink() : e-mail automatique,
+            // expéditeur "ne_pas_repondre" (jamais helene.counot ni compta).
+            from: "ne_pas_repondre@soguasphar.com",
+            fromName: "SOGUASPHAR",
             subject: "Préco SOGUASPHAR : réinitialisation de votre mot de passe",
-            text: `Bonjour,\n\nVous avez demandé à réinitialiser votre mot de passe Préco.\n\nCliquez sur ce lien dans les 2 heures pour choisir un nouveau mot de passe :\n${resetLink}\n\nSi vous n'êtes pas à l'origine de cette demande, ignorez simplement cet e-mail : rien ne change.\n\n— Préco SOGUASPHAR`,
-            html: `<p>Bonjour,</p><p>Vous avez demandé à réinitialiser votre mot de passe Préco.</p><p><a href="${resetLink}">Cliquez ici pour choisir un nouveau mot de passe</a> (lien valable 2 heures).</p><p>Si vous n'êtes pas à l'origine de cette demande, ignorez simplement cet e-mail : rien ne change.</p><p>— Préco SOGUASPHAR</p>`
+            text: `Bonjour,\n\nVous avez demandé à réinitialiser votre mot de passe Préco.\n\nCliquez sur ce lien dans les 2 heures pour choisir un nouveau mot de passe :\n${resetLink}\n\nSi vous n'êtes pas à l'origine de cette demande, ignorez simplement cet e-mail : rien ne change.\n\nCeci est un message automatique, merci de ne pas y répondre.\n\n— Préco SOGUASPHAR`,
+            html: `<p>Bonjour,</p><p>Vous avez demandé à réinitialiser votre mot de passe Préco.</p><p><a href="${resetLink}">Cliquez ici pour choisir un nouveau mot de passe</a> (lien valable 2 heures).</p><p>Si vous n'êtes pas à l'origine de cette demande, ignorez simplement cet e-mail : rien ne change.</p><p style="font-size:12px;color:#6b7280;">Ceci est un message automatique, merci de ne pas y répondre.</p><p>— Préco SOGUASPHAR</p>`
           }).catch((error) => {
             console.error(`[preco] échec de l'e-mail de réinitialisation pour "${user.email}" :`, error.message);
           });
@@ -3596,10 +3626,21 @@ const server = http.createServer(async (request, response) => {
         sendJson(response, 409, { error: "Cette attestation n'est pas ouverte à la signature" });
         return;
       }
-      const signatureDataUrl = String(payload.signatureImage || "");
-      if (!/^data:image\/(png|jpe?g);base64,/.test(signatureDataUrl)) {
-        sendJson(response, 400, { error: "Photo de signature/tampon manquante ou invalide" });
+      const submittedSignature = String(payload.signatureImage || "");
+      const isSignatureImage = /^data:image\/(png|jpe?g);base64,/.test(submittedSignature);
+      const isSignaturePdf = /^data:application\/pdf;base64,/.test(submittedSignature);
+      if (!isSignatureImage && !isSignaturePdf) {
+        sendJson(response, 400, { error: "Photo ou PDF de signature/tampon manquant ou invalide" });
         return;
+      }
+      let signatureDataUrl = submittedSignature;
+      if (isSignaturePdf) {
+        try {
+          signatureDataUrl = await pdfSignatureToImageDataUrl(submittedSignature);
+        } catch (error) {
+          sendJson(response, 502, { error: `Conversion du PDF de signature impossible : ${error.message}` });
+          return;
+        }
       }
       const nowLabel = new Date().toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" });
       const responses = readAttestationResponses();
