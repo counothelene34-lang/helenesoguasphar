@@ -196,6 +196,26 @@ Avant de modifier des données à la main : copie datée dans `data-backups/`.
   `sendPollExcel`, `sendInfoExcel`, colonnes libres vers la ligne 673 de `server.js`
 
 ## Pièges connus
+- **15/10/2026 : garde-fou anti-régression ajouté (`runStartupSecurityChecks`,
+  server.js, juste avant `server.listen`).** Suite aux DEUX régressions
+  silencieuses ci-dessous (fermeture de l'ancien accès pharmacie effacée, puis
+  `lastLoginAt` sur `/api/auth/reset-password` effacé — toutes deux par le même
+  commit `644f5c1` du 13/10 sans que personne ne s'en rende compte), le serveur
+  relit désormais son propre code source **à chaque démarrage** (donc à chaque
+  déploiement, manuel ou via le webhook GitHub) et vérifie que :
+  1) `/api/pharmacy-login`, `/api/pharmacy-password`,
+     `/api/pharmacy-password-reset-request` répondent bien 410 ;
+  2) `/api/auth/login` et `/api/auth/reset-password` mettent bien à jour
+     `lastLoginAt`.
+  Si l'une de ces règles n'est plus respectée, une alerte e-mail part
+  automatiquement à `helene.counot@soguasphar.com` (depuis
+  `ne_pas_repondre@soguasphar.com`) + un message bien visible dans les logs
+  (`docker logs soguasphar-preco`). Testé pour de vrai en simulant les deux
+  régressions dans une copie du fichier (hors conteneur) : les deux sont
+  détectées correctement, zéro faux positif sur le code sain.
+  **Si une nouvelle route de sécurité/suivi est fermée ou corrigée à l'avenir
+  et qu'elle mérite la même protection, ajouter sa vérification dans cette
+  même fonction plutôt que de compter sur la mémoire humaine.**
 - **15/10/2026 : dates affichées sur la fiche d'une opération.** Ajouté (entre le
   descriptif et la photo) `.delivery-date-info` (« Livraison prévisionnelle le... »)
   et `.period-closing-info` (« Clôture précommande le... »), déjà présentes dans le

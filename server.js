@@ -3676,8 +3676,81 @@ const server = http.createServer(async (request, response) => {
   }
 });
 
+// --- Garde-fou contre les régressions silencieuses -------------------------
+// Le 13/10/2026 puis à nouveau le 15/10/2026, deux corrections déjà faites
+// (fermeture de l'ancien accès pharmacie par mot de passe unique, et mise à
+// jour de lastLoginAt sur /api/auth/reset-password) ont été effacées par un
+// merge/une réécriture de code sans que personne ne s'en aperçoive. Ce
+// contrôle relit le propre code source du serveur à CHAQUE démarrage (donc à
+// chaque déploiement, manuel ou via le webhook GitHub) et envoie une alerte
+// e-mail à Hélène si l'une de ces deux règles n'est plus respectée — pour ne
+// plus jamais dépendre de quelqu'un qui repense à vérifier à la main.
+function runStartupSecurityChecks() {
+  const problems = [];
+  let source = "";
+  try {
+    source = fs.readFileSync(__filename, "utf8");
+  } catch (error) {
+    problems.push(`Impossible de relire server.js pour le contrôle de démarrage : ${error.message}`);
+  }
+
+  // 1) L'ancien accès pharmacie (mot de passe unique, fermé le 13/10/2026)
+  //    doit répondre 410, pas traiter une vraie connexion.
+  ["/api/pharmacy-login", "/api/pharmacy-password", "/api/pharmacy-password-reset-request"].forEach((route) => {
+    const marker = `url.pathname === "${route}"`;
+    const idx = source.indexOf(marker);
+    if (idx === -1) {
+      problems.push(`Route ${route} introuvable dans server.js (code déplacé ou supprimé ?).`);
+      return;
+    }
+    // On s'arrête au premier "return;" du bloc pour ne pas "voir" par erreur
+    // le 410 d'une route voisine (elles se suivent de près dans le fichier).
+    const returnIdx = source.indexOf("return;", idx + marker.length);
+    const snippet = source.slice(idx, returnIdx === -1 ? idx + 400 : returnIdx);
+    if (!snippet.includes("410")) {
+      problems.push(`SÉCURITÉ : ${route} ne répond plus 410 — l'ancien accès par mot de passe unique semble réactivé !`);
+    }
+  });
+
+  // 2) lastLoginAt doit être mis à jour à la connexion ET à la création du
+  //    mot de passe via un lien d'invitation, sinon "Dernière connexion"
+  //    redevient faux pour quiconque vient d'activer son compte.
+  ["/api/auth/login", "/api/auth/reset-password"].forEach((route) => {
+    const marker = `url.pathname === "${route}"`;
+    const idx = source.indexOf(marker);
+    if (idx === -1) {
+      problems.push(`Route ${route} introuvable dans server.js (code déplacé ou supprimé ?).`);
+      return;
+    }
+    const nextRouteIdx = source.indexOf("url.pathname ===", idx + marker.length);
+    const snippet = source.slice(idx, nextRouteIdx === -1 ? idx + 2000 : nextRouteIdx);
+    if (!snippet.includes("lastLoginAt")) {
+      problems.push(`SUIVI : ${route} ne met plus à jour lastLoginAt — "Dernière connexion" redeviendra faux pour les nouveaux comptes.`);
+    }
+  });
+
+  if (problems.length > 0) {
+    console.error("\n🚨🚨🚨 RÉGRESSION DÉTECTÉE AU DÉMARRAGE DE PRÉCO 🚨🚨🚨");
+    problems.forEach((p) => console.error(" - " + p));
+    console.error("🚨 Une alerte e-mail a été envoyée à Hélène.\n");
+    sendMail({
+      to: "helene.counot@soguasphar.com",
+      from: "ne_pas_repondre@soguasphar.com",
+      fromName: "Alerte Préco",
+      subject: "⚠️ Préco : régression de sécurité/suivi détectée au démarrage",
+      text: `Bonjour,\n\nAu démarrage du serveur Préco, un contrôle automatique a trouvé ${problems.length} problème(s) :\n\n${problems.map((p) => "- " + p).join("\n")}\n\nUne modification récente du code a probablement annulé une correction déjà faite. À vérifier et corriger rapidement.\n\n— Contrôle automatique Préco`,
+      html: `<p>Bonjour,</p><p>Au démarrage du serveur Préco, un contrôle automatique a trouvé ${problems.length} problème(s) :</p><ul>${problems.map((p) => `<li>${p}</li>`).join("")}</ul><p>Une modification récente du code a probablement annulé une correction déjà faite. À vérifier et corriger rapidement.</p><p>— Contrôle automatique Préco</p>`
+    }).catch((error) => {
+      console.error("[preco] échec de l'envoi de l'alerte de régression :", error.message);
+    });
+  } else {
+    console.log("[preco] Contrôle de sécurité au démarrage : OK (accès legacy fermé, suivi des connexions actif).");
+  }
+}
+
 server.listen(PORT, () => {
   console.log(`SOGUASPHAR demandes pharmacies: http://localhost:${PORT}`);
+  runStartupSecurityChecks();
 });
 
 // Vérification des relances : une première fois peu après le démarrage, puis
