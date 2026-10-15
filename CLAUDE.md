@@ -61,6 +61,30 @@ cotisation 3 000 €/1 500 €) fusionné dans la tuile **« Document en attente
   dû être copié à la main vers `/opt/apps/soguasphar-preco/data/`, volontairement
   **sans** `attestation-responses.json` ni le dossier `attestations-2027/` de la
   copie de test (qui ne contenaient qu'une signature de TEST, pas une vraie).
+- **14/10/2026 : tampon SOGUASPHAR + texte de l'e-mail finalisés.** Image du
+  tampon/signature du gérant récupérée via le connecteur Dropbox commun
+  (`POST /fetch` sur sogua-connectors) et enregistrée dans le dossier de l'app :
+  `tampon-soguasphar.png` (racine, à côté de `logo-soguasphar.png`). Intégrée
+  côté serveur dans `buildAttestationHtml()` via `getAttestationStampDataUrl()`
+  (même principe de cache base64 que `getAttestationLogoDataUrl()`), affichée
+  dans la section « Pour SOGUASPHAR / Mandat accepté » du PDF — vérifié
+  visuellement (conversion PDF → image avec `pdftoppm`) que le tampon est bien
+  placé. **Si ce fichier image doit un jour être remplacé**, il suffit d'écraser
+  `tampon-soguasphar.png` et de redémarrer (`appctl rebuild preco`) — le cache
+  base64 est en mémoire du processus, pas sur disque.
+  Texte de l'e-mail envoyé à la pharmacie après signature (route
+  `POST /api/attestation/sign`) revu avec Hélène : **pas** de phrase « Pour
+  toute question, vous pouvez nous répondre... » ni de signature e-mail en bas
+  (juste « Bien cordialement, L'équipe SOGUASPHAR ») — demande explicite du
+  14/10/2026, ne pas les rajouter. Expéditeur toujours `helene.counot@soguasphar.com`
+  (jamais `compta@...`, voir mémoire). Confirmé que l'envoi n'a lieu que si la
+  pharmacie a fourni une signature/tampon valide (la route renvoie 400 avant
+  tout sinon) et que la date « Le : » se remplit automatiquement à la signature
+  (`signedAt`, calculé côté serveur) — ces deux points étaient déjà corrects
+  dans le code, pas de changement nécessaire, juste vérifiés.
+  Testé avec un vrai envoi (mail à `helene.counot@soguasphar.com`, étiqueté
+  « [TEST] » en clair dans le sujet et dans le corps, aucune vraie pharmacie
+  concernée) avant publication.
 
 ## Aperçu "voir comme pharmacie" pour les administrateurs (ajouté le 13/10/2026)
 Un compte administrateur SOGUASPHAR (rôle `soguasphar_admin`) peut, sur l'onglet

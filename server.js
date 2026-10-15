@@ -904,6 +904,22 @@ function getAttestationLogoDataUrl() {
   return attestationLogoDataUrl;
 }
 
+// Tampon + signature du gérant SOGUASPHAR, apposé côté "Pour SOGUASPHAR" du
+// document final (fourni par Hélène le 14/10/2026). Même principe de cache
+// base64 que le logo ci-dessus.
+let attestationStampDataUrl = "";
+function getAttestationStampDataUrl() {
+  if (attestationStampDataUrl) return attestationStampDataUrl;
+  try {
+    const stampPath = path.join(__dirname, "tampon-soguasphar.png");
+    const base64 = fs.readFileSync(stampPath).toString("base64");
+    attestationStampDataUrl = `data:image/png;base64,${base64}`;
+  } catch {
+    attestationStampDataUrl = "";
+  }
+  return attestationStampDataUrl;
+}
+
 // Construit le HTML du document final (texte pré-rempli + photo du tampon et
 // de la signature) envoyé au service commun sogua-connectors (/html-to-pdf).
 // Calqué sur le modèle exact fourni par Hélène (certificat 2027.pdf) : même
@@ -931,6 +947,7 @@ function buildAttestationHtml(doc, response, signatureDataUrl) {
   li { margin: 4px 0; }
   .signature-box { margin-top: 18px; }
   .signature-box img { max-width: 260px; max-height: 160px; border: 1px solid #ddd; margin-top: 6px; display: block; }
+  .stamp-box img { max-width: 260px; max-height: 145px; margin-top: 6px; display: block; border: none; }
 </style></head>
 <body>
   ${logoDataUrl ? `<div class="letterhead"><img src="${logoDataUrl}" alt="SOGUASPHAR"></div>` : ""}
@@ -1004,10 +1021,11 @@ function buildAttestationHtml(doc, response, signatureDataUrl) {
     ${signatureDataUrl ? `<img src="${signatureDataUrl}" alt="Signature et cachet">` : ""}
   </div>
 
-  <div class="signature-box">
+  <div class="signature-box stamp-box">
     <p><b>Pour SOGUASPHAR</b></p>
     <p>Mention : <b>« Mandat accepté »</b></p>
     <p>Signature et cachet :</p>
+    ${getAttestationStampDataUrl() ? `<img src="${getAttestationStampDataUrl()}" alt="Signature et cachet SOGUASPHAR">` : ""}
   </div>
 </body></html>`;
 }
@@ -3634,14 +3652,17 @@ const server = http.createServer(async (request, response) => {
       const emails = activePharmacyEmails(pharmacy);
       if (emails.length) {
         sendMail({
+          from: "helene.counot@soguasphar.com",
           to: emails.join(", "),
-          subject: `Votre attestation d'engagement SOGUASPHAR ${attestation.year || "2027"} signée`,
-          text: `Bonjour,\n\nVoici en pièce jointe une copie de l'attestation d'engagement SOGUASPHAR ${attestation.year || "2027"} que vous venez de signer pour ${document.pharmacyName}, le ${nowLabel}.\n\n— Préco SOGUASPHAR`,
+          subject: `Votre attestation d'engagement SOGUASPHAR ${attestation.year || "2027"} — signée`,
+          text: `Bonjour,\n\nNous vous confirmons la bonne réception de votre attestation d'engagement SOGUASPHAR ${attestation.year || "2027"}, signée électroniquement le ${nowLabel} pour la pharmacie ${document.pharmacyName}.\n\nVous trouverez ci-joint une copie de ce document signé, à conserver pour vos dossiers.\n\nNous vous remercions pour votre confiance et votre engagement au sein du groupement.\n\nBien cordialement,\nL'équipe SOGUASPHAR`,
           html: `<div style="font-family: Arial, Helvetica, sans-serif; max-width: 480px; margin: 0 auto; color: #1f2937;">
             <div style="text-align: center; padding: 16px 0;"><img src="${PRECO_BASE_URL}/logo-soguasphar.png" alt="SOGUASPHAR" style="height: 56px;" /></div>
             <p>Bonjour,</p>
-            <p>Voici en pièce jointe une copie de l'attestation d'engagement SOGUASPHAR ${attestation.year || "2027"} que vous venez de signer pour <strong>${document.pharmacyName}</strong>, le ${nowLabel}.</p>
-            <p>— Préco SOGUASPHAR</p>
+            <p>Nous vous confirmons la bonne réception de votre attestation d'engagement SOGUASPHAR ${attestation.year || "2027"}, signée électroniquement le ${nowLabel} pour la pharmacie <strong>${document.pharmacyName}</strong>.</p>
+            <p>Vous trouverez ci-joint une copie de ce document signé, à conserver pour vos dossiers.</p>
+            <p>Nous vous remercions pour votre confiance et votre engagement au sein du groupement.</p>
+            <p>Bien cordialement,<br>L'équipe SOGUASPHAR</p>
           </div>`,
           attachments: [{
             filename: `attestation-${attestation.year || "2027"}-${document.pharmacyName}.pdf`,
