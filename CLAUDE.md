@@ -196,6 +196,13 @@ Avant de modifier des données à la main : copie datée dans `data-backups/`.
   `sendPollExcel`, `sendInfoExcel`, colonnes libres vers la ligne 673 de `server.js`
 
 ## Pièges connus
+- **15/10/2026 : dates affichées sur la fiche d'une opération.** Ajouté (entre le
+  descriptif et la photo) `.delivery-date-info` (« Livraison prévisionnelle le... »)
+  et `.period-closing-info` (« Clôture précommande le... »), déjà présentes dans le
+  menu principal (`campaignCard`) mais absentes de la fiche détaillée
+  (`renderOrderTemplate` / fonctions autour de la ligne 5436 de `app.js`). Texte
+  et taille (16px, CSS `styles.css`) choisis avec Hélène. Si un nouvel endroit
+  affiche une opération, penser à reprendre ces deux lignes pour rester cohérent.
 - **15/10/2026 : ouverture de l'application lente — photos des précommandes
   envoyées en entier à chaque chargement.** `GET /api/orders` (appelé par
   `getCampaigns()` à CHAQUE ouverture de l'appli, pour les 44 pharmacies et
