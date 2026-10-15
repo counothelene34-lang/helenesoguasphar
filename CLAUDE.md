@@ -212,6 +212,15 @@ Avant de modifier des données à la main : copie datée dans `data-backups/`.
   retirer ce filet, c'est la 2ᵉ ligne de défense). Données déjà importées de
   l'opération ORAL-B corrigées à la main dans `data/orders.json` et
   `data/responses.json` (24 + 4 valeurs, sauvegarde avant dans `data-backups/`).
+  **Même jour, suite :** la colonne s'appelait à tort « Prix vente pharmacie »
+  alors que ce sont des prix d'achat (voir la description de l'opération :
+  « le prix d'achat réel est inférieur une fois la RFA de 7 % déduite »).
+  Renommée en « Prix d'achat » (colonne + toutes les valeurs des 30 lignes du
+  template, et dans les réponses déjà enregistrées) directement dans
+  `data/orders.json` et `data/responses.json` (script Python ponctuel, montants
+  non touchés, sauvegarde avant dans `data-backups/`) — aucun redémarrage
+  nécessaire, ces fichiers sont relus à chaque requête (`readOrders()`,
+  pas de cache mémoire).
   **Si un nouveau cas de prix à 3+ décimales est signalé un jour**, vérifier
   d'abord que ces deux arrondis sont toujours en place avant de chercher ailleurs.
 - **`/data/*` est bloqué par Traefik** sur preco.soguasphar.fr (protège
