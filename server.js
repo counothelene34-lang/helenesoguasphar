@@ -983,9 +983,12 @@ function buildAttestationHtml(doc, response, signatureDataUrl) {
   p { margin: 8px 0; }
   ul { margin: 4px 0; padding-left: 22px; }
   li { margin: 4px 0; }
-  .signature-box { margin-top: 18px; }
-  .signature-box img { max-width: 260px; max-height: 160px; border: 1px solid #ddd; margin-top: 6px; display: block; }
-  .stamp-box img { max-width: 260px; max-height: 145px; margin-top: 6px; display: block; border: none; }
+  .signature-box { margin-top: 10px; page-break-inside: avoid; break-inside: avoid; }
+  .signature-box p { margin: 4px 0; }
+  .signature-box img { max-width: 190px; max-height: 80px; border: 1px solid #ddd; margin-top: 4px; display: block; }
+  .stamp-box img { max-width: 190px; max-height: 80px; margin-top: 4px; display: block; border: none; }
+  .signature-page { page-break-inside: avoid; break-inside: avoid; }
+  .signature-page p.field { margin: 2px 0; }
 </style></head>
 <body>
   ${logoDataUrl ? `<div class="letterhead"><img src="${logoDataUrl}" alt="SOGUASPHAR"></div>` : ""}
@@ -1049,21 +1052,23 @@ function buildAttestationHtml(doc, response, signatureDataUrl) {
   <p>En cas de cession de l'officine ou de changement d'exploitant en cours d'année, aucuns frais supplémentaires d'adhésion ne seront facturés. Le nouvel exploitant devra cependant signer une nouvelle attestation pour confirmer la poursuite de l'adhésion.</p>
   <p>Les associés investisseurs n'exerçant pas au sein de la pharmacie ne disposent d'aucun droit automatique de participation à la vie du Groupement.</p>
 
-  <p class="field"><b>Fait à :</b> ${esc(response.faitA)}</p>
-  <p class="field"><b>Le :</b> ${esc(response.signedAt)}</p>
+  <div class="signature-page">
+    <p class="field"><b>Fait à :</b> ${esc(response.faitA)}</p>
+    <p class="field"><b>Le :</b> ${esc(response.signedAt)}</p>
 
-  <div class="signature-box">
-    <p><b>Pour la pharmacie</b></p>
-    <p>Mention manuscrite :<br><b>« Lu et approuvé – Bon pour adhésion, engagement et mandat pour l'année ${year} »</b></p>
-    <p>Signature et cachet :</p>
-    ${signatureDataUrl ? `<img src="${signatureDataUrl}" alt="Signature et cachet">` : ""}
-  </div>
+    <div class="signature-box">
+      <p><b>Pour la pharmacie</b></p>
+      <p>Mention manuscrite :<br><b>« Lu et approuvé – Bon pour adhésion, engagement et mandat pour l'année ${year} »</b></p>
+      <p>Signature et cachet :</p>
+      ${signatureDataUrl ? `<img src="${signatureDataUrl}" alt="Signature et cachet">` : ""}
+    </div>
 
-  <div class="signature-box stamp-box">
-    <p><b>Pour SOGUASPHAR</b></p>
-    <p>Mention : <b>« Mandat accepté »</b></p>
-    <p>Signature et cachet :</p>
-    ${getAttestationStampDataUrl() ? `<img src="${getAttestationStampDataUrl()}" alt="Signature et cachet SOGUASPHAR">` : ""}
+    <div class="signature-box stamp-box">
+      <p><b>Pour SOGUASPHAR</b></p>
+      <p>Mention : <b>« Mandat accepté »</b></p>
+      <p>Signature et cachet :</p>
+      ${getAttestationStampDataUrl() ? `<img src="${getAttestationStampDataUrl()}" alt="Signature et cachet SOGUASPHAR">` : ""}
+    </div>
   </div>
 </body></html>`;
 }
