@@ -3891,9 +3891,24 @@ function msUntilNextGuadeloupe8am() {
   return target.getTime() - now.getTime();
 }
 
+// 19/10/2026 : repéré par Hélène (relances jamais parties, 0 pharmacie sur 44
+// touchée en 5 jours) que ces vérifications programmées une fois par jour à
+// heure fixe ne se déclenchaient quasiment jamais en pratique, parce que
+// l'application est redéployée très souvent (plusieurs fois par jour parfois)
+// — chaque redéploiement redémarre le conteneur, ce qui annule le minuteur en
+// cours et reprogramme un nouveau délai de ~24h à partir de l'instant du
+// redémarrage. Si aucun redémarrage ne tombe "par hasard" pile sur le bon
+// créneau un jour donné, la vérification de ce jour-là est silencieusement
+// sautée. Corrigé en lançant aussi IMMÉDIATEMENT une vérification à chaque
+// démarrage du serveur (en plus du créneau quotidien) : les deux fonctions
+// sont sans danger à relancer plusieurs fois (elles ne ré-agissent jamais sur
+// ce qui a déjà été traité : `remindersSent` déjà envoyé, ou `closed: true`
+// déjà posé), donc aucun risque de doublon même en cas de redémarrages
+// fréquents le même jour.
 if (AUTO_REMINDERS_ENABLED) {
   const delay = msUntilNextGuadeloupe8am();
-  console.log(`[preco] relances automatiques ACTIVÉES (ENABLE_AUTO_REMINDERS=true) : prochaine vérification dans ${Math.round(delay / 60000)} min (8h00 heure Guadeloupe)`);
+  console.log(`[preco] relances automatiques ACTIVÉES (ENABLE_AUTO_REMINDERS=true) : vérification immédiate au démarrage, puis prochaine vérification programmée dans ${Math.round(delay / 60000)} min (8h00 heure Guadeloupe)`);
+  checkReminders();
   setTimeout(() => {
     checkReminders();
     setInterval(() => { checkReminders(); }, 24 * 60 * 60 * 1000);
@@ -3905,10 +3920,12 @@ if (AUTO_REMINDERS_ENABLED) {
 // Clôture automatique des précommandes en retard : toujours active (contrairement
 // aux relances aux pharmacies ci-dessus, qui restent derrière un interrupteur) —
 // demandée explicitement par Hélène le 19/10/2026 après un e-mail de clôture
-// manqué un vendredi. Même créneau (8h00 heure Guadeloupe) pour rester simple.
+// manqué un vendredi. Même créneau (8h00 heure Guadeloupe) et même vérification
+// immédiate au démarrage, pour la même raison que ci-dessus.
 {
   const closeDelay = msUntilNextGuadeloupe8am();
-  console.log(`[preco] clôture automatique des précommandes en retard : prochaine vérification dans ${Math.round(closeDelay / 60000)} min (8h00 heure Guadeloupe)${AUTO_CLOSE_START_DATE ? `, à partir des clôtures prévues le ${AUTO_CLOSE_START_DATE} ou après` : ""}.`);
+  console.log(`[preco] clôture automatique des précommandes en retard : vérification immédiate au démarrage, puis prochaine vérification programmée dans ${Math.round(closeDelay / 60000)} min (8h00 heure Guadeloupe)${AUTO_CLOSE_START_DATE ? `, à partir des clôtures prévues le ${AUTO_CLOSE_START_DATE} ou après` : ""}.`);
+  autoCloseExpiredCampaigns();
   setTimeout(() => {
     autoCloseExpiredCampaigns();
     setInterval(() => { autoCloseExpiredCampaigns(); }, 24 * 60 * 60 * 1000);
