@@ -239,6 +239,32 @@ une vraie clôture automatique :
   `sendMail()`, ne jamais compter sur le défaut.**
 
 ## Pièges connus
+- **19/10/2026 : relances pharmacies ET clôture auto jamais déclenchées en
+  pratique (0 relance envoyée en 5 jours sur 44 pharmacies, repéré par
+  Hélène).** `checkReminders()` et `autoCloseExpiredCampaigns()` étaient
+  programmées uniquement via `setTimeout`/`setInterval` ancrés sur la durée de
+  vie du conteneur (prochain passage à 8h00 heure Guadeloupe). Problème :
+  Préco est redéployé très souvent (plusieurs fois par jour parfois) et
+  CHAQUE redémarrage annule ce minuteur et le reprogramme ~24h plus tard à
+  partir de l'instant du redémarrage — si aucun redémarrage ne tombe
+  "par hasard" sur le bon créneau un jour donné, la vérification de ce
+  jour-là est silencieusement sautée. Corrigé en ajoutant un appel immédiat
+  des deux fonctions à CHAQUE démarrage du serveur, en plus du créneau
+  quotidien habituel (`server.js`, juste après leur schedule respectif) :
+  sans danger même avec des redémarrages fréquents, car les deux fonctions
+  sont idempotentes (elles ne ré-agissent jamais sur ce qui a déjà été
+  traité — `remindersSent` déjà posé, ou `closed: true` déjà posé). Testé en
+  conditions réelles au redémarrage : 18 relances envoyées immédiatement pour
+  PHYTOXIL (clôture le 20/10, J-1 ce jour-là). **Reste un angle mort assumé** :
+  les 2 précommandes qui clôturaient CE jour-là (ORAL-B, cartes de fidélité)
+  avaient leur fenêtre J-1 la veille (18/10), déjà manquée avant le correctif
+  — pas de rattrapage automatique rétroactif pour un jour déjà passé (décision
+  cohérente avec celle du 13/10 sur les relances : "aucun rattrapage
+  rétroactif des opérations dont le J-1 est déjà passé"). **Toute nouvelle
+  vérification programmée à l'avenir (quotidienne ou autre) doit reprendre ce
+  même principe (appel immédiat au démarrage + créneau quotidien) plutôt que
+  de compter sur un minuteur qui survit rarement assez longtemps dans ce
+  projet.**
 - **15/10/2026 : garde-fou anti-régression ajouté (`runStartupSecurityChecks`,
   server.js, juste avant `server.listen`).** Suite aux DEUX régressions
   silencieuses ci-dessous (fermeture de l'ancien accès pharmacie effacée, puis
