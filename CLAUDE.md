@@ -195,6 +195,41 @@ Avant de modifier des données à la main : copie datée dans `data-backups/`.
 - Côté serveur : `read*/write*` par fichier, `validationSummary`, `sendExcel`,
   `sendPollExcel`, `sendInfoExcel`, colonnes libres vers la ligne 673 de `server.js`
 
+## Clôture automatique des précommandes en retard (ajouté le 19/10/2026)
+Jusqu'ici, une précommande ne se clôturait **que** si un admin cliquait sur
+« Clôturer » (ce qui déclenche `notifyCampaignClosed()` → e-mail récapitulatif
+quantités + détail par pharmacie à `ARCHIVE_NOTIFY_EMAILS`). Résultat : un
+vendredi, 4 précommandes dont la date de clôture était passée sont restées
+« ouvertes » faute de clic, et personne n'a reçu l'e-mail. Corrigé en ajoutant
+une vraie clôture automatique :
+- `autoCloseExpiredCampaigns()` (`server.js`, juste avant les relances
+  automatiques) : chaque jour à 8h heure Guadeloupe (même créneau que
+  `checkReminders()`), repère les précommandes non `draft`, non déjà `closed`,
+  dont la date de clôture (`closingDateForOrder`) est dépassée, les passe à
+  `closed: true` et appelle `notifyCampaignClosed()` pour chacune — exactement
+  comme un clic manuel. **Toujours actif** (contrairement aux relances
+  pharmacies, qui restent derrière `ENABLE_AUTO_REMINDERS`).
+- **Garde-fou anti-surprise rétroactive** : `AUTO_CLOSE_START_DATE` (`.env` +
+  `docker-compose.yml`, posé à `2026-10-19` à la mise en service) — toute
+  précommande dont la date de clôture est *antérieure* à cette date est
+  ignorée par la clôture automatique et reste à traiter à la main comme avant.
+  Sans ce garde-fou, la première exécution aurait clôturé d'un coup (et envoyé
+  un e-mail pour) toutes les précommandes déjà en retard à l'activation — au
+  19/10/2026 il y en avait encore 5 (LISOPAINE, opération GUIGOZ novembre,
+  OXYPROLANE/CURCUMA, BEURER, BLEDIDEJ mois du bébé), volontairement laissées
+  de côté, pas forcément en retard "par erreur" (un admin a pu les laisser
+  ouvertes exprès pour des réponses tardives). **Si Hélène veut un jour
+  clôturer rétroactivement l'une d'elles, le faire à la main (bouton
+  « Clôturer ») plutôt que de reculer `AUTO_CLOSE_START_DATE`** — reculer
+  cette date rouvrirait le risque d'un envoi en masse non souhaité.
+- Les 4 précommandes manquées du 16/10/2026 (Gourde personnalisée SOGUASPHAR
+  1,2L, NATIYE, Culottes menstruelles, Thermomètre digital) ont été clôturées
+  à la main ce jour-là (via l'API, sauvegarde avant dans `data-backups/`),
+  les 4 e-mails récap sont bien partis.
+- Si un nouveau type d'opération avec quantités a besoin du même traitement
+  un jour, réutiliser ce même principe (vérif quotidienne + garde-fou de date
+  de démarrage) plutôt que d'en recréer un autre.
+
 ## Pièges connus
 - **15/10/2026 : garde-fou anti-régression ajouté (`runStartupSecurityChecks`,
   server.js, juste avant `server.listen`).** Suite aux DEUX régressions

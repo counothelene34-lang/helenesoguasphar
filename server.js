@@ -1775,6 +1775,47 @@ async function notifyCampaignClosed(campaign) {
   });
 }
 
+// --- Clôture automatique à la date prévue -----------------------------------
+// Décidé par Hélène le 19/10/2026 : si une précommande n'a pas été clôturée à
+// la main ET que sa date de clôture est dépassée, on la clôture nous-mêmes et
+// on envoie l'e-mail récapitulatif (quantités + détail par pharmacie), tout
+// comme si un admin avait cliqué "Clôturer" (réutilise notifyCampaignClosed).
+// Pour ne jamais surprendre avec une clôture rétroactive sur des opérations
+// déjà en retard AVANT la mise en place de cette fonctionnalité, on ignore
+// toute date de clôture antérieure à AUTO_CLOSE_START_DATE : ces opérations-là
+// restent à clôturer à la main, comme avant.
+const AUTO_CLOSE_START_DATE = String(process.env.AUTO_CLOSE_START_DATE || "").trim() || null;
+
+async function autoCloseExpiredCampaigns() {
+  try {
+    const orders = readOrders();
+    let changed = false;
+    const justClosed = [];
+    for (const order of orders) {
+      if (!order || order.draft || order.closed) continue;
+      const closingDate = closingDateForOrder(order);
+      if (!closingDate) continue;
+      if (AUTO_CLOSE_START_DATE && closingDate < AUTO_CLOSE_START_DATE) continue;
+      const left = daysUntil(closingDate);
+      if (left === null || left >= 0) continue; // date pas encore passée
+      order.closed = true;
+      changed = true;
+      justClosed.push(order);
+    }
+    if (changed) writeOrders(orders);
+    for (const campaign of justClosed) {
+      try {
+        await notifyCampaignClosed(campaign);
+        console.log(`[preco] précommande "${campaign.title}" clôturée automatiquement (date dépassée), e-mail récapitulatif envoyé.`);
+      } catch (error) {
+        console.error(`[preco] échec de l'e-mail de clôture automatique pour "${campaign.title}" :`, error.message);
+      }
+    }
+  } catch (error) {
+    console.error("[preco] erreur pendant la clôture automatique des précommandes :", error);
+  }
+}
+
 // --- Relances automatiques par e-mail (précommandes et sondages) -----------
 // Chaque jour : si une pharmacie n'a pas répondu à une opération active dont la
 // clôture est prévue le LENDEMAIN (J-1, un seul rappel, jamais avant), on lui
@@ -3835,4 +3876,17 @@ if (AUTO_REMINDERS_ENABLED) {
   }, delay);
 } else {
   console.log("[preco] relances automatiques désactivées (ENABLE_AUTO_REMINDERS absent ou différent de \"true\")");
+}
+
+// Clôture automatique des précommandes en retard : toujours active (contrairement
+// aux relances aux pharmacies ci-dessus, qui restent derrière un interrupteur) —
+// demandée explicitement par Hélène le 19/10/2026 après un e-mail de clôture
+// manqué un vendredi. Même créneau (8h00 heure Guadeloupe) pour rester simple.
+{
+  const closeDelay = msUntilNextGuadeloupe8am();
+  console.log(`[preco] clôture automatique des précommandes en retard : prochaine vérification dans ${Math.round(closeDelay / 60000)} min (8h00 heure Guadeloupe)${AUTO_CLOSE_START_DATE ? `, à partir des clôtures prévues le ${AUTO_CLOSE_START_DATE} ou après` : ""}.`);
+  setTimeout(() => {
+    autoCloseExpiredCampaigns();
+    setInterval(() => { autoCloseExpiredCampaigns(); }, 24 * 60 * 60 * 1000);
+  }, closeDelay);
 }

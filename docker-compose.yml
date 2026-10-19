@@ -17,6 +17,7 @@ services:
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-https://preco.soguasphar.fr}
       ENABLE_AUTO_REMINDERS: ${ENABLE_AUTO_REMINDERS:-false}
       REMINDERS_START_DATE: ${REMINDERS_START_DATE:-}
+      AUTO_CLOSE_START_DATE: ${AUTO_CLOSE_START_DATE:-}
     volumes:
       # Persistance des données fichiers (commandes, sondages, pharmacies…)
       - ./data:/app/data
