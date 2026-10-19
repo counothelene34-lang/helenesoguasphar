@@ -1768,6 +1768,11 @@ async function notifyCampaignClosed(campaign) {
     subject: `Précommande clôturée : ${campaign.title}`,
     text: `La précommande "${campaign.title}" vient d'être clôturée sur Préco.\n\nVous trouverez en pièces jointes le récapitulatif des quantités globales commandées et le détail des réponses par pharmacie.`,
     html: `<p>La précommande <strong>${escapeHtml(campaign.title)}</strong> vient d'être clôturée sur Préco.</p><p>Vous trouverez en pièces jointes le récapitulatif des quantités globales commandées et le détail des réponses par pharmacie.</p>`,
+    // Expéditeur : ne_pas_repondre@soguasphar.com, jamais helene.counot (qui est
+    // le défaut de sendMail) — demandé explicitement par Hélène le 19/10/2026,
+    // cet e-mail récap n'attend aucune réponse.
+    from: "ne_pas_repondre@soguasphar.com",
+    fromName: "SOGUASPHAR",
     attachments: [
       { filename: `quantites-${campaign.id}-${datePart}.xls`, content: summaryHtml },
       { filename: `dispatch-pharmacies-${campaign.id}-${datePart}.xls`, content: dispatchHtml }
