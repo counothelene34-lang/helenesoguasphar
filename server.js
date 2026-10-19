@@ -1865,6 +1865,22 @@ function activePharmacyEmails(pharmacy) {
   return [...new Set(emails.filter(Boolean))];
 }
 
+// Adresse(s) e-mail du TITULAIRE uniquement (rôle "pharmacy_admin"), sans les
+// comptes "équipe" ("pharmacy_collaborator") — pour les documents officiels
+// (ex. attestation d'engagement signée) qui ne doivent partir que vers le
+// titulaire, jamais vers un compte équipe. Demandé explicitement par Hélène
+// le 19/10/2026. Si aucun compte titulaire actif n'existe encore, on retombe
+// sur l'adresse de contact de la pharmacie (pharmacies.json, champ "email").
+function titulaireEmailsForPharmacy(pharmacy) {
+  if (!pharmacy || !pharmacy.id) return [];
+  const emails = readUsers()
+    .filter((user) => user && user.pharmacyId === pharmacy.id && user.active !== false
+      && user.role === "pharmacy_admin" && user.email)
+    .map((user) => normalizeEmail(user.email));
+  if (!emails.length && pharmacy.email) emails.push(normalizeEmail(pharmacy.email));
+  return [...new Set(emails.filter(Boolean))];
+}
+
 function closingDateForOrder(order) {
   const dates = (order.periods || [])
     .map((period) => period && period.endDate)
@@ -3732,15 +3748,18 @@ const server = http.createServer(async (request, response) => {
       writeAttestationResponses(updatedResponses);
       sendJson(response, 200, savedResponse);
 
-      // Copie du PDF signé envoyée à la pharmacie, par e-mail normal (pas
-      // "ne_pas_repondre" : elle doit pouvoir répondre si besoin). Après avoir
-      // répondu au navigateur : un échec d'envoi ne doit jamais empêcher la
-      // signature d'être enregistrée.
+      // Copie du PDF signé envoyée UNIQUEMENT au titulaire (jamais aux comptes
+      // équipe) — changé le 19/10/2026 à la demande d'Hélène (un compte équipe
+      // avait reçu la copie par erreur). Expéditeur "ne_pas_repondre" (changé
+      // le même jour, idem demande explicite — ce mail n'attend plus de
+      // réponse). Après avoir répondu au navigateur : un échec d'envoi ne doit
+      // jamais empêcher la signature d'être enregistrée.
       const pharmacy = readPharmacies().find((item) => item.id === pharmacyId);
-      const emails = activePharmacyEmails(pharmacy);
+      const emails = titulaireEmailsForPharmacy(pharmacy);
       if (emails.length) {
         sendMail({
-          from: "helene.counot@soguasphar.com",
+          from: "ne_pas_repondre@soguasphar.com",
+          fromName: "SOGUASPHAR",
           to: emails.join(", "),
           subject: `Votre attestation d'engagement SOGUASPHAR ${attestation.year || "2027"} — signée`,
           text: `Bonjour,\n\nNous vous confirmons la bonne réception de votre attestation d'engagement SOGUASPHAR ${attestation.year || "2027"}, signée électroniquement le ${nowLabel} pour la pharmacie ${document.pharmacyName}.\n\nVous trouverez ci-joint une copie de ce document signé, à conserver pour vos dossiers.\n\nNous vous remercions pour votre confiance et votre engagement au sein du groupement.\n\nBien cordialement,\nL'équipe SOGUASPHAR`,

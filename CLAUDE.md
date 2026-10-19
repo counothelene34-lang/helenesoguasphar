@@ -532,6 +532,25 @@ une vraie clôture automatique :
   avait déjà un mot de passe actif), même traitement : restaurer depuis la
   sauvegarde la plus récente d'avant l'incident plutôt que de lui faire
   recréer un mot de passe.
+- **19/10/2026 : copie de l'attestation signée envoyée à tort à un compte
+  équipe.** `activePharmacyEmails()` envoie à TOUS les comptes actifs d'une
+  pharmacie (titulaire `pharmacy_admin` + comptes équipe
+  `pharmacy_collaborator`, sans distinction) — utilisé par erreur pour la
+  copie du PDF signé, qui doit rester strictement entre SOGUASPHAR et le
+  titulaire. Corrigé : nouvelle fonction `titulaireEmailsForPharmacy()`
+  (server.js, juste après `activePharmacyEmails()`) qui ne garde que les
+  comptes `role === "pharmacy_admin"` (repli sur `pharmacy.email` si aucun
+  compte titulaire actif). **Au passage, expéditeur changé en
+  `ne_pas_repondre@soguasphar.com`** (demande explicite d'Hélène le même jour)
+  — **attention, ceci contredit la règle posée le 14/10/2026** ("expéditeur
+  attestation = exclusivement helene.counot@soguasphar.com, jamais
+  ne_pas_repondre, car la pharmacie doit pouvoir répondre") : la règle du
+  19/10 est la plus récente et prévaut, mais si une pharmacie dit un jour
+  "je n'arrive pas à vous répondre par e-mail sur l'attestation", c'est la
+  cause probable — en reparler avec Hélène avant de retoucher ce from.
+  **Si un autre document officiel (signature, validation) est ajouté un
+  jour et ne doit partir qu'au titulaire, réutiliser
+  `titulaireEmailsForPharmacy()`** plutôt que `activePharmacyEmails()`.
 - **15/10/2026 (suite, dans l'après-midi) : EBOUE, GIRARD DUGAMIN et LA
   LICORNE réapparaissaient "Jamais connecté" dans l'export Excel admin**,
   malgré la restauration de leur mot de passe le matin même. Cause : la
