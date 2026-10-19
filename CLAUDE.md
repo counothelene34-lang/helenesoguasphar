@@ -558,6 +558,29 @@ une vraie clôture automatique :
   avait déjà un mot de passe actif), même traitement : restaurer depuis la
   sauvegarde la plus récente d'avant l'incident plutôt que de lui faire
   recréer un mot de passe.
+- **19/10/2026 : l'ancien code administrateur partagé ("Code administrateur
+  incorrect") était réapparu, Hélène ne pouvait plus entrer dans
+  l'Administration.** Avait pourtant été fermé le 13/10/2026 (commit
+  `36d442f`) : le formulaire `#adminLogin` ne devait plus comparer de code,
+  juste rediriger vers la connexion personnelle (e-mail + mot de passe).
+  Régression silencieuse (même famille que les deux autres déjà documentées
+  plus bas, attribuées au commit `644f5c1` du 13/10 en fin de journée) : le
+  code de comparaison (`if (code !== ADMIN_CODE) ...`) était redevenu actif
+  dans `app.js` sans que `runStartupSecurityChecks` ne le détecte (cette
+  vérification ne couvre que les routes pharmacie et `lastLoginAt`, pas ce
+  formulaire). Refermé à l'identique du correctif d'origine, **avec un
+  complément** : le formulaire `#adminLogin` vit dans l'onglet
+  "Administration" mais l'écran de connexion personnelle (`#newAuthGate`)
+  vit dans l'onglet "Formulaire" (`.view` caché si pas `.active`) — appeler
+  `showNewAuthScreen()` sans d'abord basculer sur l'onglet "Formulaire"
+  laissait l'écran invisible (ce défaut existait probablement déjà dans le
+  correctif du 13/10, jamais remarqué). Le nouveau handler bascule donc
+  d'abord sur l'onglet "Formulaire" avant d'appeler `showNewAuthScreen()`.
+  Vérifié avec Playwright : taper n'importe quoi dans le code administrateur
+  affiche bien l'écran e-mail + mot de passe (avec « Mot de passe oublié »)
+  au lieu du message d'erreur. **Si ce formulaire réapparaît une 3ᵉ fois**,
+  ajouter sa vérification dans `runStartupSecurityChecks()` (comme les deux
+  autres) plutôt que de compter sur un signalement d'Hélène.
 - **19/10/2026 : copie de l'attestation signée envoyée à tort à un compte
   équipe.** `activePharmacyEmails()` envoie à TOUS les comptes actifs d'une
   pharmacie (titulaire `pharmacy_admin` + comptes équipe
