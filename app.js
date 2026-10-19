@@ -9174,16 +9174,27 @@ async function unlockAdminPanel() {
   await showAdminCampaignPicker();
 }
 
-adminLogin.addEventListener("submit", async (event) => {
+// Le code administrateur partagé n'ouvre plus l'espace admin directement
+// (13/10/2026, régression du 19/10/2026 corrigée à nouveau ici) : chaque
+// administrateur SOGUASPHAR a un compte personnel (e-mail + mot de passe),
+// c'est le seul moyen d'entrer, pour que "Dernière connexion" reflète
+// vraiment qui se connecte.
+adminLogin.addEventListener("submit", (event) => {
   event.preventDefault();
-  const code = document.querySelector("#adminCode").value.trim();
-  if (code !== ADMIN_CODE) {
-    adminMessage.textContent = "Code administrateur incorrect.";
-    return;
+  adminMessage.textContent = "";
+  // L'écran de connexion personnelle (newAuthGate) vit dans l'onglet
+  // "Formulaire" : si on est resté sur l'onglet "Administration" (où se
+  // trouve ce formulaire de code), il faut d'abord basculer dessus, sinon
+  // showNewAuthScreen() rend l'écran invisible (caché par .view:not(.active)).
+  const formViewBtn = document.querySelector('.switch-btn[data-view="formView"]');
+  const formViewSection = document.querySelector("#formView");
+  if (formViewBtn && formViewSection && !formViewSection.classList.contains("active")) {
+    document.querySelectorAll(".switch-btn").forEach((item) => item.classList.remove("active"));
+    document.querySelectorAll(".view").forEach((item) => item.classList.remove("active"));
+    formViewBtn.classList.add("active");
+    formViewSection.classList.add("active");
   }
-
-  await unlockAdminPanel();
-  adminMessage.textContent = "Accès administrateur ouvert.";
+  showNewAuthScreen();
 });
 
 exportExcelBtn.addEventListener("click", exportToExcel);
