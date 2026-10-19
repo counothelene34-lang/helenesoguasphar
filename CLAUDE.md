@@ -229,6 +229,14 @@ une vraie clôture automatique :
 - Si un nouveau type d'opération avec quantités a besoin du même traitement
   un jour, réutiliser ce même principe (vérif quotidienne + garde-fou de date
   de démarrage) plutôt que d'en recréer un autre.
+- **19/10/2026 : expéditeur du mail de clôture corrigé.** `notifyCampaignClosed()`
+  ne précisait pas d'expéditeur et retombait donc sur le défaut de `sendMail()`
+  (`helene.counot@soguasphar.com`) — repéré par Hélène après l'envoi. Cet
+  e-mail récap (quantités + dispatch, vers `ARCHIVE_NOTIFY_EMAILS`) n'attend
+  aucune réponse : corrigé pour partir depuis `ne_pas_repondre@soguasphar.com`
+  (comme les relances pharmacies), jamais `helene.counot@soguasphar.com`.
+  **Toujours préciser `from`/`fromName` explicitement dans tout nouvel appel à
+  `sendMail()`, ne jamais compter sur le défaut.**
 
 ## Pièges connus
 - **15/10/2026 : garde-fou anti-régression ajouté (`runStartupSecurityChecks`,
