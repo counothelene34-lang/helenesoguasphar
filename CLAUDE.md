@@ -581,6 +581,22 @@ une vraie clôture automatique :
   au lieu du message d'erreur. **Si ce formulaire réapparaît une 3ᵉ fois**,
   ajouter sa vérification dans `runStartupSecurityChecks()` (comme les deux
   autres) plutôt que de compter sur un signalement d'Hélène.
+  **Même jour, dans la foulée (demande d'Hélène) :** le bouton "Administration"
+  (barre du haut, à côté de "Formulaire") restait visible pour tout le monde
+  avant connexion, et ne menait qu'à ce même écran déroutant — retiré tant
+  qu'on n'est pas connectée avec un compte admin personnel. Logique
+  centralisée dans `renderPharmacyAccess()` (app.js, juste après le calcul de
+  `isAdmin`) : le bouton `.switch-btn[data-view="adminView"]` est caché par
+  défaut (`hidden` posé aussi dans `index.html` pour éviter un flash au
+  chargement de la page) et seulement ré-affiché quand
+  `currentUser.role === "soguasphar_admin"`. Si on perd les droits admin
+  (déconnexion, session expirée) en étant sur l'onglet Administration, on
+  revient automatiquement sur "Formulaire". Vérifié avec Playwright en
+  navigation anonyme : seul "Formulaire" visible, aucune erreur JS. **Si un
+  autre bouton/lien mène un jour vers une zone réservée aux administrateurs,
+  reprendre ce même principe (caché par défaut dans le HTML + ré-affiché par
+  `renderPharmacyAccess()` selon le rôle) plutôt que de compter sur la
+  destination elle-même pour refuser l'accès.**
 - **19/10/2026 : copie de l'attestation signée envoyée à tort à un compte
   équipe.** `activePharmacyEmails()` envoie à TOUS les comptes actifs d'une
   pharmacie (titulaire `pharmacy_admin` + comptes équipe
