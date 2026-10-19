@@ -3537,7 +3537,30 @@ function renderPharmacyAccess() {
   // continuer à voir les deux onglets.
   const viewSwitch = document.querySelector(".view-switch");
   if (viewSwitch) {
-    viewSwitch.hidden = Boolean(currentPharmacy) && !(currentUser && currentUser.role === "soguasphar_admin");
+    viewSwitch.hidden = Boolean(currentPharmacy) && !isAdmin;
+  }
+  // Le bouton "Administration" lui-même ne doit apparaître qu'à une
+  // administratrice SOGUASPHAR déjà connectée avec son compte personnel.
+  // Avant toute connexion (visiteur anonyme, ou pharmacie), ce bouton ne
+  // menait qu'à l'ancien écran "Code administrateur" fermé le 13/10/2026 et
+  // induisait en erreur — retiré à la demande d'Hélène le 19/10/2026.
+  const adminViewBtn = document.querySelector('.switch-btn[data-view="adminView"]');
+  if (adminViewBtn) {
+    adminViewBtn.hidden = !isAdmin;
+    if (!isAdmin) {
+      const adminViewSection = document.querySelector("#adminView");
+      const formViewSection = document.querySelector("#formView");
+      if (adminViewSection && adminViewSection.classList.contains("active")) {
+        // On a perdu les droits admin (déconnexion, session expirée) pendant
+        // qu'on était sur l'onglet Administration : on revient sur
+        // "Formulaire" plutôt que de laisser un onglet actif mais caché.
+        adminViewSection.classList.remove("active");
+        formViewSection?.classList.add("active");
+        document.querySelectorAll(".switch-btn").forEach((btn) => {
+          btn.classList.toggle("active", btn.dataset.view === "formView");
+        });
+      }
+    }
   }
   if (pendingPasswordPharmacy) {
     pharmacyLoginForm.hidden = true;
