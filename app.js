@@ -5577,7 +5577,17 @@ function selectCampaign(campaignId) {
   form.reset();
   applyCurrentPharmacyToForms();
   renderOrderTemplate();
-  prefillCampaignResponse(pharmacyCampaignResponses[selectedCampaign.id]);
+  // Piège évité (23/10/2026) : form.reset() ci-dessus déclenche l'écouteur
+  // "reset" du formulaire, qui vide les quantités via resetQuantities() —
+  // mais DANS un setTimeout(0) (voir plus bas), donc APRÈS la fin de cette
+  // fonction. Sans ce même délai ici, prefillCampaignResponse() remplirait
+  // les champs puis resetQuantities() les effacerait aussitôt derrière
+  // (invisible à l'œil nu, quelques millisecondes, mais le formulaire
+  // retombait vide juste après — repéré sur le pré-cadencier Roche où une
+  // pharmacie ayant déjà répondu rouvrait un formulaire qui semblait vierge).
+  setTimeout(() => {
+    prefillCampaignResponse(pharmacyCampaignResponses[selectedCampaign.id]);
+  }, 0);
   updateQuantityVisibility();
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
@@ -6312,7 +6322,18 @@ function prefillCampaignResponse(response) {
 
   // Pré-cadencier : recalcule les totaux annuels après avoir restauré les
   // quantités LIV1-4 saisies précédemment, et restaure les dates de livraison.
-  (currentOrderTemplate.rows || []).forEach((templateRow) => recomputeRowTotal(templateRow.id));
+  // Piège évité (23/10/2026) : une réponse enregistrée AVANT ce correctif n'a
+  // qu'une quantité globale (pas de détail par livraison) — si on recalculait
+  // systématiquement le total à partir des colonnes LIV (vides pour elle), ce
+  // total affiché aurait été effacé à l'écran (et perdu pour de vrai au
+  // prochain enregistrement). On ne recalcule donc QUE les lignes où au moins
+  // une colonne LIV a déjà une valeur saisie ; sinon on garde tel quel le
+  // total déjà restauré ci-dessus (l'ancienne quantité globale).
+  (currentOrderTemplate.rows || []).forEach((templateRow) => {
+    const hasSubValue = [...productRows.querySelectorAll(`.quantity-sub-input[data-id="${CSS.escape(templateRow.id)}"]`)]
+      .some((input) => input.value.trim() !== "");
+    if (hasSubValue) recomputeRowTotal(templateRow.id);
+  });
   (response.deliveryDates || []).forEach((date, index) => {
     const input = document.querySelector(`.delivery-date-input[data-index="${index}"]`);
     if (input) input.value = date || "";
