@@ -348,6 +348,28 @@ avant de publier la donnée qui en dépend** (ici la précommande a été mise e
 jours avant que quiconque ne remarque que le code manquait).
 
 ## Pièges connus
+- **23/10/2026 (audit après mise en prod) : aperçu admin SOGUASPHAR Awards bloquant pour
+  42/44 pharmacies + 2 fiches de test réelles trouvées en base Awards (AZAR, BAMBOU
+  VERT).** Cause 1 : `GET /api/awards-link-preview` ne transmettait QUE l'identifiant
+  (`pharmacy.id`), jamais le nom/titulaire — côté Awards, `GET /api/preview/pharmacy`
+  faisait un simple `SELECT` et renvoyait un 404 bloquant dès qu'aucune fiche
+  n'existait encore (seule une VRAIE connexion pharmacie via `/api/awards-link` crée la
+  fiche, jamais un aperçu admin). Corrigé : cette route transmet désormais `name` +
+  `titulaireFirstName`/`titulaireLastName` (même source que `/api/awards-link`), et
+  Awards construit un aperçu virtuel en lecture seule (aucune écriture en base) à
+  partir de ces infos quand la fiche n'existe pas encore — voir la fiche CLAUDE.md
+  d'Awards pour le détail côté serveur. Cause 2 : les 2 seules fiches en base
+  (créées le 23/10/2026 pendant les tests de mise en prod) contenaient des noms de
+  test non nettoyés ("Jeanne TESTAZAR", "Marie DUPONT-VERIF", "Paul MARTIN-VERIF",
+  votes factices) — sauvegardées dans `/opt/apps/soguasphar-awards/backups-manuels/`
+  puis supprimées (la prochaine vraie connexion pharmacie recrée une fiche propre,
+  comportement déjà correct, rien à changer là). Vérifié par appel direct à l'API
+  (jeton signé manuellement) sur AZAR, BAMBOU VERT et un login inexistant : les 3
+  renvoient un aperçu virtuel propre (nom correct, aucune donnée inventée), plus de
+  404. **Rattachement Préco↔Soguaspilot vérifié à 44/44 (bilan chiffré), 5 cas « DE
+  LA … » distingués seulement par l'ordre alphabétique identique des deux côtés (pas
+  de CIP commun) — à sécuriser un jour avec un identifiant croisé si l'ordre venait à
+  diverger entre les deux bases.**
 - **19/10/2026 : relances pharmacies ET clôture auto jamais déclenchées en
   pratique (0 relance envoyée en 5 jours sur 44 pharmacies, repéré par
   Hélène).** `checkReminders()` et `autoCloseExpiredCampaigns()` étaient
@@ -744,3 +766,55 @@ jours avant que quiconque ne remarque que le code manquait).
   "jamais connecté" alors que la pharmacie confirme s'être déjà connectée) :
   vérifier d'abord `mustChangePassword === false` + `lastLoginAt` vide dans
   `data/users.json` (signe du même bug), pas la peine de chercher plus loin.
+- **23/10/2026 : bloc SOGUASPHAR Awards invisible en aperçu administrateur
+  « voir comme pharmacie » — corrigé (deuxième volet du pont Awards du même
+  jour).** Le premier pont (pharmacie vraiment connectée, `/api/awards-link`)
+  marchait déjà ; en aperçu admin, `isNewSystemPharmacy` est TOUJOURS faux
+  (`currentUser` reste l'admin pendant tout l'aperçu, seul `currentPharmacy`
+  change — voir `app.js` ~7458) donc le bloc restait cond. masqué. Corrigé
+  SANS créer de session pharmacie pour l'admin (risque identifié et refusé :
+  4 routes d'écriture Préco — commandes/sondages/infos/validations — ne
+  vérifient aujourd'hui AUCUNE session, voir item juste en dessous) :
+  - Nouvelle route Préco `GET /api/awards-link-preview?pharmacyId=` (server.js,
+    juste après `/api/awards-link`), protégée par `requireAuth(["soguasphar_admin"])`
+    — signe un jeton très court (60s, `signShortAwardsToken`, même secret
+    `AWARDS_SSO_SECRET`) avec `{type:"pharmacy_preview", login:pharmacy.id,
+    aud:"awards_preview"}`, vers `${AWARDS_BASE_URL}/invite?pt=<jeton>`.
+  - Côté Awards (`/opt/apps/soguasphar-awards/server.js`), nouvelle route
+    `GET /api/preview/pharmacy?token=` — vérifie le jeton (audience dédiée
+    `awards_preview`, jamais confondue avec le pont pharmacie normal ni avec
+    le pont admin Soguaspilot/`ADMIN_LOGINS`), renvoie la fiche RÉELLE de la
+    pharmacie (participants/votes/talk/powerpoint, pas des données vidées
+    comme l'ancien `/api/admin/preview/:type` générique) avec
+    `preview:true, previewReal:true`, **ne crée jamais de session ni de
+    jeton personnel invité** — donc aucune route d'écriture `/api/me/*`
+    (toutes protégées par `requireGuest`, qui exige ce jeton personnel)
+    n'est accessible depuis cet écran : lecture seule garantie par
+    construction, pas seulement par des boutons désactivés.
+  - `public/invite.js` : nouveau paramètre d'URL `?pt=` (distinct de `?t=`
+    pharmacie et `?preview=pharmacy|labo` générique Soguaspilot), bannière
+    "Aperçu administrateur — lecture seule, rien n'est enregistré." si
+    `previewReal`, tous les champs/boutons déjà désactivés via
+    `disabledAttr(d)` (`d.closed || d.preview`, préexistant).
+  - `app.js` (Préco) : `awardsPromoBlock` visible aussi en aperçu admin ;
+    `openAwardsSpace()` choisit `/api/awards-link-preview` au lieu de
+    `/api/awards-link` quand `isAdminPreviewMode()` est vrai ; bandeau
+    "Aperçu administrateur — lecture seule" ajouté dans la modale
+    (`#awardsModalPreviewNote`, index.html, juste après le titre).
+  - Vérifié par Playwright (agent dédié, compte admin de test créé puis
+    supprimé dans `data/users.json`, `data-backups/` avant/après identiques) :
+    les deux parcours fonctionnent, pas de fuite entre pharmacies (AZAR vs
+    BAMBOU VERT), tentatives directes `PUT /api/me/presence`/`POST
+    /api/me/vote` depuis l'iframe d'aperçu → 401 (aucun jeton exploitable).
+  - **Faille préexistante signalée, PAS corrigée (hors périmètre de ce
+    chantier, à traiter séparément avec Hélène)** : `POST /api/responses`,
+    `/api/poll-responses`, `/api/info-responses`, `/api/validation-responses`
+    (commandes/sondages/infos/validations) ne vérifient AUJOURD'HUI aucune
+    session serveur — ils font confiance à un `pharmacyId` envoyé par
+    l'écran, contrairement à `/api/attestation/sign` qui fait les choses
+    bien (`requireAuth` + `user.pharmacyId` de la session, jamais celui du
+    payload). Conséquence : n'importe qui connaissant l'identifiant d'une
+    pharmacie pourrait aujourd'hui, en théorie, répondre à sa place sans
+    être connecté. À corriger avec Hélène (reprendre le motif
+    `/api/attestation/sign` : `requireAuth(PHARMACY_SESSION_ROLES)` puis
+    `user.pharmacyId`, jamais celui du corps de la requête).

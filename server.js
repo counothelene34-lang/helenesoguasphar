@@ -2668,6 +2668,11 @@ const server = http.createServer(async (request, response) => {
     // audience dédiée "awards_preview" distincte du pont pharmacie ci-dessus. Côté
     // Awards, ce jeton ne crée jamais de session ni de jeton personnel invité : rien
     // n'est modifiable depuis cet écran, pas seulement des boutons grisés.
+    // Corrigé le 23/10/2026 (audit) : on transmet désormais aussi le nom de la
+    // pharmacie et l'identité connue du titulaire (même source que le pont
+    // pharmacie ci-dessus) — sans ça, Awards ne pouvait rien afficher pour une
+    // pharmacie qui n'a jamais encore ouvert son propre espace (404 bloquant) ;
+    // avec ces champs, Awards peut construire un aperçu lisible même sans fiche.
     if (url.pathname === "/api/awards-link-preview" && request.method === "GET") {
       const admin = requireAuth(request, response, ["soguasphar_admin"]);
       if (!admin) return;
@@ -2681,8 +2686,18 @@ const server = http.createServer(async (request, response) => {
         sendJson(response, 404, { error: "Pharmacie introuvable." });
         return;
       }
+      const titulaireAccount = readUsers().find(
+        (item) => item.role === "pharmacy_admin" && String(item.pharmacyId) === String(pharmacy.id)
+      );
       const token = signShortAwardsToken(
-        { type: "pharmacy_preview", login: pharmacy.id, aud: "awards_preview" },
+        {
+          type: "pharmacy_preview",
+          login: pharmacy.id,
+          name: pharmacy.name,
+          titulaireFirstName: titulaireAccount ? titulaireAccount.firstName || "" : "",
+          titulaireLastName: titulaireAccount ? titulaireAccount.lastName || "" : "",
+          aud: "awards_preview",
+        },
         60
       );
       sendJson(response, 200, { url: `${AWARDS_BASE_URL}/invite?pt=${token}` });
