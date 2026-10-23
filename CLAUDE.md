@@ -348,6 +348,32 @@ avant de publier la donnée qui en dépend** (ici la précommande a été mise e
 jours avant que quiconque ne remarque que le code manquait).
 
 ## Pièges connus
+- **23/10/2026 : les 4 routes d'enregistrement d'une réponse pharmacie
+  (`POST /api/responses` commande, `/api/poll-responses` sondage,
+  `/api/info-responses` document, `/api/validation-responses` validation BAT)
+  n'exigeaient AUCUNE session — elles faisaient confiance au `pharmacyId` envoyé
+  dans le corps de la requête par le navigateur.** Concrètement : une requête
+  sans aucune connexion était acceptée, et une pharmacie connectée pouvait (en
+  modifiant la requête, pas par l'écran normal) écrire sous l'identifiant d'une
+  autre pharmacie. Corrigé par une nouvelle fonction `requirePharmacyWriteSession()`
+  (server.js, juste après `requireSamePharmacy`) : exige une vraie session
+  pharmacie (`PHARMACY_SESSION_ROLES` — jamais un compte `soguasphar_admin`, donc
+  aussi jamais l'« aperçu administrateur », qui n'est qu'un marqueur côté écran,
+  pas une vraie session pharmacie) et impose le `pharmacyId`/`pharmacyName` de
+  CETTE session sur l'enregistrement, en écrasant systématiquement toute valeur
+  envoyée par le client. Testé sur la copie de test (comptes de test jetables,
+  jamais de vraies pharmacies) : requête sans session → 401 ; pharmacie A visant
+  l'identifiant de la pharmacie B → acceptée mais enregistrée sous l'identifiant
+  réel de A (jamais sous celui de B) ; jeton de session falsifié → 401 ; compte
+  admin → 403 ; connexions normales des deux pharmacies de test → inchangées.
+  Aucun identifiant, mot de passe, compte ni écran de connexion modifié ; durée
+  des sessions inchangée. Publié directement (pas de copie de test active pour
+  ce dépôt, voir « Comment on travaille » plus haut), vérifié ensuite en
+  production (page de connexion OK, les 4 routes refusent bien une requête sans
+  session). **Si une 5ᵉ route d'enregistrement de réponse pharmacie est ajoutée
+  un jour, reprendre `requirePharmacyWriteSession()` dès son écriture — ne
+  jamais faire confiance à un `pharmacyId` envoyé par le client pour une
+  écriture.**
 - **23/10/2026 (audit après mise en prod) : aperçu admin SOGUASPHAR Awards bloquant pour
   42/44 pharmacies + 2 fiches de test réelles trouvées en base Awards (AZAR, BAMBOU
   VERT).** Cause 1 : `GET /api/awards-link-preview` ne transmettait QUE l'identifiant
