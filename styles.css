@@ -2635,6 +2635,42 @@ textarea:focus {
   font-weight: 800;
 }
 
+/* Pré-cadencier : plusieurs colonnes de quantité (LIV1-4) + une colonne total
+   calculée tiennent plus serré qu'une colonne "Quantité" unique, sinon elles
+   prennent toute la largeur disponible et écrasent les colonnes de texte
+   (désignation, code produit) jusqu'à les faire passer à un caractère par
+   ligne. */
+.order-table .quantity-sub-input,
+.order-table .row-total-input {
+  width: 100px;
+  min-width: 100px;
+}
+
+.order-table .row-total-input {
+  background: var(--soft);
+  font-weight: 800;
+}
+
+.delivery-dates-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.delivery-date-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+}
+
+.delivery-date-field input[type="date"] {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #b8c8c2;
+}
+
 .product-quantity.is-invalid {
   border-color: #dc2626;
   background: #fff7f7;

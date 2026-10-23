@@ -1709,7 +1709,13 @@ function buildDispatchWorkbookHtml(responses) {
     });
   });
 
-  const headings = ["Date", "Modifié le", "Pharmacie", "Statut", ...productColumns, "Quantité", "Commentaire"];
+  // Pré-cadencier : si des réponses ont des dates de livraison, on ajoute
+  // autant de colonnes "Date livraison N" que le maximum rencontré (vide pour
+  // les opérations classiques, qui n'en ont jamais).
+  const deliveryDatesCount = rows.reduce((max, row) => Math.max(max, (row.deliveryDates || []).length), 0);
+  const deliveryDateHeadings = Array.from({ length: deliveryDatesCount }, (_, index) => `Date livraison ${index + 1}`);
+
+  const headings = ["Date", "Modifié le", "Pharmacie", "Statut", ...productColumns, "Quantité", ...deliveryDateHeadings, "Commentaire"];
   const bodyRows = rows.map((row) => `
     <tr>
       <td>${escapeHtml(row.createdAt)}</td>
@@ -1718,6 +1724,7 @@ function buildDispatchWorkbookHtml(responses) {
       <td>${escapeHtml(row.interest)}</td>
       ${productColumns.map((column) => `<td>${escapeHtml(row.values[column] || "")}</td>`).join("")}
       <td>${escapeHtml(row.quantity)}</td>
+      ${deliveryDateHeadings.map((_, index) => `<td>${escapeHtml((row.deliveryDates || [])[index] || "")}</td>`).join("")}
       <td>${escapeHtml(row.notes)}</td>
     </tr>
   `).join("");
@@ -2654,6 +2661,34 @@ const server = http.createServer(async (request, response) => {
       return;
     }
 
+    // Pont SSO vers SOGUASPHAR Awards EN APERÇU ADMINISTRATEUR, lecture seule
+    // (23/10/2026, demande d'Hélène) : réservé à un VRAI compte soguasphar_admin
+    // (jamais une pharmacie, même nouveau système) — on signe un jeton très court
+    // (60s) qui ne contient QUE l'identifiant de la pharmacie à consulter, avec une
+    // audience dédiée "awards_preview" distincte du pont pharmacie ci-dessus. Côté
+    // Awards, ce jeton ne crée jamais de session ni de jeton personnel invité : rien
+    // n'est modifiable depuis cet écran, pas seulement des boutons grisés.
+    if (url.pathname === "/api/awards-link-preview" && request.method === "GET") {
+      const admin = requireAuth(request, response, ["soguasphar_admin"]);
+      if (!admin) return;
+      if (!AWARDS_SSO_SECRET) {
+        sendJson(response, 500, { error: "Pont SOGUASPHAR Awards non configuré (secret manquant)." });
+        return;
+      }
+      const pharmacyId = url.searchParams.get("pharmacyId") || "";
+      const pharmacy = readPharmacies().find((item) => item.id === pharmacyId);
+      if (!pharmacy) {
+        sendJson(response, 404, { error: "Pharmacie introuvable." });
+        return;
+      }
+      const token = signShortAwardsToken(
+        { type: "pharmacy_preview", login: pharmacy.id, aud: "awards_preview" },
+        60
+      );
+      sendJson(response, 200, { url: `${AWARDS_BASE_URL}/invite?pt=${token}` });
+      return;
+    }
+
     if (url.pathname === "/api/auth/me" && request.method === "GET") {
       const principal = getAuthenticatedPrincipal(request);
       if (!principal) {
@@ -3506,6 +3541,11 @@ const server = http.createServer(async (request, response) => {
         pharmacyName: String(payload.pharmacyName || "").trim(),
         interest: String(payload.interest || "").trim(),
         products,
+        // Pré-cadencier : dates de livraison souhaitées (facultatif, absent pour
+        // toutes les opérations classiques).
+        deliveryDates: Array.isArray(payload.deliveryDates)
+          ? payload.deliveryDates.map((date) => String(date || "").trim())
+          : [],
         notes: String(payload.notes || "").trim()
       };
       const pharmacies = readPharmacies();

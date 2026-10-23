@@ -444,6 +444,12 @@
           <div id="mixedDiscountSummary" class="mixed-discount-summary" hidden></div>
         </section>
 
+        <section id="deliveryDatesSection" class="question-block" hidden>
+          <span class="field-title">Dates de livraison souhaitées</span>
+          <p>Indiquez la date à laquelle vous souhaitez recevoir chaque livraison.</p>
+          <div id="deliveryDatesFields" class="delivery-dates-grid"></div>
+        </section>
+
         <section class="question-block">
           <label for="notes">Commentaire ou demande particulière</label>
           <textarea id="notes" name="notes" rows="4" placeholder="Précision de livraison, préférence, contrainte, autre demande..."></textarea>
@@ -1412,6 +1418,7 @@
         <h2 id="awardsModalTitle">🏆 SOGUASPHAR Awards</h2>
         <button id="awardsModalClose" class="image-preview-close" type="button" aria-label="Fermer et revenir à Préco">X</button>
       </div>
+      <p id="awardsModalPreviewNote" class="status-message" role="status" hidden>Aperçu administrateur — lecture seule, rien n'est envoyé ni enregistré.</p>
       <p id="awardsModalError" class="status-message" role="status" hidden></p>
       <iframe id="awardsModalFrame" title="SOGUASPHAR Awards" src="about:blank"></iframe>
       <button id="awardsModalCloseBtn" class="primary-btn" type="button">← Retour à Préco</button>

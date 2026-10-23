@@ -312,6 +312,41 @@ juste après dans `app.js`) chargeant la fiche invité de l'app **SOGUASPHAR Awa
   app.js server.js index.html styles.css docker-compose.yml` dans ce dossier (travail non
   commité au moment du déploiement) puis `sudo appctl rebuild preco`.**
 
+## Pré-cadencier (ex: Roche Diabète 2027) — code manquant en prod réparé le 23/10/2026
+L'opération « Pré-cadencier Roche Diabète 2027 » (9 produits, colonnes `Qantités LIV 1`
+à `Qantités LIV 4` + `total  unités annuelles` dans `data/orders.json`) avait été
+**publiée sur le site en ligne le 19/10/2026 sans le code qui sait afficher/traiter ce
+type de colonnes** : le code correspondant n'avait été développé et validé que dans
+`soguasphar-preco-test`, jamais commité/porté en prod (contrairement à l'habitude —
+voir la section « Comment on travaille », abandonnée depuis le 13/10 au profit d'une
+modif directe en prod). Résultat signalé par Hélène le 23/10/2026 : les pharmacies ne
+pouvaient pas saisir une quantité par livraison ni leur date de livraison souhaitée.
+**Corrigé** en portant depuis `soguasphar-preco-test` UNIQUEMENT ce qui concerne le
+pré-cadencier (le reste de la copie de test avait divergé avec d'autres chantiers —
+attestation 2027, Awards — déjà portés séparément en prod à leur époque, donc pas
+touché) :
+- Détection par convention sur le nom de colonne (`app.js`, juste avant
+  `isPriceColumn`) : `isQuantitySubColumn()` (colonne `LIV <n>`) et
+  `isComputedTotalColumn()` (colonne `total ... annuel`) — aucune configuration à
+  stocker, n'affecte aucune autre opération.
+- `renderOrderTemplate()` : une colonne `LIV n` devient un champ de saisie
+  (`.quantity-sub-input`), la colonne `Total annuel` devient un champ calculé en
+  lecture seule (`.row-total-input`, classe `recomputeRowTotal()`) qui remplace la
+  colonne « Quantité » générique le temps qu'il reste masqué/affiché.
+- Section « Dates de livraison souhaitées » (`#deliveryDatesSection` dans
+  `index.html`, un champ date par colonne LIV) affichée sous le tableau, saisie
+  envoyée dans `response.deliveryDates` (`server.js`, route `POST /api/responses`) et
+  reprise à l'export (`buildDispatchWorkbookHtml()`, colonnes « Date livraison N »).
+- CSS ajouté dans `styles.css` (largeur des colonnes LIV/total, grille des champs date).
+Vérifié avec Playwright en production (sans soumettre de vraie réponse) : les 4
+colonnes LIV sont saisissables, le total se recalcule en direct, la section dates de
+livraison s'affiche, aucune erreur JavaScript. **Si une autre opération « pré-cadencier »
+est créée un jour**, il suffit de nommer ses colonnes selon la même convention
+(`LIV <n>` / `Total ... annuel`) — rien à coder en plus. **Et surtout : la prochaine
+fois qu'un développement est validé sur `preco-test`, bien penser à le porter en prod
+avant de publier la donnée qui en dépend** (ici la précommande a été mise en ligne 4
+jours avant que quiconque ne remarque que le code manquait).
+
 ## Pièges connus
 - **19/10/2026 : relances pharmacies ET clôture auto jamais déclenchées en
   pratique (0 relance envoyée en 5 jours sur 44 pharmacies, repéré par

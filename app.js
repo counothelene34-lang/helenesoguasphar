@@ -94,6 +94,7 @@ const awardsModalFrame = document.querySelector("#awardsModalFrame");
 const awardsModalClose = document.querySelector("#awardsModalClose");
 const awardsModalCloseBtn = document.querySelector("#awardsModalCloseBtn");
 const awardsModalError = document.querySelector("#awardsModalError");
+const awardsModalPreviewNote = document.querySelector("#awardsModalPreviewNote");
 const viewPrecommandesBtn = document.querySelector("#viewPrecommandes");
 const viewSondagesBtn = document.querySelector("#viewSondages");
 const viewPendingDocumentsBtn = document.querySelector("#viewPendingDocuments");
@@ -229,6 +230,8 @@ const quantitySection = document.querySelector("#quantitySection");
 const orderMessage = document.querySelector("#orderMessage");
 const lineCount = document.querySelector("#lineCount");
 const mixedDiscountSummary = document.querySelector("#mixedDiscountSummary");
+const deliveryDatesSection = document.querySelector("#deliveryDatesSection");
+const deliveryDatesFields = document.querySelector("#deliveryDatesFields");
 const adminLogin = document.querySelector("#adminLogin");
 const adminPanel = document.querySelector(".admin-panel");
 const adminContent = document.querySelector("#adminContent");
@@ -3331,11 +3334,14 @@ function renderUserMenu() {
   }
 }
 
-// Espace SOGUASPHAR Awards pour la pharmacie (23/10/2026) — ouvre une fenêtre DANS
-// le site (même motif que l'aperçu PDF), avec un retour explicite vers Préco. Aucune
-// nouvelle identification : la pharmacie est déjà connectée ici, on demande juste au
-// serveur un lien à usage immédiat (jeton signé, 60s) qui l'amène directement sur SA
-// fiche invité côté Awards.
+// Espace SOGUASPHAR Awards (23/10/2026) — ouvre une fenêtre DANS le site (même
+// motif que l'aperçu PDF), avec un retour explicite vers Préco.
+// - Pharmacie vraiment connectée : aucune nouvelle identification, lien signé
+//   (60s) qui l'amène directement sur SA fiche invité côté Awards, modifiable.
+// - Administratrice en aperçu "voir comme pharmacie" (complété le 23/10/2026) :
+//   un lien DIFFÉRENT (/api/awards-link-preview), qui ouvre la même fiche mais en
+//   lecture seule côté Awards (aucun jeton personnel transmis, donc aucune
+//   écriture possible depuis cet écran).
 async function openAwardsSpace() {
   if (!awardsModal || !awardsModalFrame) return;
   awardsModalFrame.src = "about:blank";
@@ -3343,8 +3349,13 @@ async function openAwardsSpace() {
   awardsModal.hidden = false;
   document.body.classList.add("modal-open");
   awardsModalClose?.focus();
+  const previewMode = isAdminPreviewMode();
+  if (awardsModalPreviewNote) awardsModalPreviewNote.hidden = !previewMode;
   try {
-    const data = await requestJson("/api/awards-link");
+    const endpoint = previewMode
+      ? `/api/awards-link-preview?pharmacyId=${encodeURIComponent(currentPharmacy.id)}`
+      : "/api/awards-link";
+    const data = await requestJson(endpoint);
     awardsModalFrame.src = data.url;
   } catch (error) {
     if (awardsModalError) {
@@ -3568,10 +3579,17 @@ function renderPharmacyAccess() {
     : "";
   if (logoutPharmacyBtn) logoutPharmacyBtn.hidden = isNewSystemPharmacy;
 
-  // SOGUASPHAR Awards (23/10/2026) : visible seulement pour une vraie pharmacie
-  // connectée (pas une administratrice, pas un aperçu "voir comme pharmacie" en
-  // lecture seule) — le pont SSO identifie la pharmacie elle-même, pas une admin.
-  if (awardsPromoBlock) awardsPromoBlock.hidden = !(isNewSystemPharmacy && !isAdminPreviewMode());
+  // SOGUASPHAR Awards (23/10/2026, complété le 23/10/2026 pour l'aperçu admin) :
+  // visible pour une vraie pharmacie connectée (pont SSO vers SA propre fiche,
+  // lecture/écriture jusqu'à la clôture) ET pour une administratrice en aperçu
+  // "voir comme pharmacie" (pont SSO dédié vers la MÊME fiche, mais strictement
+  // lecture seule côté Awards — voir /api/awards-link-preview et
+  // /api/preview/pharmacy côté Awards : aucun jeton personnel n'est jamais transmis
+  // dans ce cas, donc aucune écriture n'est possible, pas seulement des boutons
+  // grisés).
+  if (awardsPromoBlock) {
+    awardsPromoBlock.hidden = !((isNewSystemPharmacy && !isAdminPreviewMode()) || isAdminPreviewMode());
+  }
 
   // Sélecteur "Voir comme pharmacie" : seulement pour une administratrice
   // SOGUASPHAR qui n'a pas encore choisi de pharmacie à prévisualiser (une
@@ -6060,6 +6078,30 @@ function isFillableColumn(column) {
   return /à remplir|a remplir/i.test(column || "");
 }
 
+// Pré-cadencier (ex: Roche Diabète 2027) : une colonne "LIV 1"/"LIV2"/... est une
+// quantité que la pharmacie saisit elle-même pour UNE livraison parmi plusieurs
+// dans l'année (contrairement à la colonne "Quantité" unique des précommandes
+// classiques). Détectée par convention sur le nom de colonne, sans configuration
+// supplémentaire à stocker : aucune autre opération n'est donc affectée.
+function isQuantitySubColumn(column) {
+  return /\bliv\s*\d+\b/i.test(column || "");
+}
+
+// La colonne "Total annuel" (ou "Total ... unités annuelles") d'un pré-cadencier
+// remplace la colonne "Quantité" habituelle : elle se calcule toute seule
+// (somme des colonnes LIV) et n'est jamais modifiable à la main.
+function isComputedTotalColumn(column) {
+  return /total.*annuel/i.test(column || "");
+}
+
+function quantitySubColumnsOf(columns) {
+  return (columns || []).filter(isQuantitySubColumn);
+}
+
+function computedTotalColumnOf(columns) {
+  return (columns || []).find(isComputedTotalColumn) || null;
+}
+
 // Une colonne "prix" (Prix unitaire, Tarif, PU...) doit afficher le symbole € après
 // la valeur, sans toucher à la valeur enregistrée (utile pour l'import/export).
 function isPriceColumn(column) {
@@ -6096,8 +6138,29 @@ function renderOrderTemplate() {
   const columns = currentOrderTemplate.columns || [];
   lineCount.textContent = `${rows.length} ligne${rows.length > 1 ? "s" : ""}`;
 
-  if (orderTableHeadRow) orderTableHeadRow.innerHTML = orderColumnsHeadRowMarkup(columns, true);
-  if (orderTemplateHeadRow) orderTemplateHeadRow.innerHTML = orderColumnsHeadRowMarkup(columns, false);
+  // Pré-cadencier : si une colonne "Total ... annuel" est présente, elle sert
+  // de colonne Quantité (calculée, pas la peine d'en rajouter une à la suite).
+  const totalColumn = computedTotalColumnOf(columns);
+  const quantityColumns = quantitySubColumnsOf(columns);
+  const withQuantity = !totalColumn;
+
+  if (orderTableHeadRow) orderTableHeadRow.innerHTML = orderColumnsHeadRowMarkup(columns, withQuantity);
+  if (orderTemplateHeadRow) orderTemplateHeadRow.innerHTML = orderColumnsHeadRowMarkup(columns, withQuantity);
+
+  if (deliveryDatesSection && deliveryDatesFields) {
+    if (quantityColumns.length) {
+      deliveryDatesSection.hidden = false;
+      deliveryDatesFields.innerHTML = quantityColumns.map((column, index) => `
+        <label class="delivery-date-field">
+          <span>Date souhaitée — ${escapeHtml(column.trim())}</span>
+          <input type="date" class="delivery-date-input" data-index="${index}">
+        </label>
+      `).join("");
+    } else {
+      deliveryDatesSection.hidden = true;
+      deliveryDatesFields.innerHTML = "";
+    }
+  }
 
   if (!rows.length) {
     orderMessage.style.display = "block";
@@ -6113,9 +6176,43 @@ function renderOrderTemplate() {
       : 0;
     return `
     <tr class="order-row" data-line-id="${escapeHtml(item.id)}">
-      ${columns.map((column) => isFillableColumn(column)
-        ? `<td><textarea class="product-fillable-info" rows="2" data-id="${escapeHtml(item.id)}" data-column="${escapeHtml(column)}" aria-label="${escapeHtml(column)}">${escapeHtml(item.values?.[column] || "")}</textarea></td>`
-        : `<td>${escapeHtml(displayColumnValue(column, item.values?.[column]))}</td>`).join("")}
+      ${columns.map((column) => {
+        if (column === totalColumn) {
+          return `<td>
+            <input
+              type="number"
+              class="product-quantity row-total-input"
+              min="0"
+              step="1"
+              readonly
+              tabindex="-1"
+              data-id="${escapeHtml(item.id)}"
+              data-min-colisage="${escapeHtml(colisageMinimum)}"
+              aria-label="${escapeHtml(column)} pour ${escapeHtml(productDisplayLabel(item.values))}"
+            >
+          </td>`;
+        }
+        if (isQuantitySubColumn(column)) {
+          return `<td>
+            <input
+              type="number"
+              class="product-fillable-info quantity-sub-input"
+              min="0"
+              step="1"
+              inputmode="numeric"
+              data-id="${escapeHtml(item.id)}"
+              data-column="${escapeHtml(column)}"
+              aria-label="${escapeHtml(column)} pour ${escapeHtml(productDisplayLabel(item.values))}"
+              value="${escapeHtml(item.values?.[column] || "")}"
+            >
+          </td>`;
+        }
+        if (isFillableColumn(column)) {
+          return `<td><textarea class="product-fillable-info" rows="2" data-id="${escapeHtml(item.id)}" data-column="${escapeHtml(column)}" aria-label="${escapeHtml(column)}">${escapeHtml(item.values?.[column] || "")}</textarea></td>`;
+        }
+        return `<td>${escapeHtml(displayColumnValue(column, item.values?.[column]))}</td>`;
+      }).join("")}
+      ${withQuantity ? `
       <td>
         <input
           type="number"
@@ -6127,7 +6224,7 @@ function renderOrderTemplate() {
           data-min-colisage="${escapeHtml(colisageMinimum)}"
           aria-label="Quantité pour ${escapeHtml(productDisplayLabel(item.values))}"
         >
-      </td>
+      </td>` : ""}
     </tr>
   `;
   }).join("");
@@ -6138,7 +6235,23 @@ function renderOrderTemplate() {
     </tr>
   `).join("");
 
+  if (totalColumn) {
+    rows.forEach((item) => recomputeRowTotal(item.id));
+  }
+
   renderMixedDiscountSummary();
+}
+
+// Recalcule, pour une ligne de produit d'un pré-cadencier, le total annuel
+// (somme des colonnes "LIV 1"..."LIV 4" saisies par la pharmacie) et le pose
+// dans la case "Total annuel" (readonly, jamais modifiée à la main).
+function recomputeRowTotal(rowId) {
+  const totalInput = productRows?.querySelector(`.row-total-input[data-id="${CSS.escape(rowId)}"]`);
+  if (!totalInput) return;
+  const sum = [...productRows.querySelectorAll(`.quantity-sub-input[data-id="${CSS.escape(rowId)}"]`)]
+    .reduce((total, input) => total + (Number(String(input.value || "").replace(",", ".")) || 0), 0);
+  totalInput.value = sum > 0 ? String(sum) : "";
+  validateQuantityInput(totalInput);
 }
 
 // Récupère, pour une ligne donnée, les colonnes "à remplir" que la pharmacie a
@@ -6195,6 +6308,14 @@ function prefillCampaignResponse(response) {
     if (savedValues && savedValues[textarea.dataset.column] !== undefined) {
       textarea.value = savedValues[textarea.dataset.column] || "";
     }
+  });
+
+  // Pré-cadencier : recalcule les totaux annuels après avoir restauré les
+  // quantités LIV1-4 saisies précédemment, et restaure les dates de livraison.
+  (currentOrderTemplate.rows || []).forEach((templateRow) => recomputeRowTotal(templateRow.id));
+  (response.deliveryDates || []).forEach((date, index) => {
+    const input = document.querySelector(`.delivery-date-input[data-index="${index}"]`);
+    if (input) input.value = date || "";
   });
 
   renderMixedDiscountSummary();
@@ -6293,6 +6414,12 @@ function resetQuantities() {
     input.value = "";
     input.setCustomValidity("");
     input.classList.remove("is-invalid");
+  });
+  document.querySelectorAll(".quantity-sub-input").forEach((input) => {
+    input.value = "";
+  });
+  document.querySelectorAll(".delivery-date-input").forEach((input) => {
+    input.value = "";
   });
   renderMixedDiscountSummary();
 }
@@ -7144,12 +7271,22 @@ document.querySelectorAll('input[name="interest"]').forEach((input) => {
 });
 
 productRows?.addEventListener("input", (event) => {
+  const subInput = event.target.closest(".quantity-sub-input");
+  if (subInput) {
+    recomputeRowTotal(subInput.dataset.id);
+    renderMixedDiscountSummary();
+  }
   const input = event.target.closest(".product-quantity");
   if (input) validateQuantityInput(input);
   if (event.target.closest(".product-quantity")) renderMixedDiscountSummary();
 });
 
 productRows?.addEventListener("change", (event) => {
+  const subInput = event.target.closest(".quantity-sub-input");
+  if (subInput) {
+    recomputeRowTotal(subInput.dataset.id);
+    renderMixedDiscountSummary();
+  }
   const input = event.target.closest(".product-quantity");
   if (input) validateQuantityInput(input);
   if (event.target.closest(".product-quantity")) renderMixedDiscountSummary();
@@ -9184,6 +9321,13 @@ form.addEventListener("submit", async (event) => {
     }
   }
 
+  // Pré-cadencier : dates de livraison souhaitées (une par colonne LIV, ex: 4),
+  // saisies en dehors du tableau de produits. Tableau vide pour une opération
+  // classique (section cachée, aucun input .delivery-date-input dans le DOM).
+  const deliveryDates = [...document.querySelectorAll(".delivery-date-input")]
+    .sort((a, b) => Number(a.dataset.index) - Number(b.dataset.index))
+    .map((input) => input.value);
+
   const existingResponse = pharmacyCampaignResponses[selectedCampaign.id];
   const now = new Date().toLocaleString("fr-FR");
   const response = {
@@ -9197,6 +9341,7 @@ form.addEventListener("submit", async (event) => {
     pharmacyName,
     interest,
     products: interest === "Pas intéressé" ? [] : collectProducts(),
+    deliveryDates: interest === "Pas intéressé" ? [] : deliveryDates,
     notes: String(formData.get("notes") || "").trim()
   };
 
