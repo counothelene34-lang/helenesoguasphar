@@ -723,6 +723,25 @@ function requireSamePharmacy(user, pharmacyId) {
   return Boolean(user.pharmacyId) && String(user.pharmacyId) === String(pharmacyId);
 }
 
+// Sécurité (23/10/2026) : à utiliser sur toute route qui ENREGISTRE une
+// réponse de pharmacie (commande, sondage, document, validation). Exige une
+// vraie session pharmacie (jamais un soguasphar_admin — y compris en "aperçu
+// administrateur" côté écran, qui n'est qu'un marqueur client, jamais une
+// vraie session pharmacie) et renvoie l'identifiant de pharmacie AUTHENTIQUE
+// de la session — à utiliser à la place de tout `pharmacyId` envoyé par le
+// navigateur dans le corps de la requête, qui ne doit jamais servir de preuve
+// d'autorisation. Envoie elle-même 401/403 si refusé (même convention que
+// requireAuth) ; renvoie null dans ce cas, l'utilisateur sinon.
+function requirePharmacyWriteSession(request, response) {
+  const user = requireAuth(request, response, PHARMACY_SESSION_ROLES);
+  if (!user) return null;
+  if (!user.pharmacyId) {
+    sendJson(response, 403, { error: "Accès refusé" });
+    return null;
+  }
+  return user;
+}
+
 loadSessions();
 
 // --- Protection anti-brute-force -------------------------------------------
@@ -3535,6 +3554,8 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/responses" && request.method === "POST") {
+      const user = requirePharmacyWriteSession(request, response);
+      if (!user) return;
       const payload = JSON.parse(await readBody(request));
       const responses = readResponses();
       const campaignId = String(payload.campaignId || "herboristerie");
@@ -3552,7 +3573,9 @@ const server = http.createServer(async (request, response) => {
         periodId: String(payload.periodId || "").trim(),
         createdAt: String(payload.createdAt || new Date().toLocaleString("fr-FR")),
         updatedAt: String(payload.updatedAt || ""),
-        pharmacyId: String(payload.pharmacyId || "").trim(),
+        // Jamais le pharmacyId envoyé par le navigateur (sécurité, 23/10/2026) :
+        // toujours celui de la session en cours, seule preuve d'autorisation fiable.
+        pharmacyId: user.pharmacyId,
         pharmacyName: String(payload.pharmacyName || "").trim(),
         interest: String(payload.interest || "").trim(),
         products,
@@ -3564,6 +3587,11 @@ const server = http.createServer(async (request, response) => {
         notes: String(payload.notes || "").trim()
       };
       const pharmacies = readPharmacies();
+      // Le nom affiché suit aussi la pharmacie réelle de la session (pas celui
+      // envoyé par le client) — purement pour éviter un étiquetage trompeur,
+      // l'identifiant (déjà forcé ci-dessus) est la seule clé de sécurité.
+      const ownPharmacyForResponse = pharmacies.find((item) => item.id === user.pharmacyId);
+      if (ownPharmacyForResponse?.name) incoming.pharmacyName = ownPharmacyForResponse.name;
       const existing = responses.find((item) => responseOwnerKey(item, pharmacies) === responseOwnerKey(incoming, pharmacies));
       const now = new Date().toLocaleString("fr-FR");
       const savedResponse = {
@@ -3580,6 +3608,8 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/poll-responses" && request.method === "POST") {
+      const user = requirePharmacyWriteSession(request, response);
+      if (!user) return;
       const payload = JSON.parse(await readBody(request));
       const responses = readPollResponses();
       const poll = readPolls().find((item) => item.id === String(payload.pollId || ""));
@@ -3591,13 +3621,16 @@ const server = http.createServer(async (request, response) => {
         pollQuestion: String(payload.pollQuestion || "").trim(),
         createdAt: String(payload.createdAt || new Date().toLocaleString("fr-FR")),
         updatedAt: String(payload.updatedAt || ""),
-        pharmacyId: String(payload.pharmacyId || "").trim(),
+        // Jamais le pharmacyId envoyé par le navigateur (sécurité, 23/10/2026).
+        pharmacyId: user.pharmacyId,
         pharmacyName: String(payload.pharmacyName || "").trim(),
         answer: recomputedAnswer || String(payload.answer || "").trim(),
         answers: cleanedAnswers,
         freeText: String(payload.freeText || "").trim()
       };
       const pharmacies = readPharmacies();
+      const ownPharmacyForPoll = pharmacies.find((item) => item.id === user.pharmacyId);
+      if (ownPharmacyForPoll?.name) incoming.pharmacyName = ownPharmacyForPoll.name;
       const existing = responses.find((item) => pollResponseOwnerKey(item, pharmacies) === pollResponseOwnerKey(incoming, pharmacies));
       const now = new Date().toLocaleString("fr-FR");
       const savedResponse = {
@@ -3614,10 +3647,16 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/info-responses" && request.method === "POST") {
+      const user = requirePharmacyWriteSession(request, response);
+      if (!user) return;
       const payload = JSON.parse(await readBody(request));
       const responses = readInfoResponses();
       const incoming = normalizeInfoResponse(payload);
+      // Jamais le pharmacyId envoyé par le navigateur (sécurité, 23/10/2026).
+      incoming.pharmacyId = user.pharmacyId;
       const pharmacies = readPharmacies();
+      const ownPharmacyForInfo = pharmacies.find((item) => item.id === user.pharmacyId);
+      if (ownPharmacyForInfo?.name) incoming.pharmacyName = ownPharmacyForInfo.name;
       const existing = responses.find((item) => infoResponseOwnerKey(item, pharmacies) === infoResponseOwnerKey(incoming, pharmacies));
       const now = new Date().toLocaleString("fr-FR");
       const savedResponse = {
@@ -3634,10 +3673,16 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/validation-responses" && request.method === "POST") {
+      const user = requirePharmacyWriteSession(request, response);
+      if (!user) return;
       const payload = JSON.parse(await readBody(request));
       const responses = readValidationResponses();
       const incoming = normalizeValidationResponse(payload);
+      // Jamais le pharmacyId envoyé par le navigateur (sécurité, 23/10/2026).
+      incoming.pharmacyId = user.pharmacyId;
       const pharmacies = readPharmacies();
+      const ownPharmacyForValidation = pharmacies.find((item) => item.id === user.pharmacyId);
+      if (ownPharmacyForValidation?.name) incoming.pharmacyName = ownPharmacyForValidation.name;
       const existing = responses.find((item) => validationResponseOwnerKey(item, pharmacies) === validationResponseOwnerKey(incoming, pharmacies));
       const now = new Date().toLocaleString("fr-FR");
       const savedResponse = {
