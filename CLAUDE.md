@@ -347,6 +347,52 @@ fois qu'un développement est validé sur `preco-test`, bien penser à le porter
 avant de publier la donnée qui en dépend** (ici la précommande a été mise en ligne 4
 jours avant que quiconque ne remarque que le code manquait).
 
+**23/10/2026 (suite, même jour) : détail admin et export Excel réparés.** La saisie
+elle-même (ci-dessus) enregistrait déjà correctement les 4 quantités LIV et les dates
+par livraison dans `data/responses.json` (`product.values["Qantités LIV n"]`,
+`response.deliveryDates[]`) — vérifié sur la réponse réelle de DU CENTRE (LANCETTES
+FAST 20+20+20+20=80, TEST GUIDE 50+50+40+40=180, K7 MOBILE 20+10+10+10=50, SET GUIDE
+3+3+2+2=10, KIT MOBILE 3+2+(vide)+1=6, dates 01/03, 01/06, 01/09, 01/12/2027), donc
+**aucune donnée n'a jamais été perdue**. Le bug était seulement à l'AFFICHAGE/EXPORT
+admin, qui n'avait jamais été adapté à ce nouveau format :
+- Tableau « Détail des commandes » (`renderAdmin()`, app.js) : la cellule produit
+  n'affichait que `product.quantity` (le total annuel), jamais le détail par
+  livraison. Corrigé par `precadencierProductDetailMarkup()` (app.js, juste après
+  `computedTotalColumnOf()`) : affiche produit + code ACL + les 4 quantités LIV avec
+  leur date souhaitée + total annuel, uniquement si l'opération a des colonnes
+  `LIV n` (`quantitySubColumnsOf(currentOrderTemplate.columns)` — n'affecte aucune
+  autre opération). Une réponse enregistrée AVANT ce développement n'a aucune valeur
+  dans les colonnes LIV : affiche explicitement « Répartition non renseignée » à côté
+  du total annuel déjà connu, jamais une répartition inventée.
+- « Récap des quantités » (`renderQuantitySummary()`) : les colonnes LIV affichaient
+  la valeur brute d'UNE SEULE réponse (la dernière rencontrée) au lieu de la somme de
+  toutes les pharmacies sur cette livraison — corrigé en sommant par colonne
+  (`row.subTotals`), répercuté aussi dans ses exports PDF et Excel
+  (`quantitySummaryCellValue()`).
+- Bouton « Exporter Excel » du détail (`exportExcelBtn` → `exportToExcel()`) :
+  jusqu'ici une redirection vers `/api/export.xls` (tableau HTML déguisé en `.xls` —
+  fonctionnait, mais Excel affiche un avertissement "format ne correspond pas à
+  l'extension" à l'ouverture, lu comme "l'export ne marche pas"). Pour une opération
+  pré-cadencier UNIQUEMENT, `exportPrecadencierToExcel()` (app.js, juste avant
+  `exportToExcel()`) génère désormais un vrai classeur `.xlsx` dans le navigateur
+  avec la bibliothèque déjà chargée pour "Récap des quantités" (`globalThis.XLSX`,
+  CDN, zéro dépendance ajoutée) : feuille « Détail » (pharmacie, statut, produit,
+  code ACL **en texte** — jamais converti en nombre, 4×(quantité LIV + vraie date
+  Excel), total annuel, commentaire) et feuille « Récapitulatif » (sommes par
+  produit et par livraison + total annuel). Respecte la période/filtre affiché à
+  l'écran (mêmes fonctions `responseMatchesCampaign`/`responseMatchesAdminPeriod`
+  que le tableau). Les opérations classiques gardent EXACTEMENT l'export
+  précédent, inchangé.
+- Vérifié en production (compte admin jetable créé puis supprimé dans
+  `data/users.json`/`data/sessions.json`, sauvegarde avant dans `data-backups/`,
+  aucune vraie commande touchée) avec Playwright : tableau détail de DU CENTRE
+  conforme pharmacie par pharmacie, fichier `.xlsx` réellement téléchargé et
+  rouvert (openpyxl) — quantités de type numérique, dates de type date Excel,
+  code ACL de type texte, KIT MOBILE LIV3 bien `None` (jamais `0`), Récapitulatif
+  exact (ex. LANCETTES FAST total 173 sur toutes les pharmacies). **Si un nouveau
+  pré-cadencier a un jour un autre nom de colonne LIV, pas de risque : tout est
+  dérivé dynamiquement de `quantitySubColumnsOf(columns)`, rien à reconfigurer.**
+
 ## Pièges connus
 - **23/10/2026 : les 4 routes d'enregistrement d'une réponse pharmacie
   (`POST /api/responses` commande, `/api/poll-responses` sondage,

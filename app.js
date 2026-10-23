@@ -6112,6 +6112,31 @@ function computedTotalColumnOf(columns) {
   return (columns || []).find(isComputedTotalColumn) || null;
 }
 
+// Détail par livraison (LIV1-4 + date souhaitée) d'une ligne de produit d'un
+// pré-cadencier, pour le tableau admin des réponses (corrigé le 23/10/2026 : avant,
+// seul le total annuel s'affichait). Une réponse enregistrée AVANT l'ajout de ce
+// détail par livraison n'a AUCUNE valeur dans les colonnes "LIV n" (`item.values`
+// n'a jamais eu ces clés remplies, faute d'écran pour les saisir à l'époque) :
+// on l'indique explicitement plutôt que d'inventer une répartition ou un 0.
+function precadencierProductDetailMarkup(item, response, quantityColumns) {
+  const acl = item.values?.["CODE ACL"] ?? item.values?.["Code ACL"] ?? "";
+  const label = `<strong>${escapeHtml(productDisplayLabel(item.values))}</strong>${acl ? ` — ACL ${escapeHtml(acl)}` : ""}`;
+  const hasAnyDetail = quantityColumns.some((column) => {
+    const raw = item.values?.[column];
+    return raw !== undefined && String(raw).trim() !== "";
+  });
+  if (!hasAnyDetail) {
+    return `${label}<br><span class="muted">Répartition non renseignée</span><br>Total annuel : ${escapeHtml(item.quantity || "0")}`;
+  }
+  const livLines = quantityColumns.map((column, index) => {
+    const raw = item.values?.[column];
+    const qtyText = raw === undefined || String(raw).trim() === "" ? "non renseigné" : escapeHtml(String(raw).trim());
+    const date = (response.deliveryDates || [])[index];
+    return `${escapeHtml(column.trim())} : ${qtyText}${date ? ` — souhaité le ${escapeHtml(formatDateFr(date))}` : ""}`;
+  }).join("<br>");
+  return `${label}<br>${livLines}<br>Total annuel : ${escapeHtml(item.quantity || "0")}`;
+}
+
 // Une colonne "prix" (Prix unitaire, Tarif, PU...) doit afficher le symbole € après
 // la valeur, sans toucher à la valeur enregistrée (utile pour l'import/export).
 function isPriceColumn(column) {
@@ -6474,12 +6499,15 @@ async function renderAdmin() {
     return;
   }
 
+  const quantityColumns = quantitySubColumnsOf(currentOrderTemplate.columns);
   responsesTable.innerHTML = responses
     .slice()
     .reverse()
     .map((response) => {
       const products = response.products.length
-        ? response.products.map((item) => `${escapeHtml(productDisplayLabel(item.values))} : ${escapeHtml(item.quantity || "0")}`).join("<br>")
+        ? response.products.map((item) => quantityColumns.length
+            ? precadencierProductDetailMarkup(item, response, quantityColumns)
+            : `${escapeHtml(productDisplayLabel(item.values))} : ${escapeHtml(item.quantity || "0")}`).join("<br><br>")
         : "-";
 
       const modifiedLabel = response.updatedAt
@@ -6508,6 +6536,12 @@ let lastQuantitySummary = { columns: [], rows: [] };
 
 function renderQuantitySummary(responses = []) {
   const columns = currentOrderTemplate.columns || [];
+  // Pré-cadencier : une colonne "LIV n" doit sommer, pour chaque produit, les
+  // quantités de TOUTES les pharmacies sur CETTE livraison (corrigé le 23/10/2026 ;
+  // avant, la colonne affichait juste la valeur brute d'une seule réponse, sans
+  // rapport avec le total réellement commandé sur cette livraison). N'a aucun
+  // effet sur une opération classique (aucune colonne ne correspond à "LIV n").
+  const quantityColumns = quantitySubColumnsOf(columns);
   if (quantitySummaryHeadRow) quantitySummaryHeadRow.innerHTML = orderColumnsHeadRowMarkup(columns, false) + '<th>Quantité totale</th>';
 
   const totals = new Map();
@@ -6518,16 +6552,23 @@ function renderQuantitySummary(responses = []) {
       const existing = totals.get(key) || {
         values: product.values || {},
         label: productDisplayLabel(product.values),
-        quantity: 0
+        quantity: 0,
+        subTotals: {}
       };
 
       existing.quantity += Number(String(product.quantity || "0").replace(",", ".")) || 0;
+      quantityColumns.forEach((column) => {
+        const raw = product.values?.[column];
+        if (raw !== undefined && String(raw).trim() !== "") {
+          existing.subTotals[column] = (existing.subTotals[column] || 0) + (Number(String(raw).replace(",", ".")) || 0);
+        }
+      });
       totals.set(key, existing);
     });
   });
 
   const rows = [...totals.values()].filter((row) => row.quantity > 0).sort((a, b) => a.label.localeCompare(b.label, "fr"));
-  lastQuantitySummary = { columns, rows };
+  lastQuantitySummary = { columns, rows, quantityColumns };
   const colspan = Math.max(columns.length + 1, 1);
   if (!rows.length) {
     quantitySummaryTable.innerHTML = `<tr><td colspan="${colspan}" class="empty-state">Aucune quantité commandée pour le moment.</td></tr>`;
@@ -6537,11 +6578,24 @@ function renderQuantitySummary(responses = []) {
   quantitySummaryTable.innerHTML = rows
     .map((row) => `
       <tr>
-        ${columns.map((column) => `<td>${escapeHtml(displayColumnValue(column, row.values[column]))}</td>`).join("")}
+        ${columns.map((column) => isQuantitySubColumn(column)
+          ? `<td>${row.subTotals[column] !== undefined ? escapeHtml(String(row.subTotals[column])) : ""}</td>`
+          : `<td>${escapeHtml(displayColumnValue(column, row.values[column]))}</td>`).join("")}
         <td><strong>${escapeHtml(row.quantity)}</strong></td>
       </tr>
     `)
     .join("");
+}
+
+// Valeur à afficher/exporter pour une colonne du "Récap des quantités" : une
+// colonne "LIV n" (pré-cadencier) montre la somme déjà calculée dans
+// renderQuantitySummary() (row.subTotals), jamais la valeur brute d'une seule
+// réponse — sinon export et écran se contrediraient.
+function quantitySummaryCellValue(row, column) {
+  if (isQuantitySubColumn(column)) {
+    return row.subTotals && row.subTotals[column] !== undefined ? String(row.subTotals[column]) : "";
+  }
+  return String(row.values[column] || "");
 }
 
 function exportQuantitySummaryToPdf() {
@@ -6575,7 +6629,7 @@ function exportQuantitySummaryToPdf() {
 
   const head = [[...columns, "Quantité totale"]];
   const body = rows.map((row) => [
-    ...columns.map((column) => String(row.values[column] || "")),
+    ...columns.map((column) => quantitySummaryCellValue(row, column)),
     String(row.quantity)
   ]);
 
@@ -6607,7 +6661,7 @@ function exportQuantitySummaryToExcel() {
 
   const header = [...columns, "Quantité totale"];
   const data = rows.map((row) => [
-    ...columns.map((column) => row.values[column] || ""),
+    ...columns.map((column) => quantitySummaryCellValue(row, column)),
     row.quantity
   ]);
 
@@ -7135,7 +7189,119 @@ function exportBatToExcel() {
   adminMessage.textContent = "Export Excel des validations généré.";
 }
 
+// Pré-cadencier (ex: Roche Diabète 2027) — corrigé le 23/10/2026. L'ancien export
+// de ce bouton (redirection vers /api/export.xls, qui génère un tableau HTML
+// déguisé en .xls) ne distinguait jamais les 4 livraisons ni leurs dates, et son
+// format "faux .xls" fait parfois croire à un export cassé une fois ouvert dans
+// Excel. Pour une opération de ce type UNIQUEMENT (détectée par la présence de
+// colonnes "LIV n"), on génère ici un vrai classeur .xlsx (2 feuilles) directement
+// dans le navigateur avec la bibliothèque déjà chargée pour "Récap des quantités"
+// (globalThis.XLSX, CDN) — aucune autre opération n'est concernée.
+async function exportPrecadencierToExcel(quantityColumns) {
+  if (!globalThis.XLSX) {
+    alert("L'export Excel n'a pas pu se charger. Vérifiez votre connexion puis réessayez.");
+    return;
+  }
+
+  const responses = (await getResponses())
+    .filter((item) => responseMatchesCampaign(item, selectedAdminCampaign))
+    .filter(responseMatchesAdminPeriod);
+
+  if (!responses.length) {
+    alert("Aucune donnée à exporter pour cette période.");
+    return;
+  }
+
+  const isoToExcelDate = (iso) => {
+    if (!iso) return "";
+    const date = new Date(`${iso}T00:00:00`);
+    return Number.isNaN(date.getTime()) ? "" : date;
+  };
+  // Nombre si une quantité a réellement été saisie, chaîne vide sinon — une
+  // livraison jamais remplie ne doit jamais devenir un 0 confirmé.
+  const numOrBlank = (raw) => (raw === undefined || String(raw).trim() === "" ? "" : (Number(String(raw).replace(",", ".")) || 0));
+
+  const detailHeader = ["Pharmacie", "Statut", "Produit", "Code ACL",
+    ...quantityColumns.flatMap((column) => [column.trim(), `Date souhaitée — ${column.trim()}`]),
+    "Total annuel", "Commentaire"];
+  const detailRows = [detailHeader];
+
+  responses.forEach((response) => {
+    const dates = response.deliveryDates || [];
+    const items = response.products && response.products.length ? response.products : [null];
+    items.forEach((item) => {
+      if (!item) {
+        detailRows.push([response.pharmacyName, response.interest, "", "", ...quantityColumns.flatMap(() => ["", ""]), "", response.notes || ""]);
+        return;
+      }
+      const acl = String(item.values?.["CODE ACL"] ?? item.values?.["Code ACL"] ?? "");
+      const row = [response.pharmacyName, response.interest, productDisplayLabel(item.values), acl];
+      quantityColumns.forEach((column, index) => {
+        row.push(numOrBlank(item.values?.[column]));
+        row.push(isoToExcelDate(dates[index]));
+      });
+      row.push(numOrBlank(item.quantity));
+      row.push(response.notes || "");
+      detailRows.push(row);
+    });
+  });
+
+  // Récapitulatif : sommes par produit et par livraison, puis total annuel —
+  // même agrégation que renderQuantitySummary() (écran "Récap des quantités").
+  const totals = new Map();
+  responses.forEach((response) => {
+    (response.products || []).forEach((item) => {
+      const key = String(item.rowId || productDisplayLabel(item.values));
+      const existing = totals.get(key) || {
+        label: productDisplayLabel(item.values),
+        acl: String(item.values?.["CODE ACL"] ?? item.values?.["Code ACL"] ?? ""),
+        subTotals: quantityColumns.map(() => 0),
+        hasSub: quantityColumns.map(() => false),
+        total: 0
+      };
+      quantityColumns.forEach((column, index) => {
+        const raw = item.values?.[column];
+        if (raw !== undefined && String(raw).trim() !== "") {
+          existing.subTotals[index] += Number(String(raw).replace(",", ".")) || 0;
+          existing.hasSub[index] = true;
+        }
+      });
+      existing.total += Number(String(item.quantity || "0").replace(",", ".")) || 0;
+      totals.set(key, existing);
+    });
+  });
+
+  const summaryHeader = ["Produit", "Code ACL", ...quantityColumns.map((column) => column.trim()), "Total annuel"];
+  const summaryRows = [summaryHeader];
+  [...totals.values()]
+    .filter((row) => row.total > 0)
+    .sort((a, b) => a.label.localeCompare(b.label, "fr"))
+    .forEach((row) => {
+      summaryRows.push([
+        row.label,
+        row.acl,
+        ...row.subTotals.map((value, index) => (row.hasSub[index] ? value : "")),
+        row.total
+      ]);
+    });
+
+  const workbook = globalThis.XLSX.utils.book_new();
+  globalThis.XLSX.utils.book_append_sheet(workbook, globalThis.XLSX.utils.aoa_to_sheet(detailRows), "Détail");
+  globalThis.XLSX.utils.book_append_sheet(workbook, globalThis.XLSX.utils.aoa_to_sheet(summaryRows), "Récapitulatif");
+
+  const campaignSlug = (selectedAdminCampaign?.id || "precadencier").toString();
+  const datePart = new Date().toISOString().slice(0, 10);
+  globalThis.XLSX.writeFile(workbook, `${campaignSlug}-${datePart}.xlsx`);
+  adminMessage.textContent = "Export Excel généré.";
+}
+
 async function exportToExcel() {
+  const quantityColumns = quantitySubColumnsOf(currentOrderTemplate.columns);
+  if (quantityColumns.length) {
+    await exportPrecadencierToExcel(quantityColumns);
+    return;
+  }
+
   if (API_AVAILABLE && adminUnlocked && selectedAdminCampaign) {
     const periodParam = selectedAdminPeriodId ? `&period=${encodeURIComponent(selectedAdminPeriodId)}` : "";
     window.location.href = `/api/export.xls?code=${encodeURIComponent(ADMIN_CODE)}&campaign=${encodeURIComponent(selectedAdminCampaign.id)}${periodParam}`;
