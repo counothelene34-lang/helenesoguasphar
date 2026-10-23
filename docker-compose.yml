@@ -13,6 +13,8 @@ services:
       MAILER_API_KEY: ${MAILER_API_KEY}
       CONNECTORS_URL: ${CONNECTORS_URL:-http://sogua-connectors:8090}
       CONNECTORS_API_KEY: ${CONNECTORS_API_KEY}
+      AWARDS_SSO_SECRET: ${AWARDS_SSO_SECRET}
+      AWARDS_BASE_URL: ${AWARDS_BASE_URL:-https://apps.soguasphar.fr/awards}
       ARCHIVE_NOTIFY_EMAILS: ${ARCHIVE_NOTIFY_EMAILS}
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-https://preco.soguasphar.fr}
       ENABLE_AUTO_REMINDERS: ${ENABLE_AUTO_REMINDERS:-false}

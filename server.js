@@ -25,6 +25,32 @@ const MAILER_API_KEY = process.env.MAILER_API_KEY || "";
 const CONNECTORS_URL = process.env.CONNECTORS_URL || "http://sogua-connectors:8090";
 const CONNECTORS_API_KEY = process.env.CONNECTORS_API_KEY || "";
 
+// Pont SSO vers SOGUASPHAR Awards (23/10/2026, vérifié en TEST puis mis en ligne) :
+// secret PARTAGÉ avec l'app Awards (même valeur dans son .env, "AWARDS_SSO_SECRET").
+// Sert à signer un jeton très court (60s) que la pharmacie déjà connectée peut
+// échanger côté Awards contre sa fiche invité, sans aucune nouvelle identification.
+// Si la clé manque, le bouton "SOGUASPHAR Awards" reste proposé mais la route renvoie
+// une erreur claire plutôt que de planter.
+const AWARDS_SSO_SECRET = process.env.AWARDS_SSO_SECRET || "";
+const AWARDS_BASE_URL = process.env.AWARDS_BASE_URL || "https://apps.soguasphar.fr/awards";
+
+function base64url(input) {
+  return Buffer.from(input).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+// JWT HS256 signé à la main (pas de dépendance npm dans ce projet, voir CLAUDE.md
+// "Node.js pur, sans dépendance") — format standard, vérifiable par `jsonwebtoken`
+// côté Awards sans rien de spécial à son bout. `expiresInSeconds` reste très court
+// (60s) : ce jeton ne sert qu'à un aller immédiat, jamais stocké ni réutilisé.
+function signShortAwardsToken(payload, expiresInSeconds) {
+  const header = base64url(JSON.stringify({ alg: "HS256", typ: "JWT" }));
+  const now = Math.floor(Date.now() / 1000);
+  const body = base64url(JSON.stringify({ ...payload, iat: now, exp: now + expiresInSeconds }));
+  const signature = crypto.createHmac("sha256", AWARDS_SSO_SECRET).update(`${header}.${body}`).digest("base64")
+    .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  return `${header}.${body}.${signature}`;
+}
+
 async function htmlToPdf(html) {
   if (!CONNECTORS_API_KEY) {
     throw new Error("CONNECTORS_API_KEY manquant dans .env : génération de PDF impossible");
@@ -2583,6 +2609,48 @@ const server = http.createServer(async (request, response) => {
       destroySession(cookies[SESSION_COOKIE_NAME]);
       clearSessionCookie(response);
       sendJson(response, 200, { ok: true });
+      return;
+    }
+
+    // Pont SSO vers SOGUASPHAR Awards (23/10/2026) : la pharmacie est déjà connectée
+    // ici (cookie de session Préco) — on signe juste un jeton court avec son
+    // identifiant stable (pharmacyId) et son nom, qu'elle échange immédiatement côté
+    // Awards contre sa fiche invité. Jamais de nouveau mot de passe, jamais de code,
+    // jamais l'identifiant nu dans l'URL (toujours signé + très court).
+    if (url.pathname === "/api/awards-link" && request.method === "GET") {
+      const principal = getAuthenticatedPrincipal(request);
+      if (!principal || !principal.pharmacyId) {
+        sendJson(response, 403, { error: "Réservé aux comptes pharmacie." });
+        return;
+      }
+      if (!AWARDS_SSO_SECRET) {
+        sendJson(response, 500, { error: "Pont SOGUASPHAR Awards non configuré (secret manquant)." });
+        return;
+      }
+      const pharmacy = readPharmacies().find((item) => item.id === principal.pharmacyId);
+      if (!pharmacy) {
+        sendJson(response, 404, { error: "Pharmacie introuvable." });
+        return;
+      }
+      // Identité réelle du titulaire : prise sur le compte pharmacy_admin de CETTE
+      // pharmacie (donnée fiable Préco), jamais déduite du nom commercial de la
+      // pharmacie — transmise à Awards pour préremplir sa fiche "Présence du
+      // titulaire" sans jamais inventer un nom.
+      const titulaireAccount = readUsers().find(
+        (item) => item.role === "pharmacy_admin" && String(item.pharmacyId) === String(pharmacy.id)
+      );
+      const token = signShortAwardsToken(
+        {
+          type: "pharmacy",
+          login: pharmacy.id,
+          name: pharmacy.name,
+          titulaireFirstName: titulaireAccount ? titulaireAccount.firstName || "" : "",
+          titulaireLastName: titulaireAccount ? titulaireAccount.lastName || "" : "",
+          aud: "awards",
+        },
+        60
+      );
+      sendJson(response, 200, { url: `${AWARDS_BASE_URL}/api/auth/sso-link-pharmacy?token=${token}` });
       return;
     }
 

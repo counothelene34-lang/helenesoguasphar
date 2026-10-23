@@ -87,6 +87,13 @@ const heroActionsRow = document.querySelector(".hero-actions-row");
 const heroBand = document.querySelector(".hero-band");
 const campaignPicker = document.querySelector("#campaignPicker");
 const campaignCards = document.querySelector("#campaignCards");
+const viewAwardsBtn = document.querySelector("#viewAwards");
+const awardsPromoBlock = document.querySelector("#awardsPromoBlock");
+const awardsModal = document.querySelector("#awardsModal");
+const awardsModalFrame = document.querySelector("#awardsModalFrame");
+const awardsModalClose = document.querySelector("#awardsModalClose");
+const awardsModalCloseBtn = document.querySelector("#awardsModalCloseBtn");
+const awardsModalError = document.querySelector("#awardsModalError");
 const viewPrecommandesBtn = document.querySelector("#viewPrecommandes");
 const viewSondagesBtn = document.querySelector("#viewSondages");
 const viewPendingDocumentsBtn = document.querySelector("#viewPendingDocuments");
@@ -3324,6 +3331,46 @@ function renderUserMenu() {
   }
 }
 
+// Espace SOGUASPHAR Awards pour la pharmacie (23/10/2026) — ouvre une fenêtre DANS
+// le site (même motif que l'aperçu PDF), avec un retour explicite vers Préco. Aucune
+// nouvelle identification : la pharmacie est déjà connectée ici, on demande juste au
+// serveur un lien à usage immédiat (jeton signé, 60s) qui l'amène directement sur SA
+// fiche invité côté Awards.
+async function openAwardsSpace() {
+  if (!awardsModal || !awardsModalFrame) return;
+  awardsModalFrame.src = "about:blank";
+  if (awardsModalError) awardsModalError.hidden = true;
+  awardsModal.hidden = false;
+  document.body.classList.add("modal-open");
+  awardsModalClose?.focus();
+  try {
+    const data = await requestJson("/api/awards-link");
+    awardsModalFrame.src = data.url;
+  } catch (error) {
+    if (awardsModalError) {
+      awardsModalError.hidden = false;
+      awardsModalError.textContent = error.message || "Impossible d'ouvrir SOGUASPHAR Awards pour le moment.";
+    }
+  }
+}
+
+function closeAwardsSpace() {
+  if (!awardsModal || awardsModal.hidden) return;
+  awardsModal.hidden = true;
+  awardsModalFrame.src = "about:blank";
+  document.body.classList.remove("modal-open");
+}
+
+viewAwardsBtn?.addEventListener("click", openAwardsSpace);
+awardsModalClose?.addEventListener("click", closeAwardsSpace);
+awardsModalCloseBtn?.addEventListener("click", closeAwardsSpace);
+awardsModal?.addEventListener("click", (event) => {
+  if (event.target.closest("[data-close-awards]")) closeAwardsSpace();
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && awardsModal && !awardsModal.hidden) closeAwardsSpace();
+});
+
 // --- Fenêtre "Mon équipe" ---------------------------------------------------
 // Un titulaire (pharmacy_admin) peut créer, réinitialiser le mot de passe de,
 // désactiver ou supprimer des comptes collaborateurs de sa propre pharmacie.
@@ -3520,6 +3567,11 @@ function renderPharmacyAccess() {
     ? `Connecté : ${isNewSystemPharmacy ? formatUserFullName(currentUser) : currentPharmacy.name}${isAdminPreviewMode() ? " (aperçu administrateur, lecture seule)" : ""}`
     : "";
   if (logoutPharmacyBtn) logoutPharmacyBtn.hidden = isNewSystemPharmacy;
+
+  // SOGUASPHAR Awards (23/10/2026) : visible seulement pour une vraie pharmacie
+  // connectée (pas une administratrice, pas un aperçu "voir comme pharmacie" en
+  // lecture seule) — le pont SSO identifie la pharmacie elle-même, pas une admin.
+  if (awardsPromoBlock) awardsPromoBlock.hidden = !(isNewSystemPharmacy && !isAdminPreviewMode());
 
   // Sélecteur "Voir comme pharmacie" : seulement pour une administratrice
   // SOGUASPHAR qui n'a pas encore choisi de pharmacie à prévisualiser (une

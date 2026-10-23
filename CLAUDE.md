@@ -238,6 +238,80 @@ une vraie clôture automatique :
   **Toujours préciser `from`/`fromName` explicitement dans tout nouvel appel à
   `sendMail()`, ne jamais compter sur le défaut.**
 
+## Espace SOGUASPHAR Awards pour les pharmacies — EN LIGNE depuis le 23/10/2026
+Nouveau bouton menu pharmacie « 🏆 SOGUASPHAR Awards » (`#viewAwards`, hero-menu), ouvre une
+fenêtre DANS le site (modale `#awardsModal`/iframe `#awardsModalFrame`, même motif que
+`openPdfPreview()`/`closePdfPreview()` — fonctions `openAwardsSpace()`/`closeAwardsSpace()`,
+juste après dans `app.js`) chargeant la fiche invité de l'app **SOGUASPHAR Awards**
+(`/opt/apps/soguasphar-awards`), sans aucune nouvelle identification pour la pharmacie.
+- **Pont SSO** : route `GET /api/awards-link` (server.js, juste après `/api/auth/me`) —
+  réservée aux comptes pharmacie connectés (`getAuthenticatedPrincipal().pharmacyId`), signe
+  un JWT HS256 **fait à la main** (`signShortAwardsToken()`, juste après les constantes en
+  tête de fichier — ce projet est volontairement sans dépendance npm, donc pas de lib
+  `jsonwebtoken` ; le format produit est un vrai JWT standard, vérifiable tel quel côté Awards
+  avec `jsonwebtoken`, testé par vérification croisée) contenant
+  `{type:"pharmacy", login:pharmacyId, name, aud:"awards"}`, expirant en **60 secondes**
+  (jeton d'échange immédiat, jamais stocké). Secret partagé `AWARDS_SSO_SECRET` (même valeur
+  que le `.env` d'Awards), présent dans `.env` et `docker-compose.yml` des DEUX dossiers
+  (`soguasphar-preco-test` ET `soguasphar-preco`, production).
+- Côté Awards, nouvelle route `GET /api/auth/sso-link-pharmacy` (server.js, juste avant
+  `/api/auth/logout`) vérifie ce JWT, retrouve ou crée la fiche « guest » (table `guests`,
+  `type='pharmacy'`) de façon stable par `login` (index unique partiel
+  `guests_pharmacy_login_idx`, upsert atomique — jamais de doublon même en cas de double-clic),
+  génère son jeton personnel pérenne (`access_token`, même mécanisme que les liens labo/
+  partenaire) si absent, puis redirige vers `/awards/invite?t=<token>` — **toujours avec le
+  préfixe `/awards` dans le `Location` d'une vraie redirection HTTP** (contrairement au champ
+  JSON `redirect` du portail labo, consommé en JS côté client qui est déjà sous `/awards/...`).
+- **CSP `frame-ancestors`** côté Awards (`server.js`) inclut désormais `https://preco.soguasphar.fr`
+  EN PLUS de `https://soguaspilot.soguasphar.fr` (ajouté le 23/10/2026 pour la mise en prod) —
+  `preco-test` n'en a pas besoin séparément (même origine `apps.soguasphar.fr` que Awards).
+- **Piège rencontré et corrigé le 23/10/2026, à la mise en prod** : le logo affiché dans le bloc
+  (`<img src="https://apps.soguasphar.fr/awards/award-logo.png">`) ne se chargeait pas depuis
+  `preco.soguasphar.fr` (`ERR_BLOCKED_BY_RESPONSE.NotSameOrigin`) — invisible en TEST car
+  `preco-test` et `awards` partagent la même origine (`apps.soguasphar.fr`), donc jamais
+  déclenché là-bas. Cause : helmet pose par défaut `Cross-Origin-Resource-Policy: same-origin`
+  sur TOUTES les réponses d'Awards, qui bloque le chargement d'une image par une page d'une
+  AUTRE origine (`preco.soguasphar.fr` est un domaine différent d'`apps.soguasphar.fr`).
+  Corrigé côté Awards (`server.js`, config `helmet(...)`) avec
+  `crossOriginResourcePolicy: { policy: "cross-origin" }`. **Si un jour une autre ressource
+  statique d'Awards doit être chargée depuis une page d'une origine différente (logo, image...),
+  ce réglage couvre déjà tous les cas — rien à refaire.**
+- Bouton visible uniquement pour une vraie session pharmacie (`isNewSystemPharmacy`), jamais
+  pour une administratrice ni en mode « voir comme pharmacie » (aperçu lecture seule).
+- **Vérifié le 23/10/2026** (Playwright, 2 comptes pharmacie de test créés dans
+  `data/users.json` de `preco-test` — `test-awards-azar@soguasphar.fr` / `test-awards-bamb@
+  soguasphar.fr`, mot de passe `TestAwards2026!`, sauvegarde de `users.json` faite avant dans
+  `data-backups/`) : ouverture directe sans nouvelle connexion, chaque pharmacie voit SA
+  propre fiche (noms différents, jamais mélangés), présence/vote/Soguas'talks s'enregistrent
+  chacun indépendamment et persistent après rechargement, les deux fiches apparaissent bien
+  dans l'admin Awards (`type='pharmacy'`), isolation stricte vérifiée (jetons distincts et non
+  devinables, jamais transmis en clair — un identifiant/nom seul dans l'URL n'aurait jamais
+  suffi), rendu correct en desktop et mobile (iframe redimensionnée
+  `.awards-preview-dialog`/`#awardsModalFrame`, styles.css).
+- **Mise en production le 23/10/2026** : les mêmes changements (serveur + écran) ont été portés
+  à la main dans `/opt/apps/soguasphar-preco` (PAS via `appctl publier preco`, qui aurait écrasé
+  ces modifications avec l'ancienne copie de test — `preco-test` a divergé entre-temps avec
+  d'autres chantiers non liés, pré-cadencier notamment, à ne jamais porter en prod avec ceci).
+  Déployé par `sudo appctl rebuild preco` (reconstruction directe du dossier prod, pas un
+  `publier`). Revue de sécurité ciblée faite avant publication (jeton 60s à usage immédiat,
+  signature HMAC vérifiée côté Awards avec `jsonwebtoken`, `pharmacyId` toujours tiré de la
+  session serveur jamais d'un paramètre client, aucune route admin sans contrôle d'auth) :
+  aucun point bloquant, juste `AWARDS_SSO_SECRET` à copier dans le `.env` prod (fait).
+  Vérifié en production par des contrôles non destructifs (jamais de connexion avec un vrai
+  identifiant pharmacie, pour ne toucher aucune donnée réelle) : page d'accueil et écran de
+  connexion intacts (agent `verificateur`), route `/api/awards-link` refuse bien sans session
+  pharmacie (403, testé sans cookie et avec un cookie invalide, jamais de 500), CSP et en-tête
+  anti-blocage d'image vérifiés en direct sur `https://apps.soguasphar.fr/awards/` depuis
+  l'extérieur. Le parcours complet pharmacie (ouverture réelle de la modale, vote, Soguas'talks)
+  n'a pas été rejoué avec un vrai compte en production (pour ne créer aucune fausse donnée ni
+  usurper une vraie pharmacie) — il repose sur le fait que c'est EXACTEMENT le même code que
+  celui déjà vérifié de bout en bout sur `preco-test` (2 comptes dédiés, voir ci-dessus), à
+  l'exception du secret/domaine (revérifiés identiques/corrects) et du correctif CORP
+  ci-dessus (propre à la prod, maintenant corrigé et revérifié). **Si un souci apparaît malgré
+  tout une fois de vraies pharmacies connectées, revenir en arrière avec `git checkout --
+  app.js server.js index.html styles.css docker-compose.yml` dans ce dossier (travail non
+  commité au moment du déploiement) puis `sudo appctl rebuild preco`.**
+
 ## Pièges connus
 - **19/10/2026 : relances pharmacies ET clôture auto jamais déclenchées en
   pratique (0 relance envoyée en 5 jours sur 44 pharmacies, repéré par

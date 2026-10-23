@@ -16,7 +16,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20261012-comptes-equipe-2">
+  <link rel="stylesheet" href="styles.css?v=20261023-awards-bloc">
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js" defer></script>
@@ -188,6 +188,14 @@
           <button id="viewArchives" class="hero-menu-btn" type="button">
             <span class="hero-menu-label">Archivés</span>
           </button>
+        </div>
+        <div id="awardsPromoBlock" class="awards-promo-block" hidden>
+          <img class="awards-promo-logo" src="https://apps.soguasphar.fr/awards/award-logo.png?v=20261023" alt="SOGUASPHAR Awards" />
+          <div class="awards-promo-text">
+            <div class="awards-promo-title">SOGUASPHAR Awards</div>
+            <div class="awards-promo-sub">Confirmez votre présence et votez pour vos partenaires</div>
+          </div>
+          <button id="viewAwards" class="awards-promo-btn" type="button">Accéder à mon espace</button>
         </div>
       </div>
       <section id="precommandandesListPage" class="form-shell campaign-list-page" hidden>
@@ -1397,6 +1405,19 @@
     </div>
   </div>
 
-  <script src="app.js?v=20261014-pdf-inline-attestation"></script>
+  <div id="awardsModal" class="image-preview-modal" role="dialog" aria-modal="true" aria-labelledby="awardsModalTitle" hidden>
+    <div class="image-preview-backdrop" data-close-awards></div>
+    <div class="image-preview-dialog awards-preview-dialog">
+      <div class="image-preview-head">
+        <h2 id="awardsModalTitle">🏆 SOGUASPHAR Awards</h2>
+        <button id="awardsModalClose" class="image-preview-close" type="button" aria-label="Fermer et revenir à Préco">X</button>
+      </div>
+      <p id="awardsModalError" class="status-message" role="status" hidden></p>
+      <iframe id="awardsModalFrame" title="SOGUASPHAR Awards" src="about:blank"></iframe>
+      <button id="awardsModalCloseBtn" class="primary-btn" type="button">← Retour à Préco</button>
+    </div>
+  </div>
+
+  <script src="app.js?v=20261023-awards-bloc"></script>
 </body>
 </html>
