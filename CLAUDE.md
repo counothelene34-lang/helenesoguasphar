@@ -12,6 +12,56 @@ d'informations, et **validations de documents** (ex. BAT calendriers 2027,
 attestation d'engagement 2027). Espace admin protégé par un code (`ADMIN_CODE`,
 défini côté serveur, jamais dans le code). Propriétaire : Hélène (partagée avec Chantal).
 
+## Sondages alignés sur les précommandes (clôture/relances/compte rendu) — 26/10/2026
+Les sondages fonctionnent désormais exactement comme les précommandes côté
+clôture, en réutilisant les mêmes mécanismes (fuseau centralisé
+`msUntilNextGuadeloupe8am()`, même créneau 8h heure Guadeloupe) :
+- **Date de clôture (`poll.endDate`)** : le champ existait déjà dans l'écran
+  admin (`#pollClosingDateEdit`) mais `PUT /api/polls` (server.js) ne le
+  conservait jamais — corrigé, avec aussi la préservation de
+  `remindersSent` (jamais écrasé par un enregistrement admin). Affichée à la
+  pharmacie (liste + formulaire, `pollCard()`) et à l'admin (même carte),
+  même classe CSS `.period-closing-info` que les précommandes.
+- **Clôture automatique** : `autoCloseExpiredPolls()` (server.js, juste après
+  `autoCloseExpiredCampaigns()`), même créneau quotidien + vérification
+  immédiate au démarrage. Ne concerne QUE les sondages avec une date
+  renseignée — aucune date n'est jamais devinée ni posée automatiquement.
+  **Les 5 sondages existants au 26/10/2026 n'ont aucune date** et restent
+  donc ouverts indéfiniment, comme avant.
+- **Blocage serveur après clôture** : `POST /api/poll-responses` refuse
+  désormais (403) toute réponse si `poll.closed` est vrai — avant cette date,
+  rien ne l'empêchait côté serveur (seul l'écran masquait le sondage fermé).
+- **Compte rendu de clôture** : `notifyPollClosed()` (server.js, calquée sur
+  `notifyCampaignClosed()`), déclenchée aussi bien par la clôture automatique
+  que par le clic admin "Clôturer" (`PUT /api/polls`, détection
+  `closed:false→true`). Va à **`helene.counot@soguasphar.com`** (pas
+  `ARCHIVE_NOTIFY_EMAILS`, propre aux précommandes), liste les pharmacies
+  n'ayant pas répondu dans le corps du mail, détail des réponses en pièce
+  jointe (réutilise `buildPollWorkbookHtml()`, extraite de `sendPollExcel()`
+  pour être réutilisable côté serveur). Expéditeur `ne_pas_repondre@...`
+  (même règle que pour les précommandes). Idempotent : aucun second envoi si
+  le sondage est déjà `closed` (testé par redémarrage répété sur TEST).
+- **Relances automatiques** : `checkReminders()` gérait déjà les sondages
+  exactement comme les précommandes (J-1, anti-doublon `remindersSent`,
+  exclusion de toute pharmacie ayant déjà répondu) — **aucune modification
+  nécessaire**, juste vérifié que ça fonctionne avec une vraie date une fois
+  le bug de persistance corrigé.
+- **Testé sur `preco-test`** (redémarrée pour l'occasion puis remise en pause
+  après) avec 2 sondages de test à date réelle (J-1 et déjà expiré, jamais de
+  date arbitraire sur les 5 sondages réels) et un faux service mailer
+  temporaire (conteneur `fake-mailer-test`, supprimé après coup) pour
+  n'envoyer aucun e-mail réel : relance J-1 bien reçue uniquement par les
+  pharmacies n'ayant pas répondu, clôture auto + compte rendu corrects
+  (répondants/non-répondants + pièce jointe), réponse après clôture refusée
+  (403), aucun doublon après redémarrage du conteneur (ni relance, ni compte
+  rendu), persistance de la date confirmée par un vrai aller-retour
+  `PUT`/`GET /api/polls`. Publié ensuite directement en prod (pas de données
+  touchées), vérifié par `verificateur` en ligne (aucune erreur JS, aucun
+  e-mail réel parti puisqu'aucun sondage réel n'a de date).
+- **Si un nouveau mécanisme de clôture programmée est ajouté un jour**
+  (nouveau type d'opération), reprendre ce même principe plutôt que
+  d'inventer une nouvelle logique de date/fuseau horaire.
+
 ## Attestation d'engagement SOGUASPHAR 2027 (lancée le 13/10/2026)
 Document de signature en ligne (44 pharmacies, SIREN/représentant pré-remplis,
 cotisation 3 000 €/1 500 €) fusionné dans la tuile **« Document en attente »**
