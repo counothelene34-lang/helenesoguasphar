@@ -5020,12 +5020,19 @@ function pollCard(poll, target) {
         ${escapeHtml(poll.attachmentLabel || "Voir le document")}
       </a>
     ` : "";
+    // Date de clôture visible par la pharmacie, même principe que
+    // ".period-closing-info" pour les précommandes (26/10/2026) — seulement
+    // si le sondage en a une (la plupart n'en ont pas et restent ouverts).
+    const pollClosingInfoMarkup = poll.endDate
+      ? `<p class="period-closing-info">Clôture du sondage le <strong>${escapeHtml(formatDateFr(poll.endDate))}</strong></p>`
+      : "";
     return `
       <article class="whatsapp-poll-card ${localAnswers ? "answered" : "is-open"}">
         <div class="whatsapp-poll-head">
           ${pollImage}
           <div class="whatsapp-poll-title">${escapeHtml(poll.question)}</div>
         </div>
+        ${pollClosingInfoMarkup}
         ${introMarkup}
         ${attachmentMarkup}
         ${localAnswers ? `
@@ -5049,6 +5056,12 @@ function pollCard(poll, target) {
   const pollStatusLabel = poll.draft
     ? "Brouillon"
     : (poll.category === "satisfaction" ? (poll.closed ? "Questionnaire de satisfaction clôturé" : "Questionnaire de satisfaction") : (poll.closed ? "Sondage clôturé" : "Sondage"));
+  // Même affichage que les précommandes côté admin : la date de clôture doit
+  // se voir directement dans la liste, pas seulement en ouvrant la fiche
+  // d'édition (26/10/2026).
+  const adminPollClosingInfoMarkup = poll.endDate
+    ? `<p class="period-closing-info">Clôture le <strong>${escapeHtml(formatDateFr(poll.endDate))}</strong></p>`
+    : "";
   return `
     <article class="campaign-card poll-card">
       ${adminPollImage}
@@ -5058,6 +5071,7 @@ function pollCard(poll, target) {
           <button class="delete-campaign-btn" type="button" title="Supprimer le sondage" aria-label="Supprimer le sondage ${escapeHtml(poll.question)}" data-delete-poll="${escapeHtml(poll.id)}">&#128465;</button>
         </div>
         <h3>${escapeHtml(poll.question)}</h3>
+        ${adminPollClosingInfoMarkup}
         <p>${escapeHtml(poll.freeTextLabel || "Réponse rapide en un clic.")}</p>
       </div>
       <div class="campaign-foot">
@@ -8162,7 +8176,16 @@ sondagesListRows?.addEventListener("submit", async (event) => {
     return;
   }
 
-  await savePollAnswer(poll, answers, pharmacyName, freeText);
+  try {
+    await savePollAnswer(poll, answers, pharmacyName, freeText);
+  } catch (error) {
+    // Cas rare : le sondage a été clôturé entre l'affichage et l'envoi
+    // (26/10/2026, même contrôle que côté serveur) — message clair plutôt
+    // qu'une erreur silencieuse.
+    if (message) message.textContent = error.message || "Ce sondage est clôturé, la réponse n'a pas pu être enregistrée.";
+    renderCampaignPickers();
+    return;
+  }
   selectedPoll = null;
   renderCampaignPickers();
   await renderPollResults();
@@ -8251,7 +8274,16 @@ pollCards.addEventListener("submit", async (event) => {
     return;
   }
 
-  await savePollAnswer(poll, answers, pharmacyName, freeText);
+  try {
+    await savePollAnswer(poll, answers, pharmacyName, freeText);
+  } catch (error) {
+    // Cas rare : le sondage a été clôturé entre l'affichage et l'envoi
+    // (26/10/2026, même contrôle que côté serveur) — message clair plutôt
+    // qu'une erreur silencieuse.
+    if (message) message.textContent = error.message || "Ce sondage est clôturé, la réponse n'a pas pu être enregistrée.";
+    renderCampaignPickers();
+    return;
+  }
   selectedPoll = null;
   renderCampaignPickers();
   await renderPollResults();

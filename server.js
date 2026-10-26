@@ -1873,6 +1873,80 @@ async function autoCloseExpiredCampaigns() {
   }
 }
 
+// Compte rendu de clôture d'un sondage — même principe que notifyCampaignClosed
+// (précommandes) : qui a répondu / qui n'a pas répondu, détail des réponses en
+// pièce jointe (réutilise buildPollWorkbookHtml, le même tableau que l'export
+// Excel manuel). Décidé par Hélène le 26/10/2026 : ce compte rendu va
+// directement à son adresse personnelle (pas à ARCHIVE_NOTIFY_EMAILS, propre
+// aux précommandes), car c'est elle qui suit les sondages au quotidien.
+const POLL_CLOSED_REPORT_TO = "helene.counot@soguasphar.com";
+
+async function notifyPollClosed(poll) {
+  const pharmacies = readPharmacies().filter((pharmacy) => pharmacy && pharmacy.active !== false);
+  const pollResponses = latestPollResponses(readPollResponses())
+    .filter((item) => String(item.pollId || "") === String(poll.id));
+  const respondedNames = new Set(pollResponses.map((item) => normalizeLookup(item.pharmacyName)));
+  const nonRespondents = pharmacies.filter((pharmacy) => !respondedNames.has(normalizeLookup(pharmacy.name)));
+  const nonRespondentsText = nonRespondents.length
+    ? nonRespondents.map((pharmacy) => pharmacy.name).join(", ")
+    : "Aucune — toutes les pharmacies actives ont répondu.";
+  const datePart = new Date().toISOString().slice(0, 10);
+  const workbookHtml = buildPollWorkbookHtml(pollResponses, poll);
+  await sendMail({
+    to: POLL_CLOSED_REPORT_TO,
+    subject: `Sondage clôturé : ${poll.question}`,
+    text: `Le sondage "${poll.question}" vient d'être clôturé sur Préco.\n\nRéponses reçues : ${pollResponses.length} sur ${pharmacies.length} pharmacie(s) active(s).\n\nPharmacies n'ayant pas répondu : ${nonRespondentsText}\n\nLe détail des réponses (par pharmacie) est en pièce jointe.`,
+    html: `<p>Le sondage <strong>${escapeHtml(poll.question)}</strong> vient d'être clôturé sur Préco.</p><p>Réponses reçues : <strong>${pollResponses.length}</strong> sur ${pharmacies.length} pharmacie(s) active(s).</p><p>Pharmacies n'ayant pas répondu : ${escapeHtml(nonRespondentsText)}</p><p>Le détail des réponses (par pharmacie) est en pièce jointe.</p>`,
+    // Même règle que pour les précommandes : ce récapitulatif n'attend aucune
+    // réponse, il ne doit jamais partir de helene.counot (qui serait le défaut
+    // de sendMail), même si c'est elle la destinataire.
+    from: "ne_pas_repondre@soguasphar.com",
+    fromName: "SOGUASPHAR",
+    attachments: [
+      { filename: `sondage-${poll.id}-${datePart}.xls`, content: workbookHtml }
+    ]
+  });
+}
+
+// --- Clôture automatique des sondages datés ---------------------------------
+// Même principe que autoCloseExpiredCampaigns ci-dessus (même créneau, même
+// garantie anti-doublon via poll.closed déjà posé), mais UNIQUEMENT pour les
+// sondages qui ont une date de clôture renseignée (poll.endDate) : la plupart
+// n'en ont aucune et restent ouverts indéfiniment, jusqu'à ce qu'une date soit
+// saisie ou qu'un admin clôture à la main — aucune date n'est jamais devinée
+// ou posée automatiquement ici (demande explicite d'Hélène le 26/10/2026).
+// Pas besoin d'un garde-fou "AUTO_CLOSE_START_DATE" équivalent : comme aucun
+// sondage existant n'a de date au moment de l'activation, il n'y a aucun
+// risque de clôture rétroactive en masse.
+async function autoCloseExpiredPolls() {
+  try {
+    const polls = readPolls();
+    let changed = false;
+    const justClosed = [];
+    for (const poll of polls) {
+      if (!poll || poll.draft || poll.closed) continue;
+      const closingDate = closingDateForPoll(poll);
+      if (!closingDate) continue;
+      const left = daysUntil(closingDate);
+      if (left === null || left >= 0) continue; // date pas encore passée
+      poll.closed = true;
+      changed = true;
+      justClosed.push(poll);
+    }
+    if (changed) writePolls(polls);
+    for (const poll of justClosed) {
+      try {
+        await notifyPollClosed(poll);
+        console.log(`[preco] sondage "${poll.question}" clôturé automatiquement (date dépassée), compte rendu envoyé.`);
+      } catch (error) {
+        console.error(`[preco] échec du compte rendu de clôture automatique pour le sondage "${poll.question}" :`, error.message);
+      }
+    }
+  } catch (error) {
+    console.error("[preco] erreur pendant la clôture automatique des sondages :", error);
+  }
+}
+
 // --- Relances automatiques par e-mail (précommandes et sondages) -----------
 // Chaque jour : si une pharmacie n'a pas répondu à une opération active dont la
 // clôture est prévue le LENDEMAIN (J-1, un seul rappel, jamais avant), on lui
@@ -2122,7 +2196,10 @@ function pollAnswerCellValue(row, question, questionList) {
   return "";
 }
 
-function sendPollExcel(response, responses, poll) {
+// Séparée de sendPollExcel pour pouvoir aussi générer ce tableau en pièce
+// jointe d'e-mail (clôture d'un sondage), sans passer par une réponse HTTP —
+// même principe que buildDispatchWorkbookHtml pour les précommandes.
+function buildPollWorkbookHtml(responses, poll) {
   const questionList = pollQuestionListMeta(poll);
   const multiQuestion = questionList.length > 1;
   const headings = [
@@ -2142,7 +2219,7 @@ function sendPollExcel(response, responses, poll) {
     </tr>
   `).join("");
 
-  const workbook = `
+  return `
     <html>
       <head><meta charset="utf-8"></head>
       <body>
@@ -2153,7 +2230,10 @@ function sendPollExcel(response, responses, poll) {
       </body>
     </html>
   `;
+}
 
+function sendPollExcel(response, responses, poll) {
+  const workbook = buildPollWorkbookHtml(responses, poll);
   response.writeHead(200, {
     "Content-Type": "application/vnd.ms-excel; charset=utf-8",
     "Content-Disposition": `attachment; filename="sondage-soguasphar-${new Date().toISOString().slice(0, 10)}.xls"`
@@ -3355,8 +3435,11 @@ const server = http.createServer(async (request, response) => {
         return;
       }
 
+      const previousPolls = readPolls();
       const payload = JSON.parse(await readBody(request));
       const polls = Array.isArray(payload) ? payload.map((poll) => {
+        const id = String(poll.id || Date.now());
+        const previous = previousPolls.find((item) => item.id === id);
         const questions = Array.isArray(poll.questions) ? poll.questions.map((question, index) => {
           const type = ["choix_unique", "choix_multiple", "texte_libre"].includes(question.type) ? question.type : "choix_unique";
           return {
@@ -3367,7 +3450,7 @@ const server = http.createServer(async (request, response) => {
           };
         }).filter((question) => question.type === "texte_libre" || question.options.length) : [];
         return {
-          id: String(poll.id || Date.now()),
+          id,
           question: String(poll.question || "Sondage").trim(),
           type: "Sondage",
           category: poll.category === "satisfaction" ? "satisfaction" : "sondage",
@@ -3377,11 +3460,38 @@ const server = http.createServer(async (request, response) => {
           freeTextRequired: Boolean(poll.freeTextRequired),
           imageData: String(poll.imageData || ""),
           draft: Boolean(poll.draft),
-          closed: Boolean(poll.closed)
+          closed: Boolean(poll.closed),
+          // Date de clôture (facultative) : champ existant côté écran admin
+          // (#pollClosingDateEdit) mais jusqu'ici jamais conservé par cette
+          // route — corrigé le 26/10/2026, sinon la date tapée par l'admin
+          // disparaissait au prochain enregistrement du sondage.
+          endDate: String(poll.endDate || "").trim(),
+          // Mémoire des relances déjà envoyées (checkReminders) : toujours
+          // reprise depuis la version déjà enregistrée côté serveur, jamais
+          // depuis ce que le navigateur renvoie — un enregistrement admin ne
+          // doit jamais effacer ni inventer cet historique.
+          remindersSent: (previous && previous.remindersSent && typeof previous.remindersSent === "object")
+            ? previous.remindersSent
+            : {}
         };
       }).filter((poll) => poll.question && (poll.options.length || poll.questions.length)) : [];
       writePolls(polls);
       sendJson(response, 200, polls);
+
+      // Sondages qui viennent tout juste de passer à "clôturé" (manuellement,
+      // via le bouton admin "Clôturer" — la clôture automatique par date passe
+      // par autoCloseExpiredPolls, pas par cette route) : même principe que
+      // pour les précommandes ci-dessus, compte rendu envoyé en tâche de fond,
+      // sans jamais faire échouer l'enregistrement du sondage.
+      const justClosedPolls = polls.filter((poll) => {
+        const previous = previousPolls.find((item) => item.id === poll.id);
+        return poll.closed && !(previous && previous.closed);
+      });
+      justClosedPolls.forEach((poll) => {
+        notifyPollClosed(poll).catch((error) => {
+          console.error(`[preco] échec du compte rendu de clôture pour le sondage "${poll.question}" :`, error.message);
+        });
+      });
       return;
     }
 
@@ -3613,6 +3723,15 @@ const server = http.createServer(async (request, response) => {
       const payload = JSON.parse(await readBody(request));
       const responses = readPollResponses();
       const poll = readPolls().find((item) => item.id === String(payload.pollId || ""));
+      // Blocage serveur d'une réponse à un sondage déjà clôturé (26/10/2026,
+      // même principe que le blocage côté interface qui masque déjà le
+      // sondage de la liste une fois fermé) : sans ce contrôle, une réponse
+      // envoyée après coup (onglet resté ouvert, requête rejouée) était
+      // acceptée quand même.
+      if (poll && poll.closed) {
+        sendJson(response, 403, { error: "Ce sondage est clôturé : il n'est plus possible d'y répondre." });
+        return;
+      }
       const cleanedAnswers = stripMealAnswerIfAbsent(poll, normalizePollAnswersMap(payload.answers));
       const recomputedAnswer = poll ? pollAnswersToTextMeta(poll, cleanedAnswers) : "";
       const incoming = {
@@ -4098,4 +4217,21 @@ if (AUTO_REMINDERS_ENABLED) {
     autoCloseExpiredCampaigns();
     setInterval(() => { autoCloseExpiredCampaigns(); }, 24 * 60 * 60 * 1000);
   }, closeDelay);
+}
+
+// Clôture automatique des sondages datés : même créneau (8h00 heure
+// Guadeloupe, via la même fonction centralisée msUntilNextGuadeloupe8am), même
+// vérification immédiate au démarrage, toujours active — demandée par Hélène
+// le 26/10/2026 pour que les sondages fonctionnent exactement comme les
+// précommandes. Ne concerne que les sondages avec une date renseignée (voir
+// autoCloseExpiredPolls) : aucun des sondages existants au moment de
+// l'activation n'en a, donc rien n'est clôturé tout de suite.
+{
+  const pollCloseDelay = msUntilNextGuadeloupe8am();
+  console.log(`[preco] clôture automatique des sondages en retard : vérification immédiate au démarrage, puis prochaine vérification programmée dans ${Math.round(pollCloseDelay / 60000)} min (8h00 heure Guadeloupe).`);
+  autoCloseExpiredPolls();
+  setTimeout(() => {
+    autoCloseExpiredPolls();
+    setInterval(() => { autoCloseExpiredPolls(); }, 24 * 60 * 60 * 1000);
+  }, pollCloseDelay);
 }
