@@ -2980,6 +2980,20 @@ const server = http.createServer(async (request, response) => {
         sendJson(response, 400, { error: "Adresse e-mail invalide." });
         return;
       }
+
+      // Sécurité : quand c'est la pharmacie elle-même (titulaire) qui crée un
+      // compte équipe, l'e-mail doit comporter un mot du nom de sa pharmacie
+      // (voir emailMatchesPharmacyName). Cette exigence ne s'applique qu'ici,
+      // pas quand c'est une administratrice SOGUASPHAR qui crée le compte
+      // (route /api/pharmacy-team) — voir la note à cette route.
+      const ownPharmacy = readPharmacies().find((item) => item.id === user.pharmacyId);
+      if (ownPharmacy && !emailMatchesPharmacyName(email, ownPharmacy.name)) {
+        sendJson(response, 400, {
+          error: `Par sécurité, l'adresse e-mail d'un compte équipe doit comporter le nom de votre pharmacie (${ownPharmacy.name}). Une adresse générique (gmail, hotmail…) sans rapport avec "${ownPharmacy.name}" n'est pas acceptée.`
+        });
+        return;
+      }
+
       if (findUserByEmail(email)) {
         sendJson(response, 409, { error: "Cette adresse e-mail est déjà utilisée par un compte." });
         return;
@@ -3013,11 +3027,14 @@ const server = http.createServer(async (request, response) => {
     // pour N'IMPORTE QUELLE pharmacie du réseau, sans avoir besoin d'être
     // connectée en tant que titulaire de cette pharmacie (contrairement à
     // POST /api/team ci-dessus, réservé au titulaire pour sa propre pharmacie).
-    // Sécurité renforcée demandée par Hélène le 13/10/2026 : l'adresse e-mail
-    // doit obligatoirement comporter un mot du nom de la pharmacie (ex. pour
-    // "BAMBOU VERT" : contenir "bambou" ou "vert"), pour empêcher la création
-    // d'un compte avec une adresse générique (gmail/hotmail...) sans lien
-    // visible avec la pharmacie.
+    // 28/10/2026 : la vérification "l'e-mail doit comporter un mot du nom de
+    // la pharmacie" (voir emailMatchesPharmacyName) ne s'applique qu'à la
+    // création par la pharmacie elle-même (POST /api/team, ci-dessus) — une
+    // administratrice SOGUASPHAR authentifiée (rôle réel vérifié juste en
+    // dessous) peut créer un compte équipe avec n'importe quelle adresse
+    // valide (gmail, hotmail...), y compris sans rapport avec le nom de la
+    // pharmacie. Les autres contrôles (format, unicité, rattachement à la
+    // pharmacie, invitation) restent inchangés.
     if (url.pathname === "/api/pharmacy-team" && request.method === "POST") {
       const admin = requireAuth(request, response, ["soguasphar_admin"]);
       if (!admin) return;
@@ -3043,12 +3060,9 @@ const server = http.createServer(async (request, response) => {
         return;
       }
 
-      if (!emailMatchesPharmacyName(email, pharmacy.name)) {
-        sendJson(response, 400, {
-          error: `Par sécurité, l'adresse e-mail d'un compte équipe doit comporter le nom de la pharmacie (${pharmacy.name}). Une adresse générique (gmail, hotmail…) sans rapport avec "${pharmacy.name}" n'est pas acceptée.`
-        });
-        return;
-      }
+      // Pas de contrôle "l'e-mail doit contenir le nom de la pharmacie" ici :
+      // c'est une administratrice SOGUASPHAR authentifiée (vérifié par
+      // requireAuth ci-dessus) qui crée ce compte, pas la pharmacie elle-même.
 
       if (findUserByEmail(email)) {
         sendJson(response, 409, { error: "Cette adresse e-mail est déjà utilisée par un compte." });

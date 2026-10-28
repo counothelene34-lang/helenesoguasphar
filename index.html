@@ -812,9 +812,9 @@
                   <input id="teamAccessFirstName" type="text" placeholder="Prénom du responsable" autocomplete="off">
                   <input id="teamAccessLastName" type="text" placeholder="Nom du responsable" autocomplete="off">
                 </div>
-                <input id="teamAccessEmail" type="email" placeholder="E-mail de la pharmacie (doit contenir le nom de la pharmacie)" autocomplete="off">
+                <input id="teamAccessEmail" type="email" placeholder="E-mail du responsable (toute adresse valide)" autocomplete="off">
                 <button class="primary-btn" type="submit">Créer le compte équipe</button>
-                <p class="form-help">Par sécurité, l'adresse e-mail doit comporter le nom de la pharmacie choisie : une adresse générique (gmail, hotmail…) sans rapport avec la pharmacie est refusée. Un e-mail est envoyé pour créer le mot de passe (lien valable 7 jours).</p>
+                <p class="form-help">En tant qu'administratrice, vous pouvez utiliser n'importe quelle adresse e-mail valide (y compris gmail, hotmail…). Un e-mail est envoyé pour créer le mot de passe (lien valable 7 jours).</p>
                 <p id="createTeamAccessMessage" class="status-message" role="status"></p>
               </form>
             </section>
@@ -1379,6 +1379,7 @@
         <input id="teamNewLastName" type="text" autocomplete="family-name" placeholder="Nom">
         <label for="teamNewEmail">Adresse e-mail</label>
         <input id="teamNewEmail" type="email" autocomplete="email" placeholder="prenom.nom@exemple.com">
+        <p class="form-help">Par sécurité, cette adresse doit comporter le nom de votre pharmacie : une adresse générique (gmail, hotmail…) sans rapport avec votre pharmacie n'est pas acceptée.</p>
         <label for="teamNewJobTitle">Fonction (optionnel)</label>
         <input id="teamNewJobTitle" type="text" placeholder="Ex. Préparateur">
         <button class="primary-btn" type="submit">Créer l'accès</button>
