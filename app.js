@@ -366,6 +366,16 @@ const pollImageAdmin = document.querySelector("#pollImageAdmin");
 const pollImageMessage = document.querySelector("#pollImageMessage");
 const pollTitleEdit = document.querySelector("#pollTitleEdit");
 const pollClosingDateEdit = document.querySelector("#pollClosingDateEdit");
+const pollIntroEdit = document.querySelector("#pollIntroEdit");
+const pollAttachmentFile = document.querySelector("#pollAttachmentFile");
+const pollAttachmentReplaceFile = document.querySelector("#pollAttachmentReplaceFile");
+const pollAttachmentsList = document.querySelector("#pollAttachmentsList");
+const pollAttachmentsMessage = document.querySelector("#pollAttachmentsMessage");
+const campaignAttachmentFile = document.querySelector("#campaignAttachmentFile");
+const campaignAttachmentReplaceFile = document.querySelector("#campaignAttachmentReplaceFile");
+const campaignAttachmentsList = document.querySelector("#campaignAttachmentsList");
+const campaignAttachmentsMessage = document.querySelector("#campaignAttachmentsMessage");
+const campaignAttachmentsDisplay = document.querySelector("#campaignAttachmentsDisplay");
 const pollTitleMessage = document.querySelector("#pollTitleMessage");
 const savePollTitleBtn = document.querySelector("#savePollTitleBtn");
 const adminDetail = document.querySelector("#adminDetail");
@@ -4357,6 +4367,117 @@ function imageFileToDataUrl(file) {
   });
 }
 
+// ---- Pièces jointes des sondages et précommandes ----------------------------
+
+// Lit un fichier (PDF ou autre) tel quel en data URL base64, sans transformation.
+function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Fichier impossible à lire."));
+    reader.onload = () => resolve(reader.result);
+    reader.readAsDataURL(file);
+  });
+}
+
+function makeAttachmentId() {
+  return `att-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+}
+
+// Transforme un fichier choisi en pièce jointe prête à envoyer : PDF conservé
+// tel quel, photo compressée en JPEG (comme les images de carte) pour rester
+// légère. Rejette tout autre format.
+async function attachmentFromFile(file) {
+  const name = file.name || "document";
+  const type = file.type || "";
+  if (type === "application/pdf" || /\.pdf$/i.test(name)) {
+    const content = await fileToDataUrl(file);
+    return { id: makeAttachmentId(), name, mime: "application/pdf", ext: "pdf", content };
+  }
+  if (type.startsWith("image/") || /\.(png|jpe?g)$/i.test(name)) {
+    const content = await imageFileToDataUrl(file);
+    const cleanName = name.replace(/\.(png|jpe?g|webp|gif|bmp)$/i, "") + ".jpg";
+    return { id: makeAttachmentId(), name: cleanName, mime: "image/jpeg", ext: "jpg", content };
+  }
+  throw new Error(`"${name}" ignoré : seuls les PDF et les photos JPG/PNG sont acceptés.`);
+}
+
+// URL de téléchargement/consultation d'une pièce jointe. admin:true ajoute le
+// code pour voir aussi les pièces d'un brouillon non publié.
+function attachmentUrl(kind, entityId, att, options = {}) {
+  let url = kind === "poll"
+    ? `/api/polls/${encodeURIComponent(entityId)}/attachment/${encodeURIComponent(att.id)}`
+    : `/api/orders/${encodeURIComponent(entityId)}/attachment/${encodeURIComponent(att.id)}`;
+  const params = [];
+  if (options.admin) params.push(`code=${encodeURIComponent(ADMIN_CODE)}`);
+  if (options.download) params.push("download=1");
+  if (params.length) url += `?${params.join("&")}`;
+  return url;
+}
+
+// Texte explicatif en plusieurs paragraphes : les lignes vides séparent des
+// paragraphes, les retours à la ligne simples deviennent des <br>.
+function explanatoryTextMarkup(text, className) {
+  const raw = String(text || "").trim();
+  if (!raw) return "";
+  const paragraphs = raw
+    .split(/\n{2,}/)
+    .map((block) => `<p>${escapeHtml(block).replace(/\n/g, "<br>")}</p>`)
+    .join("");
+  return `<div class="${className}">${paragraphs}</div>`;
+}
+
+// Galerie de pièces jointes côté pharmacie : PDF ouvrable dans le site +
+// téléchargeable, photos agrandissables.
+function attachmentsGalleryMarkup(kind, entity) {
+  const atts = Array.isArray(entity?.attachments) ? entity.attachments : [];
+  if (!atts.length) return "";
+  const items = atts.map((att) => {
+    const view = attachmentUrl(kind, entity.id, att);
+    const download = attachmentUrl(kind, entity.id, att, { download: true });
+    if (att.ext === "pdf") {
+      return `
+        <div class="attachment-chip">
+          <button type="button" class="attachment-open" data-attachment-pdf="${escapeHtml(view)}" data-attachment-title="${escapeHtml(att.name)}">
+            <span class="attachment-icon" aria-hidden="true">📄</span>
+            <span class="attachment-name">${escapeHtml(att.name)}</span>
+          </button>
+          <a class="attachment-download" href="${escapeHtml(download)}" title="Télécharger ${escapeHtml(att.name)}" aria-label="Télécharger ${escapeHtml(att.name)}">⬇</a>
+        </div>`;
+    }
+    return `
+      <a class="attachment-thumb" href="${escapeHtml(view)}" data-preview-image title="Agrandir ${escapeHtml(att.name)}">
+        <img src="${escapeHtml(view)}" alt="${escapeHtml(att.name)}" loading="lazy">
+      </a>`;
+  }).join("");
+  return `<div class="attachments-gallery">${items}</div>`;
+}
+
+// Liste des pièces jointes côté admin, avec actions voir/remplacer/supprimer.
+function renderAdminAttachments(entity, kind, listEl) {
+  if (!listEl) return;
+  const atts = Array.isArray(entity?.attachments) ? entity.attachments : [];
+  if (!atts.length) {
+    listEl.innerHTML = `<li class="attachments-empty">Aucun document joint pour le moment.</li>`;
+    return;
+  }
+  listEl.innerHTML = atts.map((att) => {
+    const view = attachmentUrl(kind, entity.id, att, { admin: true });
+    const download = attachmentUrl(kind, entity.id, att, { admin: true, download: true });
+    const isPdf = att.ext === "pdf";
+    return `
+      <li class="attachment-item" data-att-id="${escapeHtml(att.id)}">
+        <span class="attachment-icon" aria-hidden="true">${isPdf ? "📄" : "🖼️"}</span>
+        <span class="attachment-name">${escapeHtml(att.name)}</span>
+        <span class="attachment-item-actions">
+          <button type="button" class="ghost-btn" data-att-view="${escapeHtml(att.id)}" data-att-url="${escapeHtml(view)}" data-att-pdf="${isPdf ? "1" : "0"}" data-att-title="${escapeHtml(att.name)}">Voir</button>
+          <a class="ghost-btn" href="${escapeHtml(download)}">Télécharger</a>
+          <button type="button" class="ghost-btn" data-att-replace="${escapeHtml(att.id)}">Remplacer</button>
+          <button type="button" class="ghost-btn danger" data-att-delete="${escapeHtml(att.id)}">Supprimer</button>
+        </span>
+      </li>`;
+  }).join("");
+}
+
 function normalizeHeader(value) {
   return String(value || "")
     .trim()
@@ -4774,6 +4895,7 @@ function campaignCard(campaign, target) {
         <span>${isCompleted ? completedDate : `${count} ligne${count > 1 ? "s" : ""}`}</span>
         <div class="campaign-actions">
           ${isAdmin && campaign.draft ? `<button class="primary-btn" type="button" data-publish-campaign="${escapeHtml(campaign.id)}">Publier</button>` : ""}
+          ${isAdmin && !campaign.draft && !isEffectivelyClosed ? `<button class="ghost-btn" type="button" data-remind-campaign="${escapeHtml(campaign.id)}">Relancer les non-répondants</button>` : ""}
           ${isAdmin && !campaign.draft
             ? (isEffectivelyClosed
               ? `<button class="primary-btn" type="button" data-relaunch-campaign="${escapeHtml(campaign.id)}">Relancer</button>`
@@ -5014,12 +5136,8 @@ function pollCard(poll, target) {
     : "";
 
   if (!isAdmin) {
-    const introMarkup = poll.intro ? `<p class="whatsapp-poll-intro">${escapeHtml(poll.intro)}</p>` : "";
-    const attachmentMarkup = poll.attachmentUrl ? `
-      <a class="ghost-btn poll-attachment-link" href="${escapeHtml(poll.attachmentUrl)}" target="_blank" rel="noopener noreferrer">
-        ${escapeHtml(poll.attachmentLabel || "Voir le document")}
-      </a>
-    ` : "";
+    const introMarkup = explanatoryTextMarkup(poll.intro, "whatsapp-poll-intro");
+    const attachmentMarkup = attachmentsGalleryMarkup("poll", poll);
     // Date de clôture visible par la pharmacie, même principe que
     // ".period-closing-info" pour les précommandes (26/10/2026) — seulement
     // si le sondage en a une (la plupart n'en ont pas et restent ouverts).
@@ -5078,6 +5196,7 @@ function pollCard(poll, target) {
         <span>${responseCount} réponse${responseCount > 1 ? "s" : ""}</span>
         <div class="campaign-actions">
           ${isAdmin && poll.draft ? `<button class="primary-btn" type="button" data-publish-poll="${escapeHtml(poll.id)}">Publier</button>` : ""}
+          ${isAdmin && !poll.draft && !poll.closed ? `<button class="ghost-btn" type="button" data-remind-poll="${escapeHtml(poll.id)}">Relancer les non-répondants</button>` : ""}
           ${isAdmin && !poll.draft ? `<button class="ghost-btn" type="button" data-toggle-closed-poll="${escapeHtml(poll.id)}">${poll.closed ? "Rouvrir" : "Clôturer"}</button>` : ""}
           ${!isAdmin || !poll.draft ? `<button class="primary-btn" type="button" data-${target}-poll="${escapeHtml(poll.id)}">
             ${isAdmin ? "Voir les résultats" : "Répondre"}
@@ -5555,12 +5674,19 @@ function selectCampaign(campaignId) {
   if (upcomingListPage) upcomingListPage.hidden = true;
   if (attestationPage) attestationPage.hidden = true;
   document.querySelector("#formTitle").textContent = "Commande, précommande, confirmation";
-  if (selectedCampaign.pharmacyMessage) {
+  const campaignText = selectedCampaign.pharmacyMessage || selectedCampaign.description || "";
+  const campaignTextMarkup = explanatoryTextMarkup(campaignText, "campaign-notice-text");
+  if (campaignTextMarkup) {
     campaignNotice.hidden = false;
-    campaignNotice.textContent = selectedCampaign.pharmacyMessage;
+    campaignNotice.innerHTML = campaignTextMarkup;
   } else {
     campaignNotice.hidden = true;
-    campaignNotice.textContent = "";
+    campaignNotice.innerHTML = "";
+  }
+  if (campaignAttachmentsDisplay) {
+    const galleryMarkup = attachmentsGalleryMarkup("order", selectedCampaign);
+    campaignAttachmentsDisplay.innerHTML = galleryMarkup;
+    campaignAttachmentsDisplay.hidden = !galleryMarkup;
   }
   // Mêmes informations (et même format) que sur la carte de la précommande dans
   // le menu principal — affichées ici aussi, entre le descriptif et la/les
@@ -6027,6 +6153,8 @@ async function selectAdminCampaign(campaignId) {
   campaignImageMessage.textContent = "";
   campaignImageFile.value = "";
   campaignImageFile2.value = "";
+  if (campaignAttachmentsMessage) campaignAttachmentsMessage.textContent = "";
+  renderAdminAttachments(selectedAdminCampaign, "order", campaignAttachmentsList);
   refreshCampaignImagePreview(selectedAdminCampaign);
   campaignPeriodsMessage.textContent = "";
   renderCampaignPeriodsAdmin(selectedAdminCampaign);
@@ -6049,7 +6177,10 @@ async function selectAdminPoll(pollId) {
   adminPollTitle.textContent = selectedAdminPoll.question;
   pollTitleEdit.value = selectedAdminPoll.question;
   if (pollClosingDateEdit) pollClosingDateEdit.value = selectedAdminPoll.endDate || "";
+  if (pollIntroEdit) pollIntroEdit.value = selectedAdminPoll.intro || "";
   if (pollTitleMessage) pollTitleMessage.textContent = "";
+  if (pollAttachmentsMessage) pollAttachmentsMessage.textContent = "";
+  renderAdminAttachments(selectedAdminPoll, "poll", pollAttachmentsList);
   adminCampaignPicker.hidden = true;
   adminDetail.hidden = true;
   adminPollDetail.hidden = false;
@@ -7445,6 +7576,13 @@ document.querySelectorAll(".switch-btn").forEach((button) => {
 });
 
 document.addEventListener("click", (event) => {
+  const pdfTrigger = event.target.closest("[data-attachment-pdf]");
+  if (pdfTrigger) {
+    event.preventDefault();
+    openPdfPreview(pdfTrigger.getAttribute("data-attachment-pdf"), pdfTrigger.getAttribute("data-attachment-title") || "Document");
+    return;
+  }
+
   const previewLink = event.target.closest("[data-preview-image]");
   if (previewLink) {
     event.preventDefault();
@@ -7464,6 +7602,8 @@ imagePreviewCloseBtn?.addEventListener("click", closeImagePreview);
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") {
     closeImagePreview();
+    closePdfPreview();
+    closeReminderModal();
   }
 });
 
@@ -8905,6 +9045,243 @@ removePollImageBtn?.addEventListener("click", async () => {
   pollImageMessage.textContent = "Image retirée.";
 });
 
+// ---- Gestion admin des pièces jointes ---------------------------------------
+let attachmentReplaceTarget = null; // { kind, id } pendant un "Remplacer"
+
+function attachmentContext(kind) {
+  if (kind === "poll") {
+    return {
+      kind,
+      entity: selectedAdminPoll,
+      listEl: pollAttachmentsList,
+      msgEl: pollAttachmentsMessage,
+      syncGlobal(updated) { polls = polls.map((item) => item.id === updated.id ? updated : item); },
+      async persist() { await savePolls(polls); }
+    };
+  }
+  return {
+    kind: "order",
+    entity: selectedAdminCampaign,
+    listEl: campaignAttachmentsList,
+    msgEl: campaignAttachmentsMessage,
+    syncGlobal(updated) { campaigns = campaigns.map((item) => item.id === updated.id ? updated : item); },
+    async persist() { await saveCampaigns(campaigns); }
+  };
+}
+
+// Après enregistrement, on jette le contenu base64 (le serveur ne garde et ne
+// renvoie que les métadonnées) pour ne pas le renvoyer à chaque sauvegarde.
+function stripAttachmentContent(ctx) {
+  ctx.entity.attachments = (ctx.entity.attachments || []).map(({ content, ...meta }) => meta);
+  ctx.syncGlobal(ctx.entity);
+}
+
+async function addAttachments(kind, fileList) {
+  const ctx = attachmentContext(kind);
+  const files = [...(fileList || [])];
+  if (!ctx.entity || !files.length) return;
+  ctx.msgEl.textContent = "Préparation des documents...";
+  const prepared = [];
+  const errors = [];
+  for (const file of files) {
+    try { prepared.push(await attachmentFromFile(file)); }
+    catch (error) { errors.push(error.message); }
+  }
+  if (prepared.length) {
+    ctx.entity.attachments = [...(ctx.entity.attachments || []), ...prepared];
+    ctx.syncGlobal(ctx.entity);
+    try {
+      await ctx.persist();
+      stripAttachmentContent(ctx);
+    } catch (error) { errors.push(error.message || "Enregistrement impossible."); }
+  }
+  renderAdminAttachments(ctx.entity, kind, ctx.listEl);
+  renderCampaignPickers();
+  const okMsg = prepared.length ? `${prepared.length} document${prepared.length > 1 ? "s" : ""} ajouté${prepared.length > 1 ? "s" : ""}.` : "";
+  ctx.msgEl.textContent = errors.length ? `${okMsg} ${errors.join(" ")}`.trim() : okMsg;
+}
+
+async function replaceAttachment(kind, attId, file) {
+  const ctx = attachmentContext(kind);
+  if (!ctx.entity || !file) return;
+  const list = ctx.entity.attachments || [];
+  const index = list.findIndex((item) => item.id === attId);
+  if (index === -1) return;
+  ctx.msgEl.textContent = "Préparation du document...";
+  try {
+    // Nouvel identifiant : l'ancien fichier (extension éventuellement différente)
+    // est alors nettoyé côté serveur, pas d'orphelin sur le disque.
+    list[index] = await attachmentFromFile(file);
+    ctx.entity.attachments = list;
+    ctx.syncGlobal(ctx.entity);
+    await ctx.persist();
+    stripAttachmentContent(ctx);
+    ctx.msgEl.textContent = "Document remplacé.";
+  } catch (error) { ctx.msgEl.textContent = error.message || "Remplacement impossible."; }
+  renderAdminAttachments(ctx.entity, kind, ctx.listEl);
+  renderCampaignPickers();
+}
+
+async function deleteAttachment(kind, attId) {
+  const ctx = attachmentContext(kind);
+  if (!ctx.entity) return;
+  const att = (ctx.entity.attachments || []).find((item) => item.id === attId);
+  if (!att) return;
+  if (!confirm(`Supprimer le document « ${att.name} » ?`)) return;
+  ctx.entity.attachments = (ctx.entity.attachments || []).filter((item) => item.id !== attId);
+  ctx.syncGlobal(ctx.entity);
+  ctx.msgEl.textContent = "Suppression...";
+  try {
+    await ctx.persist();
+    stripAttachmentContent(ctx);
+    ctx.msgEl.textContent = "Document supprimé.";
+  } catch (error) { ctx.msgEl.textContent = error.message || "Suppression impossible."; }
+  renderAdminAttachments(ctx.entity, kind, ctx.listEl);
+  renderCampaignPickers();
+}
+
+function handleAdminAttachmentListClick(event, kind) {
+  const viewBtn = event.target.closest("[data-att-view]");
+  if (viewBtn) {
+    const url = viewBtn.getAttribute("data-att-url");
+    if (viewBtn.getAttribute("data-att-pdf") === "1") openPdfPreview(url, viewBtn.getAttribute("data-att-title") || "Document");
+    else openImagePreview(url, viewBtn.getAttribute("data-att-title") || "Image");
+    return;
+  }
+  const replaceBtn = event.target.closest("[data-att-replace]");
+  if (replaceBtn) {
+    attachmentReplaceTarget = { kind, id: replaceBtn.getAttribute("data-att-replace") };
+    (kind === "poll" ? pollAttachmentReplaceFile : campaignAttachmentReplaceFile)?.click();
+    return;
+  }
+  const deleteBtn = event.target.closest("[data-att-delete]");
+  if (deleteBtn) deleteAttachment(kind, deleteBtn.getAttribute("data-att-delete"));
+}
+
+pollAttachmentFile?.addEventListener("change", async () => {
+  const files = [...pollAttachmentFile.files];
+  pollAttachmentFile.value = "";
+  await addAttachments("poll", files);
+});
+
+campaignAttachmentFile?.addEventListener("change", async () => {
+  const files = [...campaignAttachmentFile.files];
+  campaignAttachmentFile.value = "";
+  await addAttachments("order", files);
+});
+
+pollAttachmentsList?.addEventListener("click", (event) => handleAdminAttachmentListClick(event, "poll"));
+campaignAttachmentsList?.addEventListener("click", (event) => handleAdminAttachmentListClick(event, "order"));
+
+pollAttachmentReplaceFile?.addEventListener("change", async () => {
+  const file = pollAttachmentReplaceFile.files[0];
+  pollAttachmentReplaceFile.value = "";
+  if (file && attachmentReplaceTarget?.kind === "poll") await replaceAttachment("poll", attachmentReplaceTarget.id, file);
+  attachmentReplaceTarget = null;
+});
+
+campaignAttachmentReplaceFile?.addEventListener("change", async () => {
+  const file = campaignAttachmentReplaceFile.files[0];
+  campaignAttachmentReplaceFile.value = "";
+  if (file && attachmentReplaceTarget?.kind === "order") await replaceAttachment("order", attachmentReplaceTarget.id, file);
+  attachmentReplaceTarget = null;
+});
+
+// ---- Relancer les non-répondants (admin) ------------------------------------
+const reminderModal = document.querySelector("#reminderModal");
+const reminderLoading = document.querySelector("#reminderLoading");
+const reminderContent = document.querySelector("#reminderContent");
+const reminderTrackingNote = document.querySelector("#reminderTrackingNote");
+const reminderCount = document.querySelector("#reminderCount");
+const reminderRecipients = document.querySelector("#reminderRecipients");
+const reminderRecipientsWrap = document.querySelector("#reminderRecipientsWrap");
+const reminderExcluded = document.querySelector("#reminderExcluded");
+const reminderSubject = document.querySelector("#reminderSubject");
+const reminderMessage = document.querySelector("#reminderMessage");
+const reminderSendBtn = document.querySelector("#reminderSendBtn");
+const reminderResult = document.querySelector("#reminderResult");
+let currentReminder = null;
+
+function closeReminderModal() {
+  if (reminderModal) reminderModal.hidden = true;
+  currentReminder = null;
+}
+
+async function apiReminder(body) {
+  return requestJson("/api/reminders", {
+    method: "POST",
+    headers: { "X-Admin-Code": ADMIN_CODE },
+    body: JSON.stringify(body)
+  });
+}
+
+function summarizeExcludedReminder(excluded = {}) {
+  const parts = [];
+  if (excluded.responded?.length) parts.push(`${excluded.responded.length} ont déjà répondu`);
+  if (excluded.remindedToday?.length) parts.push(`${excluded.remindedToday.length} déjà relancée(s) aujourd'hui`);
+  if (excluded.noEmail?.length) parts.push(`${excluded.noEmail.length} sans adresse e-mail connue`);
+  if (excluded.noDocument?.length) parts.push(`${excluded.noDocument.length} sans document / non concernée(s)`);
+  return parts.length ? `Exclues : ${parts.join(", ")}.` : "";
+}
+
+async function openReminder(type, id) {
+  if (!reminderModal) return;
+  currentReminder = { type, id };
+  reminderModal.hidden = false;
+  reminderContent.hidden = true;
+  reminderLoading.hidden = false;
+  reminderLoading.textContent = "Préparation de la liste…";
+  reminderResult.textContent = "";
+  if (reminderSendBtn) reminderSendBtn.disabled = false;
+  try {
+    const preview = await apiReminder({ type, id, dryRun: true });
+    reminderCount.textContent = preview.recipientCount;
+    reminderRecipients.innerHTML = (preview.recipients || []).map((n) => `<li>${escapeHtml(n)}</li>`).join("") || "<li>Aucune</li>";
+    reminderRecipientsWrap.hidden = !(preview.recipients || []).length;
+    reminderExcluded.textContent = summarizeExcludedReminder(preview.excluded);
+    if (preview.trackingNote) { reminderTrackingNote.hidden = false; reminderTrackingNote.textContent = preview.trackingNote; }
+    else { reminderTrackingNote.hidden = true; reminderTrackingNote.textContent = ""; }
+    reminderSubject.value = preview.defaultSubject || "";
+    reminderMessage.value = preview.defaultMessage || "";
+    if (reminderSendBtn) reminderSendBtn.disabled = preview.recipientCount === 0;
+    reminderLoading.hidden = true;
+    reminderContent.hidden = false;
+  } catch (error) {
+    reminderLoading.textContent = `Impossible de préparer la relance : ${error.message || error}`;
+  }
+}
+
+reminderSendBtn?.addEventListener("click", async () => {
+  if (!currentReminder) return;
+  reminderSendBtn.disabled = true; // anti double-clic côté écran
+  reminderResult.textContent = "Envoi en cours…";
+  try {
+    const res = await apiReminder({
+      type: currentReminder.type,
+      id: currentReminder.id,
+      subject: reminderSubject.value,
+      message: reminderMessage.value
+    });
+    const bits = [`${res.sentCount} e-mail(s) envoyé(s)`];
+    if (res.skipped?.length) bits.push(`${res.skipped.length} ignorée(s) (déjà relancée(s) aujourd'hui)`);
+    if (res.failed?.length) bits.push(`${res.failed.length} échec(s) : ${res.failed.map((f) => f.pharmacy).join(", ")}`);
+    reminderResult.textContent = bits.join(" · ");
+  } catch (error) {
+    reminderResult.textContent = `Échec de l'envoi : ${error.message || error}`;
+    reminderSendBtn.disabled = false;
+  }
+});
+
+document.addEventListener("click", (event) => {
+  if (event.target.closest("[data-close-reminder]")) { closeReminderModal(); return; }
+  const campaignBtn = event.target.closest("[data-remind-campaign]");
+  if (campaignBtn) { openReminder("order", campaignBtn.getAttribute("data-remind-campaign")); return; }
+  const pollBtn = event.target.closest("[data-remind-poll]");
+  if (pollBtn) { openReminder("poll", pollBtn.getAttribute("data-remind-poll")); return; }
+  if (event.target.closest("[data-remind-validation]")) { openReminder("validation", "current"); return; }
+  if (event.target.closest("[data-remind-attestation]")) { openReminder("attestation", "current"); return; }
+});
+
 savePollTitleBtn?.addEventListener("click", async () => {
   if (!selectedAdminPoll) return;
   const title = pollTitleEdit.value.trim();
@@ -8916,11 +9293,12 @@ savePollTitleBtn?.addEventListener("click", async () => {
     pollTitleMessage.textContent = "Enregistrement...";
     selectedAdminPoll.question = title;
     selectedAdminPoll.endDate = pollClosingDateEdit ? pollClosingDateEdit.value : (selectedAdminPoll.endDate || "");
+    selectedAdminPoll.intro = pollIntroEdit ? pollIntroEdit.value.trim() : (selectedAdminPoll.intro || "");
     polls = polls.map((poll) => poll.id === selectedAdminPoll.id ? selectedAdminPoll : poll);
     await savePolls(polls);
     adminPollTitle.textContent = title;
     renderCampaignPickers();
-    pollTitleMessage.textContent = "Titre et date enregistrés.";
+    pollTitleMessage.textContent = "Titre, date et texte enregistrés.";
   } catch (error) {
     pollTitleMessage.textContent = error.message;
   }

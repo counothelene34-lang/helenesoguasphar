@@ -404,6 +404,7 @@
             <img id="campaignImage2" alt="">
           </a>
         </section>
+        <section id="campaignAttachmentsDisplay" class="attachments-display" hidden></section>
         <section class="question-block">
           <label for="pharmacyName">Nom de la pharmacie <span aria-hidden="true">*</span></label>
           <input id="pharmacyName" name="pharmacyName" type="text" autocomplete="organization" required placeholder="Ex. Pharmacie du Centre">
@@ -912,6 +913,7 @@
                 </div>
                 <div class="settings-table-actions">
                   <button id="attestationPublishBtn" class="primary-btn" type="button">Publier aux pharmacies</button>
+                  <button class="ghost-btn" type="button" data-remind-attestation="1">Relancer les non-signataires</button>
                   <button id="attestationArchiveBtn" class="ghost-btn" type="button" hidden>Archiver</button>
                   <button id="attestationReopenBtn" class="ghost-btn" type="button" hidden>Rouvrir</button>
                 </div>
@@ -975,6 +977,18 @@
               </a>
             </div>
             <p id="campaignImageMessage" class="status-message" role="status"></p>
+          </section>
+
+          <section class="admin-message-editor attachments-editor">
+            <label>Documents à joindre (PDF, photos JPG/PNG)</label>
+            <p class="form-help">Les pharmacies pourront les consulter et les télécharger avant de remplir la commande.</p>
+            <div class="upload-actions">
+              <label class="file-btn" for="campaignAttachmentFile">Ajouter des documents</label>
+              <input id="campaignAttachmentFile" type="file" accept="application/pdf,image/png,image/jpeg" multiple>
+            </div>
+            <ul id="campaignAttachmentsList" class="attachments-admin-list"></ul>
+            <input id="campaignAttachmentReplaceFile" type="file" accept="application/pdf,image/png,image/jpeg" hidden>
+            <p id="campaignAttachmentsMessage" class="status-message" role="status"></p>
           </section>
 
           <section class="admin-message-editor" id="campaignPeriodsSection">
@@ -1153,8 +1167,22 @@
               <label for="pollClosingDateEdit">Date de clôture prévue (facultatif)</label>
               <input id="pollClosingDateEdit" type="date">
               <p class="field-hint">Utilisée pour le rappel automatique aux pharmacies qui n'ont pas répondu, et la dernière relance la veille de cette date.</p>
-              <button id="savePollTitleBtn" class="primary-btn" type="button">Enregistrer le titre et la date</button>
+              <label for="pollIntroEdit">Texte explicatif (facultatif)</label>
+              <textarea id="pollIntroEdit" rows="4" placeholder="Expliquez le sondage aux pharmacies. Les paragraphes et retours à la ligne sont conservés."></textarea>
+              <button id="savePollTitleBtn" class="primary-btn" type="button">Enregistrer le titre, la date et le texte</button>
               <p id="pollTitleMessage" class="status-message" role="status"></p>
+            </section>
+
+            <section class="admin-message-editor attachments-editor">
+              <label>Documents à joindre (PDF, photos JPG/PNG)</label>
+              <p class="field-hint">Les pharmacies pourront les consulter et les télécharger avant de répondre.</p>
+              <div class="upload-actions">
+                <label class="file-btn" for="pollAttachmentFile">Ajouter des documents</label>
+                <input id="pollAttachmentFile" type="file" accept="application/pdf,image/png,image/jpeg" multiple>
+              </div>
+              <ul id="pollAttachmentsList" class="attachments-admin-list"></ul>
+              <input id="pollAttachmentReplaceFile" type="file" accept="application/pdf,image/png,image/jpeg" hidden>
+              <p id="pollAttachmentsMessage" class="status-message" role="status"></p>
             </section>
 
             <section class="admin-message-editor">
@@ -1226,6 +1254,7 @@
               <p class="eyebrow">Validation</p>
               <h2>Validation en attente</h2>
               <div class="campaign-actions validation-detail-actions">
+                <button class="ghost-btn" type="button" data-remind-validation="1">Relancer les non-répondants</button>
                 <button class="ghost-btn" type="button" data-toggle-validation-archive>Archiver</button>
                 <button class="delete-campaign-btn" type="button" title="Supprimer la validation" aria-label="Supprimer la validation" data-delete-validation>&#128465;</button>
               </div>
@@ -1409,6 +1438,40 @@
       </div>
       <iframe id="pdfPreviewFrame" title="Aperçu du document" src="about:blank"></iframe>
       <button id="pdfPreviewCloseBtn" class="primary-btn" type="button">Fermer</button>
+    </div>
+  </div>
+
+  <div id="reminderModal" class="image-preview-modal" role="dialog" aria-modal="true" aria-labelledby="reminderModalTitle" hidden>
+    <div class="image-preview-backdrop" data-close-reminder></div>
+    <div class="image-preview-dialog reminder-dialog">
+      <div class="image-preview-head">
+        <h2 id="reminderModalTitle">Relancer les non-répondants</h2>
+        <button class="image-preview-close" type="button" data-close-reminder aria-label="Fermer">X</button>
+      </div>
+      <div id="reminderBody" class="reminder-body">
+        <p id="reminderLoading" class="status-message">Préparation de la liste…</p>
+        <div id="reminderContent" hidden>
+          <p id="reminderTrackingNote" class="field-hint" hidden></p>
+          <div class="reminder-summary">
+            <p><strong>Destinataires concernés : <span id="reminderCount">0</span></strong> — pharmacies qui n'ont pas encore répondu.</p>
+            <details id="reminderRecipientsWrap">
+              <summary>Voir la liste des destinataires</summary>
+              <ul id="reminderRecipients" class="reminder-recipients"></ul>
+            </details>
+            <p id="reminderExcluded" class="field-hint"></p>
+          </div>
+          <label for="reminderSubject">Objet de l'e-mail</label>
+          <input id="reminderSubject" type="text">
+          <label for="reminderMessage">Message (modifiable)</label>
+          <textarea id="reminderMessage" rows="6"></textarea>
+          <p class="field-hint">Un bouton d'accès avec le lien actuel de l'élément est ajouté automatiquement en bas de l'e-mail. Chaque pharmacie reçoit son e-mail séparément (les adresses ne sont jamais partagées entre elles).</p>
+          <div class="upload-actions">
+            <button id="reminderSendBtn" class="primary-btn" type="button">Envoyer les relances</button>
+            <button class="ghost-btn" type="button" data-close-reminder>Annuler</button>
+          </div>
+          <p id="reminderResult" class="status-message" role="status"></p>
+        </div>
+      </div>
     </div>
   </div>
 

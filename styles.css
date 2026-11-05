@@ -3957,3 +3957,144 @@ body.admin-preview-mode #attestationForm button[type="submit"] {
   border-radius: 8px;
   background: var(--soft);
 }
+
+/* ===== Pièces jointes des sondages et précommandes ======================== */
+.attachments-gallery {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 10px 0;
+}
+.attachment-chip {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid #d7d7d7;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+  max-width: 100%;
+}
+.attachment-open {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  min-width: 0;
+}
+.attachment-open:hover { background: #f1f5f2; }
+.attachment-open .attachment-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 220px;
+}
+.attachment-icon { font-size: 1.2rem; flex: 0 0 auto; }
+.attachment-download {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 12px;
+  border-left: 1px solid #e3e3e3;
+  background: #f6f8f7;
+  text-decoration: none;
+  font-size: 1.1rem;
+  color: #2f6f4f;
+}
+.attachment-download:hover { background: #e8f0ea; }
+.attachment-thumb {
+  display: block;
+  width: 150px;
+  height: 150px;
+  border: 1px solid #d7d7d7;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fafafa;
+}
+.attachment-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain; /* jamais coupée */
+  display: block;
+}
+.attachments-display { margin: 4px 0 8px; }
+
+/* Texte explicatif : paragraphes et retours à la ligne lisibles */
+.campaign-notice-text p,
+.whatsapp-poll-intro p {
+  margin: 0 0 8px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.campaign-notice-text p:last-child,
+.whatsapp-poll-intro p:last-child { margin-bottom: 0; }
+
+/* Liste de gestion côté admin */
+.attachments-admin-list {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.attachments-admin-list .attachment-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 8px 10px;
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  background: #fff;
+}
+.attachments-admin-list .attachment-name {
+  flex: 1 1 160px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-weight: 600;
+}
+.attachment-item-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.attachment-item-actions .ghost-btn { padding: 4px 10px; font-size: 0.9rem; }
+.attachment-item-actions .ghost-btn.danger { color: #b3261e; }
+.attachments-empty { color: #777; font-style: italic; }
+
+@media (max-width: 600px) {
+  .attachment-thumb { width: 120px; height: 120px; }
+  .attachment-open .attachment-name { max-width: 150px; }
+  .attachment-item-actions { width: 100%; }
+}
+
+/* ===== Fenêtre "Relancer les non-répondants" ============================== */
+.reminder-dialog {
+  max-width: 560px;
+  width: 92vw;
+  max-height: 88vh;
+  overflow-y: auto;
+  text-align: left;
+}
+.reminder-body { text-align: left; }
+.reminder-summary { margin: 8px 0 14px; }
+.reminder-recipients {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+.reminder-recipients li { margin: 2px 0; }
+.reminder-dialog label { display: block; margin-top: 10px; font-weight: 600; }
+.reminder-dialog input[type="text"],
+.reminder-dialog textarea {
+  width: 100%;
+  box-sizing: border-box;
+}
+#reminderExcluded { margin-top: 6px; }

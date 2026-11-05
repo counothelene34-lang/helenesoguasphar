@@ -157,6 +157,12 @@ const ATTESTATION_RESPONSES_FILE = path.join(DATA_DIR, "attestation-responses.js
 const ATTESTATION_PDF_DIR = path.join(DATA_DIR, "attestations-2027");
 const USERS_FILE = path.join(DATA_DIR, "users.json");
 const SESSIONS_FILE = path.join(DATA_DIR, "sessions.json");
+// Pièces jointes des sondages et des précommandes : stockées sur disque (comme
+// les BAT et les attestations) et PAS en base64 dans polls.json/orders.json —
+// un PDF de plusieurs Mo dans ces fichiers ralentirait tout le site à chaque
+// ouverture. Seules les métadonnées (nom, type, extension) vivent dans le JSON.
+const POLL_ATTACHMENTS_DIR = path.join(DATA_DIR, "poll-attachments");
+const ORDER_ATTACHMENTS_DIR = path.join(DATA_DIR, "order-attachments");
 const SESSION_COOKIE_NAME = "preco_session";
 // Durée glissante des sessions : longue pour les comptes SOGUASPHAR (admin),
 // courte pour les comptes pharmacie (titulaires/préparateurs) — sécurité
@@ -2085,6 +2091,178 @@ async function sendReminderEmail({ emails, kind, operationType, title, closingDa
   await sendMail({ to: emails.join(", "), subject, text, html, from: REMINDER_FROM, fromName: REMINDER_FROM_NAME });
 }
 
+// ====== Relances manuelles "non-répondants" (bouton admin) ==================
+// État rangé dans un fichier séparé (manual-reminders.json) pour ne JAMAIS
+// toucher aux enregistrements des entités (opérations/sondages/documents) et
+// rester indépendant des sauvegardes déclenchées par l'écran admin.
+const MANUAL_REMINDERS_FILE = path.join(DATA_DIR, "manual-reminders.json");
+
+function readManualReminders() {
+  if (!fs.existsSync(MANUAL_REMINDERS_FILE)) return {};
+  try { return JSON.parse(fs.readFileSync(MANUAL_REMINDERS_FILE, "utf8") || "{}") || {}; }
+  catch { return {}; }
+}
+function writeManualReminders(data) {
+  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+  fs.writeFileSync(MANUAL_REMINDERS_FILE, JSON.stringify(data, null, 2), "utf8");
+}
+function manualReminderKey(type, id, pharmacyId) {
+  return `${type}:${id}:${pharmacyId}`;
+}
+// Anti-doublon : une même pharmacie n'est pas relancée deux fois dans la même
+// journée pour un même élément (protège des clics répétés).
+function remindedTodayFor(store, type, id, pharmacyId) {
+  const value = store[manualReminderKey(type, id, pharmacyId)];
+  if (!value) return false;
+  return String(value).slice(0, 10) === new Date().toISOString().slice(0, 10);
+}
+
+function pharmacyByNameOrId(pharmacies, { name, id }) {
+  if (id) {
+    const byId = pharmacies.find((p) => String(p.id) === String(id));
+    if (byId) return byId;
+  }
+  if (name) {
+    const nk = normalizeLookup(name);
+    return pharmacies.find((p) => normalizeLookup(p.name) === nk) || null;
+  }
+  return null;
+}
+
+// Construit le "plan" de relance pour un élément : qui cibler, qui exclure et
+// pourquoi. Ne décide RIEN d'autre ; l'envoi est fait séparément.
+function buildReminderPlan(type, rawId) {
+  const pharmacies = readPharmacies().filter((p) => p && p.active !== false);
+  const store = readManualReminders();
+  const makeBase = (id) => ({
+    type, id, title: "", actionLabel: "", pastAction: "", link: PRECO_BASE_URL, closingDate: null,
+    trackingAvailable: true, trackingNote: null, targets: [],
+    excluded: { responded: [], noEmail: [], remindedToday: [], noDocument: [] }
+  });
+  const pushTarget = (plan, pharmacy, emailsFn) => {
+    if (!pharmacy) return;
+    if (remindedTodayFor(store, plan.type, plan.id, pharmacy.id)) { plan.excluded.remindedToday.push(pharmacy.name); return; }
+    const emails = [...new Set((emailsFn(pharmacy) || []).filter(Boolean))];
+    if (!emails.length) { plan.excluded.noEmail.push(pharmacy.name); return; }
+    plan.targets.push({ pharmacyId: pharmacy.id, pharmacyName: pharmacy.name, emails });
+  };
+
+  if (type === "order") {
+    const order = readOrders().find((o) => String(o.id) === String(rawId));
+    if (!order) return null;
+    const plan = makeBase(String(order.id));
+    plan.title = order.title;
+    plan.actionLabel = "répondre à la précommande";
+    plan.pastAction = "répondu à la précommande";
+    plan.closingDate = closingDateForOrder(order);
+    plan.link = `${PRECO_BASE_URL}/?operation=${reminderSlugify(order.title)}`;
+    const responses = readResponses();
+    for (const ph of pharmacies) {
+      if (pharmacyRespondedToOrder(order, ph, responses)) { plan.excluded.responded.push(ph.name); continue; }
+      pushTarget(plan, ph, activePharmacyEmails);
+    }
+    return plan;
+  }
+
+  if (type === "poll") {
+    const poll = readPolls().find((p) => String(p.id) === String(rawId));
+    if (!poll) return null;
+    const plan = makeBase(String(poll.id));
+    plan.title = poll.question;
+    plan.actionLabel = "répondre au sondage";
+    plan.pastAction = "répondu au sondage";
+    plan.closingDate = closingDateForPoll(poll);
+    plan.link = `${PRECO_BASE_URL}/?operation=${reminderSlugify(poll.question)}`;
+    const pollResponses = readPollResponses();
+    for (const ph of pharmacies) {
+      if (pharmacyRespondedToPoll(poll, ph, pollResponses)) { plan.excluded.responded.push(ph.name); continue; }
+      pushTarget(plan, ph, activePharmacyEmails);
+    }
+    return plan;
+  }
+
+  if (type === "attestation") {
+    const attestation = readAttestation();
+    const plan = makeBase(`attestation-${attestation.year || "en-cours"}`);
+    plan.title = attestation.title || "Attestation d'engagement SOGUASPHAR";
+    plan.actionLabel = "signer l'attestation d'engagement";
+    plan.pastAction = "signé l'attestation d'engagement";
+    plan.link = PRECO_BASE_URL;
+    if (attestation.draft || attestation.archived || !(attestation.documents || []).length) {
+      plan.trackingNote = "Aucune campagne d'attestation active (brouillon, archivée ou vide) : rien à relancer.";
+    }
+    // La signature EST le suivi : une pharmacie ayant signé est exclue ; les
+    // autres n'ont simplement pas encore signé (pas de notion de refus ici).
+    const signed = new Set(readAttestationResponses().filter((r) => r.signedAt || r.pdfUrl).map((r) => String(r.pharmacyId)));
+    for (const doc of (attestation.documents || [])) {
+      if (signed.has(String(doc.pharmacyId))) { plan.excluded.responded.push(doc.pharmacyName); continue; }
+      const ph = pharmacyByNameOrId(pharmacies, { name: doc.pharmacyName, id: doc.pharmacyId });
+      if (!ph) { plan.excluded.noDocument.push(doc.pharmacyName); continue; }
+      pushTarget(plan, ph, titulaireEmailsForPharmacy); // document officiel : titulaire uniquement
+    }
+    return plan;
+  }
+
+  if (type === "validation") {
+    const validation = readValidation();
+    const summary = validationSummary();
+    const plan = makeBase(`validation-${reminderSlugify(validation.title || "document")}`);
+    plan.title = validation.title || "Document à valider";
+    plan.actionLabel = "valider le document";
+    plan.pastAction = "validé le document";
+    plan.link = PRECO_BASE_URL;
+    if (validation.archived || !summary.matchedCount) {
+      plan.trackingNote = "Aucun document de validation actif : rien à relancer.";
+    }
+    if (summary.missingDocuments && summary.missingDocuments.length) {
+      plan.excluded.noDocument.push(...summary.missingDocuments);
+      plan.trackingNote = `${plan.trackingNote ? plan.trackingNote + " " : ""}${summary.missingDocuments.length} pharmacie(s) sans document personnalisé : non relançables (aucun document à valider pour elles).`;
+    }
+    // On ne relance QUE les "sans réponse" (summary.unanswered). Les pharmacies
+    // ayant demandé une correction ou validé ont répondu : jamais relancées
+    // (une demande de correction n'est PAS une absence de réponse).
+    for (const name of (summary.unanswered || [])) {
+      const ph = pharmacyByNameOrId(pharmacies, { name });
+      if (!ph) { plan.excluded.noDocument.push(name); continue; }
+      pushTarget(plan, ph, activePharmacyEmails);
+    }
+    return plan;
+  }
+
+  return null;
+}
+
+function reminderClosingPart(closingDate) {
+  return closingDate ? ` La date limite est le ${closingDate.split("-").reverse().join("/")}.` : "";
+}
+
+function defaultReminderContent(plan) {
+  const subject = `Rappel : ${plan.actionLabel} « ${plan.title} »`;
+  const message = `Bonjour,\n\nSauf erreur de notre part, vous n'avez pas encore ${plan.pastAction} « ${plan.title} ».${reminderClosingPart(plan.closingDate)}\n\nMerci de le faire dès que possible à l'aide du bouton ci-dessous.`;
+  return { subject, message };
+}
+
+// Rend l'e-mail à partir du message (texte modifiable par l'admin) + le lien
+// d'accès. Le lien est TOUJOURS ajouté par le serveur (jamais saisi à la main) :
+// les URL/accès des pharmacies restent strictement inchangés.
+function renderManualReminderEmail({ message, link }) {
+  const blocks = String(message || "").split(/\n{2,}/).map((b) => escapeHtml(b).replace(/\n/g, "<br>"));
+  const text = `${message}\n\nAccéder ici : ${link}\n\n— Préco SOGUASPHAR\nCeci est un message automatique, merci de ne pas y répondre.`;
+  const html = `
+    <div style="font-family: Arial, Helvetica, sans-serif; max-width: 480px; margin: 0 auto; color: #1f2937;">
+      <div style="text-align: center; padding: 16px 0;">
+        <img src="${PRECO_BASE_URL}/logo-soguasphar.png" alt="SOGUASPHAR" style="height: 56px;" />
+      </div>
+      ${blocks.map((b) => `<p>${b}</p>`).join("")}
+      <p style="text-align: center; margin: 24px 0;">
+        <a href="${link}" style="background:#0f766e; color:#ffffff; text-decoration:none; padding:12px 20px; border-radius:6px; display:inline-block;">Accéder maintenant</a>
+      </p>
+      <p>— Préco SOGUASPHAR</p>
+      <p style="font-size: 12px; color: #6b7280; margin-top: 24px;">Ceci est un message automatique, merci de ne pas y répondre.</p>
+    </div>`;
+  return { text, html };
+}
+
 async function checkReminders() {
   try {
     if (REMINDERS_START_DATE) {
@@ -2326,6 +2504,111 @@ function serveStatic(request, response, pathname) {
   });
 }
 
+// Types de pièces jointes autorisés (PDF + photos) et extension de stockage.
+const ALLOWED_ATTACHMENT_MIME = {
+  "application/pdf": "pdf",
+  "image/png": "png",
+  "image/jpeg": "jpg",
+  "image/jpg": "jpg"
+};
+
+// Nom de fichier sur disque d'une pièce jointe, reconstructible à l'identique
+// côté lecture et côté écriture (identifiants nettoyés pour rester sûrs).
+function attachmentFileName(entityId, att) {
+  const safeEntity = String(entityId).replace(/[^\w-]/g, "_");
+  const safeId = String(att.id).replace(/[^\w-]/g, "_");
+  const safeExt = String(att.ext || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  return `${safeEntity}-${safeId}.${safeExt}`;
+}
+
+// À l'enregistrement d'un sondage/précommande : écrit sur disque les pièces
+// jointes NOUVELLES (reçues en base64), conserve telles quelles celles déjà
+// stockées (métadonnées seules, sans contenu), supprime les fichiers des
+// pièces retirées, et renvoie la liste de métadonnées à ranger dans le JSON.
+function persistAttachments(entityId, dir, incoming, previous) {
+  const prevList = (previous && Array.isArray(previous.attachments)) ? previous.attachments : [];
+  // Champ absent de la charge utile : on ne touche à rien (sécurité pour les
+  // nombreux chemins d'enregistrement qui ne connaissent pas les pièces jointes).
+  if (!Array.isArray(incoming)) return prevList;
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+
+  const result = [];
+  for (const att of incoming) {
+    if (!att || typeof att !== "object") continue;
+    const id = String(att.id || Date.now()).replace(/[^\w-]/g, "") || String(Date.now());
+    const name = String(att.name || "document").slice(0, 200);
+    const content = typeof att.content === "string" ? att.content : "";
+    const match = content.match(/^data:([^;]+);base64,(.+)$/);
+    if (match) {
+      const mime = match[1];
+      const ext = ALLOWED_ATTACHMENT_MIME[mime];
+      if (!ext) continue; // type non autorisé : ignoré en silence
+      const meta = { id, name, mime: mime === "image/jpg" ? "image/jpeg" : mime, ext };
+      try {
+        fs.writeFileSync(path.join(dir, attachmentFileName(entityId, meta)), Buffer.from(match[2], "base64"));
+        result.push(meta);
+      } catch (error) {
+        console.error(`[preco] échec d'écriture de la pièce jointe ${id} :`, error.message);
+      }
+    } else {
+      // Pièce jointe déjà stockée : on la garde si elle existait vraiment.
+      const prev = prevList.find((item) => item.id === id);
+      if (prev) result.push({ id: prev.id, name: name || prev.name, mime: prev.mime, ext: prev.ext });
+    }
+  }
+
+  // Suppression des fichiers des pièces jointes qui ne sont plus dans la liste.
+  prevList.forEach((prev) => {
+    if (!result.find((item) => item.id === prev.id)) {
+      try {
+        const old = path.join(dir, attachmentFileName(entityId, prev));
+        if (fs.existsSync(old)) fs.unlinkSync(old);
+      } catch (error) { /* rien : nettoyage best-effort */ }
+    }
+  });
+  return result;
+}
+
+// Sert une pièce jointe depuis le disque. Respecte la visibilité : les pièces
+// d'un brouillon (non publié) ne sont servies qu'à l'administrateur (code
+// valide via ?code=), jamais au public. Les sondages/précos publiés sont
+// accessibles via leur lien, comme les photos déjà en place.
+function serveEntityAttachment(request, response, url, list, entityId, attId, dir) {
+  const entity = list.find((item) => item.id === entityId);
+  const att = (entity && Array.isArray(entity.attachments)) ? entity.attachments.find((a) => a.id === attId) : null;
+  if (!entity || !att) {
+    response.writeHead(404);
+    response.end("Not found");
+    return;
+  }
+  if (entity.draft && !isAdminCodeValid(request, url.searchParams.get("code") || undefined)) {
+    response.writeHead(404);
+    response.end("Not found");
+    return;
+  }
+  const filePath = path.join(dir, attachmentFileName(entityId, att));
+  if (!filePath.startsWith(dir)) {
+    response.writeHead(403);
+    response.end("Forbidden");
+    return;
+  }
+  fs.readFile(filePath, (error, data) => {
+    if (error) {
+      response.writeHead(404);
+      response.end("Not found");
+      return;
+    }
+    const disposition = url.searchParams.get("download") === "1" ? "attachment" : "inline";
+    response.writeHead(200, {
+      "Content-Type": att.mime || MIME_TYPES["." + att.ext] || "application/octet-stream",
+      "Content-Disposition": `${disposition}; filename="${encodeURIComponent(att.name)}"`,
+      "Cache-Control": "private, max-age=600",
+      "Content-Length": data.length
+    });
+    response.end(data);
+  });
+}
+
 const server = http.createServer(async (request, response) => {
   const url = new URL(request.url, `http://${request.headers.host}`);
 
@@ -2367,6 +2650,18 @@ const server = http.createServer(async (request, response) => {
         response.writeHead(200, { "Content-Type": "application/pdf" });
         response.end(data);
       });
+      return;
+    }
+
+    const pollAttachmentMatch = url.pathname.match(/^\/api\/polls\/([^/]+)\/attachment\/([^/]+)$/);
+    if (pollAttachmentMatch && request.method === "GET") {
+      serveEntityAttachment(request, response, url, readPolls(), decodeURIComponent(pollAttachmentMatch[1]), decodeURIComponent(pollAttachmentMatch[2]), POLL_ATTACHMENTS_DIR);
+      return;
+    }
+
+    const orderAttachmentMatch = url.pathname.match(/^\/api\/orders\/([^/]+)\/attachment\/([^/]+)$/);
+    if (orderAttachmentMatch && request.method === "GET") {
+      serveEntityAttachment(request, response, url, readOrders(), decodeURIComponent(orderAttachmentMatch[1]), decodeURIComponent(orderAttachmentMatch[2]), ORDER_ATTACHMENTS_DIR);
       return;
     }
 
@@ -3423,7 +3718,8 @@ const server = http.createServer(async (request, response) => {
           startDate: String(period.startDate || "").trim(),
           endDate: String(period.endDate || "").trim()
         })).filter((period) => period.startDate) : [],
-        template: normalizeTemplate(order.template)
+        template: normalizeTemplate(order.template),
+        attachments: persistAttachments(id, ORDER_ATTACHMENTS_DIR, order.attachments, previous)
         };
       }) : [];
       writeOrders(orders);
@@ -3472,7 +3768,11 @@ const server = http.createServer(async (request, response) => {
           questions,
           freeTextLabel: String(poll.freeTextLabel || "").trim(),
           freeTextRequired: Boolean(poll.freeTextRequired),
+          // Texte explicatif affiché à la pharmacie avant les choix de réponse
+          // (retours à la ligne et paragraphes conservés côté affichage).
+          intro: String(poll.intro || "").trim(),
           imageData: String(poll.imageData || ""),
+          attachments: persistAttachments(id, POLL_ATTACHMENTS_DIR, poll.attachments, previous),
           draft: Boolean(poll.draft),
           closed: Boolean(poll.closed),
           // Date de clôture (facultative) : champ existant côté écran admin
@@ -3674,6 +3974,67 @@ const server = http.createServer(async (request, response) => {
           return pharmacyName && normalizeLookup(item.pharmacyName) === pharmacyName;
         });
       sendJson(response, 200, responses);
+      return;
+    }
+
+    if (url.pathname === "/api/reminders" && request.method === "POST") {
+      if (!requireAdminCode(request, response)) return;
+      const payload = JSON.parse((await readBody(request)) || "{}");
+      const plan = buildReminderPlan(String(payload.type || ""), String(payload.id || ""));
+      if (!plan) {
+        sendJson(response, 404, { error: "Élément introuvable pour la relance." });
+        return;
+      }
+      const defaults = defaultReminderContent(plan);
+
+      // Aperçu : on recalcule TOUJOURS la liste des non-répondants au moment de
+      // la demande (jamais une liste figée), sans rien envoyer.
+      if (payload.dryRun) {
+        sendJson(response, 200, {
+          title: plan.title,
+          actionLabel: plan.actionLabel,
+          closingDate: plan.closingDate,
+          trackingAvailable: plan.trackingAvailable,
+          trackingNote: plan.trackingNote,
+          recipients: plan.targets.map((t) => t.pharmacyName),
+          recipientCount: plan.targets.length,
+          excluded: plan.excluded,
+          defaultSubject: defaults.subject,
+          defaultMessage: defaults.message,
+          link: plan.link
+        });
+        return;
+      }
+
+      // Envoi réel : un e-mail par pharmacie (jamais de liste groupée, aucune
+      // adresse d'une pharmacie n'est exposée à une autre).
+      const subject = String(payload.subject || "").trim() || defaults.subject;
+      const message = String(payload.message || "").trim() || defaults.message;
+      const rendered = renderManualReminderEmail({ message, link: plan.link });
+      const store = readManualReminders();
+      const sent = [];
+      const failed = [];
+      const skipped = [];
+      for (const target of plan.targets) {
+        // Re-vérifié juste avant l'envoi : deux clics rapprochés ne doublent pas.
+        if (remindedTodayFor(store, plan.type, plan.id, target.pharmacyId)) { skipped.push(target.pharmacyName); continue; }
+        try {
+          await sendMail({
+            to: target.emails.join(", "),
+            subject,
+            text: rendered.text,
+            html: rendered.html,
+            from: REMINDER_FROM,
+            fromName: REMINDER_FROM_NAME
+          });
+          store[manualReminderKey(plan.type, plan.id, target.pharmacyId)] = new Date().toISOString();
+          writeManualReminders(store); // écrit après CHAQUE envoi : idempotent même en cas d'arrêt
+          sent.push(target.pharmacyName);
+        } catch (error) {
+          failed.push({ pharmacy: target.pharmacyName, error: error.message || String(error) });
+        }
+      }
+      sendJson(response, 200, { sentCount: sent.length, sent, failed, skipped });
       return;
     }
 

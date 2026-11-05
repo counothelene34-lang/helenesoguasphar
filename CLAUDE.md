@@ -203,6 +203,63 @@ minimum de filet de sécurité (vu les incidents de septembre-octobre 2026 ci-de
    penser à `rafraichir-test` avant de l'utiliser (elle a pu prendre du retard
    pendant la pause).
 
+## Texte explicatif + pièces jointes sur sondages et précommandes (05/11/2026)
+Les sondages et les précommandes peuvent recevoir un **texte explicatif** (paragraphes +
+retours à la ligne conservés) et des **pièces jointes** (PDF + photos JPG/PNG), visibles
+par les pharmacies avant les choix de réponse.
+- **Texte** : les précos ont toujours `pharmacyMessage` (champ « Message visible par les
+  pharmacies », éditeur admin) ; les sondages ont désormais `intro` (nouveau champ,
+  enregistré par le bouton « Enregistrer le titre, la date et le texte »). Rendu multi-
+  paragraphe via `explanatoryTextMarkup()` (app.js) : lignes vides → paragraphes, retour
+  simple → `<br>`. Côté pharmacie : `pollCard()` (sondage) et `selectCampaign()` (préco,
+  `campaignNotice` passé en `innerHTML`).
+- **Pièces jointes** : stockées **sur le disque**, PAS en base64 dans polls.json/orders.json
+  (sinon un PDF de plusieurs Mo ralentirait tout le site à chaque ouverture — même raison
+  que l'offload des photos d'opérations le 15/10). Dossiers `data/poll-attachments/` et
+  `data/order-attachments/`, fichier `<entityId>-<attId>.<ext>`. Le JSON ne garde que les
+  métadonnées `{id,name,mime,ext}`.
+- **Upload** : pas de multipart (projet sans dépendance). Les nouveaux fichiers partent en
+  base64 dans le `content` d'une entrée `attachments` du PUT /api/polls|/api/orders ;
+  `persistAttachments()` (server.js) écrit le fichier et retire le `content`. Une entrée
+  SANS `content` = pièce déjà stockée, conservée depuis la version précédente.
+- **PIÈGE / sécurité** : `persistAttachments()` ne supprime des fichiers QUE si on lui passe
+  une liste `attachments` explicite (même vide). Si le champ est **absent** de la charge
+  utile, l'existant est **conservé** (protège les nombreux chemins d'enregistrement qui
+  ignorent les pièces jointes). Donc le bouton « Supprimer » envoie bien `attachments: []`.
+- **Service** : routes `GET /api/polls/<id>/attachment/<attId>` et
+  `GET /api/orders/<id>/attachment/<attId>` (serveEntityAttachment). `?download=1` force le
+  téléchargement, sinon `inline` (PDF ouvert dans la modale `openPdfPreview()`, photos
+  agrandies par `data-preview-image`). **Visibilité** : les pièces d'un **brouillon** ne
+  sont servies qu'avec `?code=<ADMIN_CODE>` (aperçu admin) ; une fois publié, accessible via
+  le lien comme les photos. Images d'attachement compressées en JPEG (réutilise
+  `imageFileToDataUrl`), PDF gardés tels quels.
+
+## Bouton « Relancer les non-répondants » (05/11/2026)
+Bouton admin sur chaque **précommande**, **sondage** et **document** (validation BAT,
+attestation) pour relancer par e-mail uniquement les pharmacies concernées n'ayant pas
+répondu/agi. Réutilise tout le système d'envoi existant (sendMail, `REMINDER_FROM`
+`ne_pas_repondre@…`, liens `?operation=slug` identiques à `checkReminders`).
+- **Route unique** `POST /api/reminders` (admin). `dryRun:true` → aperçu (destinataires +
+  objet/message par défaut + exclusions + note de suivi) sans rien envoyer ; sans dryRun →
+  envoi **un e-mail par pharmacie** (jamais de liste groupée : aucune adresse exposée aux
+  autres). `buildReminderPlan(type,id)` calcule les cibles. Types : `order`, `poll`,
+  `attestation` (titulaire uniquement), `validation`.
+- **Ciblage** : exclut qui a répondu (`pharmacyRespondedToOrder/Poll`), signé (attestation),
+  ou validé. **Une demande de correction (BAT) ou une réponse « Non » = a répondu → jamais
+  relancée** (on ne relance que `validationSummary().unanswered`). Pharmacies sans adresse
+  e-mail connue ou sans document perso sont listées à part, pas relancées.
+- **Suivi documents** : la signature/validation EST le suivi. S'il n'y a pas de document
+  actif, le message le dit clairement (jamais « non lu » déduit d'une absence de suivi).
+- **Anti-doublon** : état dans un **fichier séparé** `data/manual-reminders.json` (clé
+  `type:id:pharmacyId` = horodatage), JAMAIS dans l'entité (indépendant des sauvegardes
+  admin). Une pharmacie n'est pas relancée 2× le même jour ; écriture après CHAQUE envoi
+  (idempotent même en cas d'arrêt). Côté écran, le bouton « Envoyer » se désactive pendant
+  l'envoi. La liste des non-répondants est recalculée à chaque ouverture et à l'envoi.
+- **Ne pas confondre** avec le bouton « Relancer » existant d'une précommande clôturée
+  (`data-relaunch-campaign`) qui, lui, rouvre/prolonge l'opération — sans rapport.
+- **Testé** sur une copie isolée + faux mailer local (zéro e-mail réel) : ciblage des 4
+  types, envoi séparé par pharmacie, cohérence aperçu/envoi, anti-doublon le même jour.
+
 ## Architecture
 - **Node.js pur, sans dépendance** (modules natifs `http`, `fs`, `path`). CommonJS.
   N'ajoute ni framework ni `node_modules`.
