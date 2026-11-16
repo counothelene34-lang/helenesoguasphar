@@ -3947,7 +3947,10 @@ const server = http.createServer(async (request, response) => {
         .map((item) => ({
           pollId: item.pollId,
           answer: item.answer,
-          answers: item.answers || null
+          answers: item.answers || null,
+          // Propre commentaire libre de la pharmacie : utile pour le pré-remplir
+          // quand elle modifie sa réponse (donnée filtrée sur sa seule identité).
+          freeText: item.freeText || ""
         }));
       sendJson(response, 200, responses);
       return;

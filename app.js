@@ -469,6 +469,10 @@ let pendingInitialPassword = "";
 let pendingInitialUserPassword = ""; // mot de passe provisoire d'un compte nominatif, avant son changement obligatoire
 let teamMembers = [];
 let pharmacyPollAnswers = {};
+// Commentaire libre déjà enregistré par la pharmacie (pour le pré-remplir quand
+// elle modifie sa réponse) et sondages en cours de modification côté pharmacie.
+let pharmacyPollFreeText = {};
+const pollsBeingEdited = new Set();
 let pharmacyCampaignResponses = {};
 let pharmacyPeriodResponses = {};
 let selectedCampaign = null;
@@ -1567,6 +1571,7 @@ async function requestPharmacyPasswordReset(pharmacyName) {
 
 async function refreshPharmacyPollAnswers() {
   pharmacyPollAnswers = {};
+  pharmacyPollFreeText = {};
   if (!API_AVAILABLE || !currentPharmacy?.id) return;
 
   try {
@@ -1579,9 +1584,11 @@ async function refreshPharmacyPollAnswers() {
       pharmacyPollAnswers[response.pollId] = (response.answers && Object.keys(response.answers).length)
         ? response.answers
         : response.answer;
+      if (response.freeText) pharmacyPollFreeText[response.pollId] = response.freeText;
     });
   } catch {
     pharmacyPollAnswers = {};
+    pharmacyPollFreeText = {};
   }
 }
 
@@ -5081,20 +5088,23 @@ function applyPollConditionalLogic(inlineForm) {
   });
 }
 
-function buildPollQuestionsFormMarkup(questionList, showQuestionLabels) {
+function buildPollQuestionsFormMarkup(questionList, showQuestionLabels, prefill = null) {
   return questionList.map((question) => {
+    const prefillValue = prefill ? prefill[question.id] : undefined;
     let controlsMarkup;
     if (question.type === "texte_libre") {
+      const prefillText = typeof prefillValue === "string" ? prefillValue : "";
       controlsMarkup = `
-        <textarea class="inline-poll-textanswer" data-question-id="${escapeHtml(question.id)}" rows="3" placeholder="Votre r\u00e9ponse"${question.required ? " required" : ""}></textarea>
+        <textarea class="inline-poll-textanswer" data-question-id="${escapeHtml(question.id)}" rows="3" placeholder="Votre r\u00e9ponse"${question.required ? " required" : ""}>${escapeHtml(prefillText)}</textarea>
       `;
     } else {
       const inputType = question.type === "choix_multiple" ? "checkbox" : "radio";
+      const prefillSelected = Array.isArray(prefillValue) ? prefillValue : (prefillValue != null ? [prefillValue] : []);
       controlsMarkup = `
         <div class="whatsapp-poll-options inline-poll-options">
           ${question.options.map((option, index) => `
             <label class="whatsapp-poll-option inline-whatsapp-option">
-              <input type="${inputType}" name="inlinePollAnswer-${escapeHtml(question.id)}" data-question-id="${escapeHtml(question.id)}" value="${escapeHtml(option)}" ${inputType === "radio" && index === 0 ? "required" : ""}>
+              <input type="${inputType}" name="inlinePollAnswer-${escapeHtml(question.id)}" data-question-id="${escapeHtml(question.id)}" value="${escapeHtml(option)}" ${prefillSelected.includes(option) ? "checked" : ""} ${inputType === "radio" && index === 0 ? "required" : ""}>
               <span class="whatsapp-poll-circle" aria-hidden="true"></span>
               <span class="whatsapp-poll-label">${escapeHtml(option)}</span>
               <span class="whatsapp-poll-count">0</span>
@@ -5122,11 +5132,16 @@ function pollCard(poll, target) {
   const localAnswers = !isAdmin ? getPollLocalAnswers(poll) : null;
   const showQuestionLabels = questionList.length > 1;
 
+  // Mode "modification" : la pharmacie a déjà répondu et a cliqué sur
+  // « Modifier ma réponse » — on réaffiche le formulaire pré-rempli.
+  const isEditing = !isAdmin && pollsBeingEdited.has(poll.id);
+  const prefill = isEditing ? localAnswers : null;
   const optionsPreview = buildPollAnswersPreviewMarkup(questionList, showQuestionLabels, localAnswers);
-  const inlineQuestions = buildPollQuestionsFormMarkup(questionList, showQuestionLabels);
+  const inlineQuestions = buildPollQuestionsFormMarkup(questionList, showQuestionLabels, prefill);
+  const prefillFreeText = isEditing && currentPharmacy ? (pharmacyPollFreeText[poll.id] || "") : "";
   const inlineFreeText = poll.freeTextLabel ? `
     <label class="inline-poll-free-label" for="inlineFreeText-${escapeHtml(poll.id)}">${escapeHtml(poll.freeTextLabel)}</label>
-    <textarea id="inlineFreeText-${escapeHtml(poll.id)}" name="inlinePollFreeText" rows="3" ${poll.freeTextRequired ? "required" : ""}></textarea>
+    <textarea id="inlineFreeText-${escapeHtml(poll.id)}" name="inlinePollFreeText" rows="3" ${poll.freeTextRequired ? "required" : ""}>${escapeHtml(prefillFreeText)}</textarea>
   ` : "";
   const pollImage = poll.imageData
     ? `<a class="whatsapp-poll-image-link" href="${poll.imageData}" data-preview-image title="Voir la photo du sondage"><img class="whatsapp-poll-image" src="${poll.imageData}" alt="Image ${escapeHtml(poll.question)}"></a>`
@@ -5145,7 +5160,7 @@ function pollCard(poll, target) {
       ? `<p class="period-closing-info">Clôture du sondage le <strong>${escapeHtml(formatDateFr(poll.endDate))}</strong></p>`
       : "";
     return `
-      <article class="whatsapp-poll-card ${localAnswers ? "answered" : "is-open"}">
+      <article class="whatsapp-poll-card ${localAnswers && !isEditing ? "answered" : "is-open"}">
         <div class="whatsapp-poll-head">
           ${pollImage}
           <div class="whatsapp-poll-title">${escapeHtml(poll.question)}</div>
@@ -5153,17 +5168,23 @@ function pollCard(poll, target) {
         ${pollClosingInfoMarkup}
         ${introMarkup}
         ${attachmentMarkup}
-        ${localAnswers ? `
+        ${localAnswers && !isEditing ? `
           <div class="whatsapp-poll-options">
             ${optionsPreview}
           </div>
           <div class="whatsapp-poll-answered">Réponse enregistrée : ${escapeHtml(pollAnswersToText(poll, localAnswers))}</div>
+          <div class="inline-poll-actions">
+            <button class="ghost-btn" type="button" data-edit-poll="${escapeHtml(poll.id)}">Modifier ma réponse</button>
+          </div>
         ` : `
           <form class="inline-poll-form" data-inline-poll-form="${escapeHtml(poll.id)}">
             <input type="hidden" name="inlinePollPharmacy" value="${escapeHtml(currentPharmacy?.name || "")}">
             ${inlineQuestions}
             ${inlineFreeText}
-            <button class="primary-btn" type="submit">Valider ma réponse</button>
+            <div class="inline-poll-actions">
+              <button class="primary-btn" type="submit">${isEditing ? "Enregistrer la modification" : "Valider ma réponse"}</button>
+              ${isEditing ? `<button class="ghost-btn" type="button" data-cancel-edit-poll="${escapeHtml(poll.id)}">Annuler</button>` : ""}
+            </div>
             <p class="status-message inline-poll-message" role="status"></p>
           </form>
         `}
@@ -6081,6 +6102,8 @@ async function savePollAnswer(poll, answers, pharmacyName, freeText) {
   saveLocalAnsweredPoll(poll.id, answers);
   if (currentPharmacy?.id) {
     pharmacyPollAnswers[poll.id] = answers;
+    if (freeText) pharmacyPollFreeText[poll.id] = freeText;
+    else delete pharmacyPollFreeText[poll.id];
   }
   return savedResponse;
 }
@@ -8327,6 +8350,7 @@ sondagesListRows?.addEventListener("submit", async (event) => {
     return;
   }
   selectedPoll = null;
+  pollsBeingEdited.delete(poll.id);
   renderCampaignPickers();
   await renderPollResults();
 });
@@ -8363,6 +8387,34 @@ pollCards.addEventListener("change", (event) => {
     choice.classList.toggle("is-selected", Boolean(choice.querySelector("input")?.checked));
   });
   applyPollConditionalLogic(form);
+});
+
+// Révèle les questions conditionnelles déjà renseignées quand on rouvre un
+// formulaire pré-rempli (modification d'une réponse). Sans effet sur un
+// formulaire vide.
+function initPrefilledPollForms() {
+  document.querySelectorAll("[data-inline-poll-form]").forEach((form) => applyPollConditionalLogic(form));
+}
+
+function enterPollEdit(pollId) {
+  if (!pollId) return;
+  pollsBeingEdited.add(pollId);
+  renderCampaignPickers();
+  initPrefilledPollForms();
+}
+
+function cancelPollEdit(pollId) {
+  pollsBeingEdited.delete(pollId);
+  renderCampaignPickers();
+}
+
+[pollCards, sondagesListRows].forEach((container) => {
+  container?.addEventListener("click", (event) => {
+    const editBtn = event.target.closest("[data-edit-poll]");
+    if (editBtn) { enterPollEdit(editBtn.getAttribute("data-edit-poll")); return; }
+    const cancelBtn = event.target.closest("[data-cancel-edit-poll]");
+    if (cancelBtn) { cancelPollEdit(cancelBtn.getAttribute("data-cancel-edit-poll")); return; }
+  });
 });
 
 function collectInlinePollAnswers(poll, inlineForm) {
@@ -8425,6 +8477,7 @@ pollCards.addEventListener("submit", async (event) => {
     return;
   }
   selectedPoll = null;
+  pollsBeingEdited.delete(poll.id);
   renderCampaignPickers();
   await renderPollResults();
 });

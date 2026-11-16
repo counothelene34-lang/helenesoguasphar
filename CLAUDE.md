@@ -203,6 +203,29 @@ minimum de filet de sécurité (vu les incidents de septembre-octobre 2026 ci-de
    penser à `rafraichir-test` avant de l'utiliser (elle a pu prendre du retard
    pendant la pause).
 
+## Une pharmacie peut modifier son vote à un sondage (16/11/2026)
+Avant, une fois la pharmacie ayant répondu à un sondage, sa réponse s'affichait sans
+possibilité de la changer. Désormais, bouton **« Modifier ma réponse »** (comme
+« Modifier ma commande » des précommandes).
+- **Côté serveur, rien à changer** : `POST /api/poll-responses` mettait DÉJÀ à jour la
+  réponse existante en place (recherche par `pollResponseOwnerKey`, réutilise l'id, pose
+  `updatedAt`, pas de doublon) — même mécanisme que les précommandes.
+- **Côté écran (app.js)** : ensemble `pollsBeingEdited` (sondages en cours de modification).
+  `pollCard()` affiche le formulaire **pré-rempli** quand la pharmacie clique « Modifier ».
+  `buildPollQuestionsFormMarkup(questionList, showLabels, prefill)` coche les options /
+  remplit les textes déjà choisis. Boutons « Enregistrer la modification » + « Annuler »
+  (`data-edit-poll` / `data-cancel-edit-poll`, gérés sur `pollCards` ET `sondagesListRows`).
+  Après enregistrement on sort du mode édition (`pollsBeingEdited.delete`).
+- **Questions conditionnelles** : après réaffichage pré-rempli, `initPrefilledPollForms()`
+  rappelle `applyPollConditionalLogic()` sur chaque formulaire pour ré-afficher les
+  questions dépendantes déjà renseignées (sans effet sur un formulaire vierge).
+- **Commentaire libre** : `pharmacyPollFreeText[pollId]` (nouveau) pour le pré-remplir.
+  `GET /api/pharmacy-poll-responses` renvoie désormais aussi `freeText` (donnée propre à la
+  pharmacie) — nécessaire pour retrouver le commentaire après un rechargement de page.
+- **Testé** sur copie isolée (session pharmacie forgée) : réponse puis modification =
+  1 seule réponse conservée (pas de doublon), même id, `updatedAt` posé, pré-remplissage
+  (choix + commentaire) correct.
+
 ## Texte explicatif + pièces jointes sur sondages et précommandes (05/11/2026)
 Les sondages et les précommandes peuvent recevoir un **texte explicatif** (paragraphes +
 retours à la ligne conservés) et des **pièces jointes** (PDF + photos JPG/PNG), visibles

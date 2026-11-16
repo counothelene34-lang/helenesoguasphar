@@ -4098,3 +4098,12 @@ body.admin-preview-mode #attestationForm button[type="submit"] {
   box-sizing: border-box;
 }
 #reminderExcluded { margin-top: 6px; }
+
+/* Boutons d'action sous un sondage (valider / modifier / annuler) */
+.inline-poll-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-top: 8px;
+}
