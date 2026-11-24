@@ -14,7 +14,9 @@ défini côté serveur, jamais dans le code). Propriétaire : Hélène (partagé
 
 ## Remise automatique par paliers — Promotions CONFIANCE MEN (24/11/2026)
 Précommande `promotions-confiance-men` (9 références Confiance® MEN Pads/Pants,
-colonne de prix **"Cession"**), toujours en **brouillon** : remise calculée
+colonne de prix **"Cession"**), **publiée (en ligne) depuis le 24/11/2026** —
+développée et testée en brouillon, puis mise en ligne le même jour une fois
+tout revérifié (voir plus bas). Remise calculée
 automatiquement par pharmacie, sans action admin, jamais cumulable, toujours
 **recalculée à partir des quantités actuellement enregistrées** (jamais stockée
 sur la réponse) — donc à jour à la hausse comme à la baisse, y compris pour des
@@ -90,6 +92,28 @@ quantités déjà présentes avant ce développement.
     prix net corrects ; 5 paquets/3 réf → 12,6 % et prix net corrects), aucune
     réponse envoyée pendant le test. Données de test retirées, copie de test
     remise en pause après vérification.
+- **24/11/2026, mise en ligne : un écran admin NE montre pas la remise, et
+  c'est normal.** Hélène a signalé ne pas voir la remise sur l'écran admin
+  « Bon de commande » (`#orderTemplateHeadRow`/`#orderTemplateTable`,
+  `renderOrderTemplate()` app.js ~6462) — c'est le tableau BRUT du catalogue
+  (les colonnes telles qu'importées, sans aucune pharmacie ni quantité), donc
+  il n'y a rien à calculer à cet endroit-là (même chose pour "Cession" qui y
+  reste un prix catalogue, pas un prix net). C'est **volontairement différent**
+  de l'écran "Détail des commandes" (`#responsesTable`, ligne par ligne par
+  pharmacie, remise déjà correcte) et du formulaire pharmacie
+  (`#orderTableHeadRow`), qui eux ont une vraie quantité à partir de laquelle
+  calculer. **Avant publication**, vérifié par un vrai appel à
+  `GET /api/export.xls` (la route serveur réelle, `menMixedDiscount*` dans
+  `server.js`) avec une pharmacie de test temporaire (10 paquets sur 5
+  références) : 17,2 % et montants nets corrects au centime (ex. Pads 2G
+  6,76 € × 2 × 0,828 = 11,19 €) ; pharmacie de test retirée de
+  `data/responses.json` juste après (sauvegardes avant/après dans
+  `data-backups/`). Précommande passée de `draft:true` à `draft:false` dans
+  `data/orders.json` (sauvegarde avant), site revérifié en ligne (page
+  d'accueil/connexion pharmacie, aucune erreur). **Si un jour ce même constat
+  revient** ("je ne vois pas la remise sur tel écran admin"), vérifier d'abord
+  s'il s'agit de ce tableau catalogue brut (pas de pharmacie associée) avant
+  de chercher un bug.
 
 ## Sondages alignés sur les précommandes (clôture/relances/compte rendu) — 26/10/2026
 Les sondages fonctionnent désormais exactement comme les précommandes côté
