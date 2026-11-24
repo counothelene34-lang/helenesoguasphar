@@ -6305,6 +6305,73 @@ function precadencierProductDetailMarkup(item, response, quantityColumns) {
   return `${label}<br>${livLines}<br>Total annuel : ${escapeHtml(item.quantity || "0")}`;
 }
 
+// Promotions CONFIANCE MEN (précommande "promotions-confiance-men", lancée en
+// brouillon le 24/11/2026) : remise automatique par paliers selon le total de
+// paquets ET le nombre de références distinctes commandées par UNE pharmacie
+// (jamais cumulable, le palier le plus avantageux atteint l'emporte). Toujours
+// RECALCULÉE à partir des quantités affichées à cet instant (jamais stockée) —
+// donc à jour à la hausse comme à la baisse, y compris pour des quantités déjà
+// enregistrées. Limitée à cette seule précommande (comparaison sur l'id de
+// campagne) : aucun effet sur les autres opérations. Même logique côté serveur
+// (server.js, fonctions du même nom) pour les exports et l'e-mail de clôture —
+// à maintenir synchronisée si les paliers changent un jour.
+const MEN_MIXED_DISCOUNT_CAMPAIGN_ID = "promotions-confiance-men";
+const MEN_MIXED_DISCOUNT_PRICE_COLUMN = "Cession";
+const MEN_MIXED_DISCOUNT_TIERS = [
+  { minPackages: 10, minReferences: 5, rate: 0.172 },
+  { minPackages: 5, minReferences: 3, rate: 0.126 }
+];
+
+function menMixedDiscountRate(totalPackages, distinctReferences) {
+  const tier = MEN_MIXED_DISCOUNT_TIERS.find((item) =>
+    totalPackages >= item.minPackages && distinctReferences >= item.minReferences);
+  return tier ? tier.rate : 0;
+}
+
+// À partir des produits d'UNE réponse pharmacie à MEN : total de paquets
+// (toutes références confondues), nombre de références distinctes dont la
+// quantité est > 0, et taux de remise applicable.
+function menMixedDiscountStateForProducts(products) {
+  const quantities = (products || [])
+    .map((product) => Number(String(product.quantity || "0").replace(",", ".")) || 0)
+    .filter((quantity) => quantity > 0);
+  const totalPackages = quantities.reduce((sum, quantity) => sum + quantity, 0);
+  const distinctReferences = quantities.length;
+  return { totalPackages, distinctReferences, rate: menMixedDiscountRate(totalPackages, distinctReferences) };
+}
+
+function menMixedUnitPrice(values) {
+  return Number(String(values?.[MEN_MIXED_DISCOUNT_PRICE_COLUMN] || "0").replace(",", ".")) || 0;
+}
+
+function formatMenDiscountRate(rate) {
+  return rate > 0 ? `${(rate * 100).toFixed(1).replace(".", ",").replace(/,0$/, "")} %` : "0 %";
+}
+
+// Détail d'une ligne de produit MEN pour le tableau admin "Détail des
+// commandes" : quantité, prix net après remise et montant de la ligne.
+function menMixedDiscountProductLineMarkup(item, rate) {
+  const label = productDisplayLabel(item.values);
+  const quantity = Number(String(item.quantity || "0").replace(",", ".")) || 0;
+  const netUnitPrice = menMixedUnitPrice(item.values) * (1 - rate);
+  const amount = netUnitPrice * quantity;
+  return `${escapeHtml(label)} : ${escapeHtml(item.quantity || "0")} × ${escapeHtml(formatEuros(netUnitPrice))} = ${escapeHtml(formatEuros(amount))}`;
+}
+
+// Bloc complet (toutes les lignes MEN + résumé remise/montant net) pour UNE
+// réponse pharmacie, affiché dans la colonne "Produits" du tableau admin.
+function menMixedDiscountProductsMarkup(products, response) {
+  const state = menMixedDiscountStateForProducts(products);
+  const lines = products.map((item) => menMixedDiscountProductLineMarkup(item, state.rate)).join("<br>");
+  const totalAmount = products.reduce((sum, item) => {
+    const quantity = Number(String(item.quantity || "0").replace(",", ".")) || 0;
+    return sum + menMixedUnitPrice(item.values) * (1 - state.rate) * quantity;
+  }, 0);
+  const pluralPackages = state.totalPackages > 1 ? "s" : "";
+  const pluralReferences = state.distinctReferences > 1 ? "s" : "";
+  return `${lines}<br><strong>Remise ${escapeHtml(formatMenDiscountRate(state.rate))}</strong> (${state.totalPackages} paquet${pluralPackages} sur ${state.distinctReferences} référence${pluralReferences} différente${pluralReferences}) — Total net : <strong>${escapeHtml(formatEuros(totalAmount))}</strong>`;
+}
+
 // Une colonne "prix" (Prix unitaire, Tarif, PU...) doit afficher le symbole € après
 // la valeur, sans toucher à la valeur enregistrée (utile pour l'import/export).
 function isPriceColumn(column) {
@@ -6668,14 +6735,17 @@ async function renderAdmin() {
   }
 
   const quantityColumns = quantitySubColumnsOf(currentOrderTemplate.columns);
+  const isMenMixedDiscount = selectedAdminCampaign?.id === MEN_MIXED_DISCOUNT_CAMPAIGN_ID;
   responsesTable.innerHTML = responses
     .slice()
     .reverse()
     .map((response) => {
       const products = response.products.length
-        ? response.products.map((item) => quantityColumns.length
-            ? precadencierProductDetailMarkup(item, response, quantityColumns)
-            : `${escapeHtml(productDisplayLabel(item.values))} : ${escapeHtml(item.quantity || "0")}`).join("<br><br>")
+        ? (isMenMixedDiscount
+            ? menMixedDiscountProductsMarkup(response.products, response)
+            : response.products.map((item) => quantityColumns.length
+                ? precadencierProductDetailMarkup(item, response, quantityColumns)
+                : `${escapeHtml(productDisplayLabel(item.values))} : ${escapeHtml(item.quantity || "0")}`).join("<br><br>"))
         : "-";
 
       const modifiedLabel = response.updatedAt
@@ -6736,12 +6806,31 @@ function renderQuantitySummary(responses = []) {
   });
 
   const rows = [...totals.values()].filter((row) => row.quantity > 0).sort((a, b) => a.label.localeCompare(b.label, "fr"));
-  lastQuantitySummary = { columns, rows, quantityColumns };
+
+  // Promotions CONFIANCE MEN uniquement : montant net total (toutes pharmacies,
+  // remise de chacune déjà appliquée) — ne peut pas se déduire des totaux par
+  // produit ci-dessus, le taux dépendant de chaque pharmacie, pas du produit.
+  const isMenMixedDiscount = selectedAdminCampaign?.id === MEN_MIXED_DISCOUNT_CAMPAIGN_ID;
+  const menNetTotal = isMenMixedDiscount
+    ? responses.reduce((sum, response) => {
+        const state = menMixedDiscountStateForProducts(response.products || []);
+        const lineTotal = (response.products || []).reduce((lineSum, item) => {
+          const quantity = Number(String(item.quantity || "0").replace(",", ".")) || 0;
+          return lineSum + menMixedUnitPrice(item.values) * (1 - state.rate) * quantity;
+        }, 0);
+        return sum + lineTotal;
+      }, 0)
+    : null;
+  lastQuantitySummary = { columns, rows, quantityColumns, menNetTotal };
   const colspan = Math.max(columns.length + 1, 1);
   if (!rows.length) {
     quantitySummaryTable.innerHTML = `<tr><td colspan="${colspan}" class="empty-state">Aucune quantité commandée pour le moment.</td></tr>`;
     return;
   }
+
+  const menNetTotalRow = menNetTotal !== null
+    ? `<tr><td colspan="${colspan - 1}"><strong>Montant net total, remises MEN appliquées</strong></td><td><strong>${escapeHtml(formatEuros(menNetTotal))}</strong></td></tr>`
+    : "";
 
   quantitySummaryTable.innerHTML = rows
     .map((row) => `
@@ -6752,7 +6841,7 @@ function renderQuantitySummary(responses = []) {
         <td><strong>${escapeHtml(row.quantity)}</strong></td>
       </tr>
     `)
-    .join("");
+    .join("") + menNetTotalRow;
 }
 
 // Valeur à afficher/exporter pour une colonne du "Récap des quantités" : une
@@ -6767,7 +6856,7 @@ function quantitySummaryCellValue(row, column) {
 }
 
 function exportQuantitySummaryToPdf() {
-  const { columns, rows } = lastQuantitySummary;
+  const { columns, rows, menNetTotal } = lastQuantitySummary;
 
   if (!rows.length) {
     alert("Aucune quantité commandée à exporter pour cette période.");
@@ -6800,6 +6889,11 @@ function exportQuantitySummaryToPdf() {
     ...columns.map((column) => quantitySummaryCellValue(row, column)),
     String(row.quantity)
   ]);
+  if (menNetTotal !== null && menNetTotal !== undefined) {
+    body.push([...columns.map(() => ""), ""]);
+    body[body.length - 1][0] = "Montant net total, remises MEN appliquées";
+    body[body.length - 1][columns.length] = formatEuros(menNetTotal);
+  }
 
   doc.autoTable({
     head,
@@ -6815,7 +6909,7 @@ function exportQuantitySummaryToPdf() {
 }
 
 function exportQuantitySummaryToExcel() {
-  const { columns, rows } = lastQuantitySummary;
+  const { columns, rows, menNetTotal } = lastQuantitySummary;
 
   if (!rows.length) {
     alert("Aucune quantité commandée à exporter pour cette période.");
@@ -6832,6 +6926,12 @@ function exportQuantitySummaryToExcel() {
     ...columns.map((column) => quantitySummaryCellValue(row, column)),
     row.quantity
   ]);
+  if (menNetTotal !== null && menNetTotal !== undefined) {
+    const totalRow = columns.map(() => "");
+    totalRow[0] = "Montant net total, remises MEN appliquées";
+    totalRow.push(formatEuros(menNetTotal));
+    data.push(totalRow);
+  }
 
   const sheet = globalThis.XLSX.utils.aoa_to_sheet([header, ...data]);
   const workbook = globalThis.XLSX.utils.book_new();

@@ -12,6 +12,51 @@ d'informations, et **validations de documents** (ex. BAT calendriers 2027,
 attestation d'engagement 2027). Espace admin protégé par un code (`ADMIN_CODE`,
 défini côté serveur, jamais dans le code). Propriétaire : Hélène (partagée avec Chantal).
 
+## Remise automatique par paliers — Promotions CONFIANCE MEN (24/11/2026)
+Précommande `promotions-confiance-men` (9 références Confiance® MEN Pads/Pants,
+colonne de prix **"Cession"**), toujours en **brouillon** : remise calculée
+automatiquement par pharmacie, sans action admin, jamais cumulable, toujours
+**recalculée à partir des quantités actuellement enregistrées** (jamais stockée
+sur la réponse) — donc à jour à la hausse comme à la baisse, y compris pour des
+quantités déjà présentes avant ce développement.
+- **Règle** : pour chaque pharmacie, total des paquets (toutes références MEN
+  confondues) + nombre de références distinctes avec une quantité > 0 →
+  **17,2 %** si ≥10 paquets sur ≥5 références, sinon **12,6 %** si ≥5 paquets
+  sur ≥3 références, sinon **0 %** (jamais bloquant : une petite commande reste
+  acceptée, juste sans remise). La remise s'applique à **toutes** les lignes
+  MEN de cette pharmacie (même celles commandées en petite quantité).
+- **Code** : constantes/fonctions `MEN_MIXED_DISCOUNT_*` / `menMixedDiscount*`,
+  dupliquées à l'identique dans `app.js` (écran admin) et `server.js` (exports +
+  e-mail de clôture) — **à maintenir synchronisées** si les paliers changent un
+  jour. Comparaison stricte sur l'id de campagne (`promotions-confiance-men`) :
+  aucun effet sur les autres opérations.
+- **Pourquoi pas le mécanisme `mixedDiscountRule` déjà présent dans `app.js`**
+  (`mixedDiscountState`, lignes ~6556+) : ce mécanisme-là **bloque** l'envoi si
+  le minimum n'est pas atteint (`isValid` fausse en dessous du 1er palier) — il
+  n'a d'ailleurs jamais été configuré sur aucune commande (`mixedDiscountRule`
+  absent de tout `data/orders.json`, et de toute façon pas persisté par
+  `PUT /api/orders`). Pour MEN il fallait l'inverse : jamais bloquant, retomber
+  à 0 % en dessous du seuil. D'où un mécanisme dédié plutôt qu'une réouverture
+  de celui-ci — si un jour il faut vraiment bloquer un minimum de commande,
+  celui-ci reste disponible tel quel.
+- **Où c'est visible** : tableau admin "Détail des commandes" (ligne par ligne,
+  prix net + montant, résumé remise/total par pharmacie) et "Récap des
+  quantités" (ligne "Montant net total" en bas, PDF + Excel) ; mêmes montants
+  dans l'export Excel (`GET /api/export.xls`, bouton "Exporter Excel" — MEN
+  n'a pas de colonnes "LIV n" donc passe par cette route serveur, pas par le
+  tableau construit côté écran) et dans les pièces jointes de l'e-mail de
+  clôture (`notifyCampaignClosed`).
+- **Testé** en ajoutant 5 pharmacies de test temporaires dans
+  `data/responses.json` (sauvegarde avant/après dans `data-backups/`, retirées
+  dès la vérification terminée — précommande restée en brouillon pendant tout
+  le test, jamais ouverte aux pharmacies) couvrant les 5 cas (5p/3réf→12,6%,
+  5p/2réf→0%, 10p/5réf→17,2%, 10p/4réf→12,6%, 4p/3réf→0%) : taux et montants
+  corrects dans l'export réel (`/api/export.xls`) et dans le récap (montant net
+  total recalculé indépendamment, cohérent au centime).
+- **Si une autre opération a besoin d'un mécanisme de remise similaire un
+  jour**, dupliquer ce bloc avec un autre identifiant de campagne plutôt que de
+  généraliser prématurément (chaque opération a ses propres paliers/colonnes).
+
 ## Sondages alignés sur les précommandes (clôture/relances/compte rendu) — 26/10/2026
 Les sondages fonctionnent désormais exactement comme les précommandes côté
 clôture, en réutilisant les mêmes mécanismes (fuseau centralisé

@@ -1707,6 +1707,52 @@ function validateProductsAgainstColisage(products = [], colisageColumn) {
   return invalidProduct ? colisageErrorMessage(parseColisageMinimum(invalidProduct.values?.[colisageColumn])) : "";
 }
 
+// Promotions CONFIANCE MEN (précommande "promotions-confiance-men", lancée en
+// brouillon le 24/11/2026) : remise automatique par paliers selon le total de
+// paquets ET le nombre de références distinctes commandées par UNE pharmacie
+// (jamais cumulable, le palier le plus avantageux atteint l'emporte). Toujours
+// RECALCULÉE à partir des quantités réellement enregistrées à cet instant —
+// jamais stockée sur la réponse — donc automatiquement à jour, à la hausse
+// comme à la baisse, y compris pour des quantités déjà enregistrées avant ce
+// développement. Limitée à cette seule précommande (comparaison sur l'id de
+// campagne) : aucun effet sur les autres opérations.
+const MEN_MIXED_DISCOUNT_CAMPAIGN_ID = "promotions-confiance-men";
+const MEN_MIXED_DISCOUNT_PRICE_COLUMN = "Cession";
+const MEN_MIXED_DISCOUNT_TIERS = [
+  { minPackages: 10, minReferences: 5, rate: 0.172 },
+  { minPackages: 5, minReferences: 3, rate: 0.126 }
+];
+
+function menMixedDiscountRate(totalPackages, distinctReferences) {
+  const tier = MEN_MIXED_DISCOUNT_TIERS.find((item) =>
+    totalPackages >= item.minPackages && distinctReferences >= item.minReferences);
+  return tier ? tier.rate : 0;
+}
+
+// À partir des produits d'UNE réponse pharmacie à MEN : total de paquets
+// (toutes références confondues), nombre de références distinctes dont la
+// quantité est > 0, et taux de remise applicable.
+function menMixedDiscountStateForProducts(products) {
+  const quantities = (products || [])
+    .map((product) => Number(String(product.quantity || "0").replace(",", ".")) || 0)
+    .filter((quantity) => quantity > 0);
+  const totalPackages = quantities.reduce((sum, quantity) => sum + quantity, 0);
+  const distinctReferences = quantities.length;
+  return { totalPackages, distinctReferences, rate: menMixedDiscountRate(totalPackages, distinctReferences) };
+}
+
+function menMixedUnitPrice(values) {
+  return Number(String((values && values[MEN_MIXED_DISCOUNT_PRICE_COLUMN]) || "0").replace(",", ".")) || 0;
+}
+
+function formatMenEuros(amount) {
+  return `${(Number(amount) || 0).toFixed(2).replace(".", ",")} €`;
+}
+
+function formatMenDiscountRate(rate) {
+  return rate > 0 ? `${(rate * 100).toFixed(1).replace(".", ",").replace(/,0$/, "")} %` : "0 %";
+}
+
 function rowsForExport(responses) {
   return latestResponses(responses).flatMap((item) => {
     if (!item.products || !item.products.length) {
@@ -1740,8 +1786,29 @@ function buildDispatchWorkbookHtml(responses) {
   const deliveryDatesCount = rows.reduce((max, row) => Math.max(max, (row.deliveryDates || []).length), 0);
   const deliveryDateHeadings = Array.from({ length: deliveryDatesCount }, (_, index) => `Date livraison ${index + 1}`);
 
-  const headings = ["Date", "Modifié le", "Pharmacie", "Statut", ...productColumns, "Quantité", ...deliveryDateHeadings, "Commentaire"];
-  const bodyRows = rows.map((row) => `
+  // Promotions CONFIANCE MEN uniquement : colonnes "Remise appliquée" et
+  // "Montant net" (prix de la colonne "Cession" après remise × quantité). Le
+  // taux est calculé par pharmacie (une réponse = toutes ses lignes MEN), pas
+  // par ligne — voir menMixedDiscountStateForProducts().
+  const isMenMixedDiscount = Boolean(responses && responses[0] && responses[0].campaignId === MEN_MIXED_DISCOUNT_CAMPAIGN_ID);
+  const discountStateByResponseId = new Map();
+  if (isMenMixedDiscount) {
+    latestResponses(responses).forEach((item) => {
+      discountStateByResponseId.set(item.id, menMixedDiscountStateForProducts(item.products));
+    });
+  }
+  const discountHeadings = isMenMixedDiscount ? ["Remise appliquée", "Montant net"] : [];
+
+  const headings = ["Date", "Modifié le", "Pharmacie", "Statut", ...productColumns, "Quantité", ...deliveryDateHeadings, ...discountHeadings, "Commentaire"];
+  const bodyRows = rows.map((row) => {
+    let discountCells = "";
+    if (isMenMixedDiscount) {
+      const state = discountStateByResponseId.get(row.id) || { rate: 0 };
+      const quantity = Number(String(row.quantity || "0").replace(",", ".")) || 0;
+      const netAmount = menMixedUnitPrice(row.values) * (1 - state.rate) * quantity;
+      discountCells = `<td>${escapeHtml(formatMenDiscountRate(state.rate))}</td><td>${escapeHtml(formatMenEuros(netAmount))}</td>`;
+    }
+    return `
     <tr>
       <td>${escapeHtml(row.createdAt)}</td>
       <td>${escapeHtml(row.updatedAt || "")}</td>
@@ -1750,9 +1817,11 @@ function buildDispatchWorkbookHtml(responses) {
       ${productColumns.map((column) => `<td>${escapeHtml(row.values[column] || "")}</td>`).join("")}
       <td>${escapeHtml(row.quantity)}</td>
       ${deliveryDateHeadings.map((_, index) => `<td>${escapeHtml((row.deliveryDates || [])[index] || "")}</td>`).join("")}
+      ${discountCells}
       <td>${escapeHtml(row.notes)}</td>
     </tr>
-  `).join("");
+  `;
+  }).join("");
 
   return `
     <html>
@@ -1800,13 +1869,31 @@ function buildQuantitySummaryWorkbookHtml(campaign, campaignResponses) {
     </tr>
   `).join("");
 
+  // Promotions CONFIANCE MEN uniquement : une ligne de total ajoutée en bas,
+  // avec le montant net APRÈS remise toutes pharmacies confondues — ne peut
+  // pas se déduire des totaux par produit ci-dessus car le taux de remise
+  // dépend de chaque pharmacie, pas du produit (voir buildDispatchWorkbookHtml).
+  let menTotalRow = "";
+  if (campaign.id === MEN_MIXED_DISCOUNT_CAMPAIGN_ID) {
+    const totalNet = latestResponses(campaignResponses).reduce((sum, item) => {
+      const state = menMixedDiscountStateForProducts(item.products);
+      const lineTotal = (item.products || []).reduce((lineSum, product) => {
+        const quantity = Number(String(product.quantity || "0").replace(",", ".")) || 0;
+        return lineSum + menMixedUnitPrice(product.values) * (1 - state.rate) * quantity;
+      }, 0);
+      return sum + lineTotal;
+    }, 0);
+    const colspan = Math.max(columns.length, 1);
+    menTotalRow = `<tr><td colspan="${colspan}"><strong>Montant net total, remises MEN appliquées</strong></td><td><strong>${escapeHtml(formatMenEuros(totalNet))}</strong></td></tr>`;
+  }
+
   return `
     <html>
       <head><meta charset="utf-8"></head>
       <body>
         <table border="1">
           <thead><tr>${headings.map((heading) => `<th>${escapeHtml(heading)}</th>`).join("")}</tr></thead>
-          <tbody>${bodyRows}</tbody>
+          <tbody>${bodyRows}${menTotalRow}</tbody>
         </table>
       </body>
     </html>
