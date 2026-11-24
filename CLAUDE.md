@@ -56,6 +56,40 @@ quantités déjà présentes avant ce développement.
 - **Si une autre opération a besoin d'un mécanisme de remise similaire un
   jour**, dupliquer ce bloc avec un autre identifiant de campagne plutôt que de
   généraliser prématurément (chaque opération a ses propres paliers/colonnes).
+- **24/11/2026, même jour, suite : remise % + prix net affichés EN DIRECT dans
+  le formulaire que remplit la pharmacie** (pas seulement côté admin). Avant,
+  la dernière colonne du template ("Colonne 5", toujours vide) ne servait à
+  rien côté pharmacie — demande d'Hélène : y afficher le taux de remise, et
+  ajouter une colonne "Prix remisé" juste après, tous deux recalculés à chaque
+  saisie/modification de quantité, avant même l'envoi de la réponse.
+  - **Fonctions** (`app.js`, juste avant `isPriceColumn`) :
+    `menMixedDiscountDisplayColumns()` (remplace la dernière colonne du
+    template par "Remise" + "Prix remisé" — repère la colonne vide **par
+    position** (la dernière), pas par son nom littéral "Colonne 5", pour rester
+    robuste si elle est renommée un jour), `menMixedDiscountFormProducts()` (lit
+    tous les `.product-quantity` actuellement affichés) et
+    `renderMenMixedDiscountFormColumns()` (réutilise
+    `menMixedDiscountStateForProducts()`/`menMixedUnitPrice()`/
+    `formatMenDiscountRate()`, déjà utilisées côté admin, pour ne pas dupliquer
+    le calcul). Appelée au premier rendu (`renderOrderTemplate()`) et à chaque
+    `input`/`change` sur une quantité (mêmes écouteurs que le mécanisme
+    `mixedDiscountRule` existant).
+  - **Volontairement PAS ajoutées à `template.columns`** (donc pas dans
+    `data/orders.json`) : ce sont des colonnes d'affichage pur, jamais
+    enregistrées dans les réponses. Les ajouter au template aurait dupliqué les
+    colonnes "Remise appliquée"/"Montant net" déjà générées dynamiquement par
+    l'export Excel (`server.js`, `buildDispatchWorkbookHtml()`) et ajouté des
+    colonnes vides inutiles au "Récap des quantités". Limité à cette seule
+    précommande (comparaison sur `selectedCampaign?.id`), donc aucun effet sur
+    les autres opérations, sur l'écran admin ni sur l'export.
+  - **Testé** sur la copie de test (redémarrée puis remise en pause après,
+    compte pharmacie de test déjà existant réutilisé, précommande MEN copiée
+    temporairement dans les données de test SEULEMENT avec `draft:false`, puis
+    la précommande réelle reste en brouillon en prod pendant tout ce temps) :
+    les 2 colonnes recalculent bien en direct (10 paquets/5 réf → 17,2 % et
+    prix net corrects ; 5 paquets/3 réf → 12,6 % et prix net corrects), aucune
+    réponse envoyée pendant le test. Données de test retirées, copie de test
+    remise en pause après vérification.
 
 ## Sondages alignés sur les précommandes (clôture/relances/compte rendu) — 26/10/2026
 Les sondages fonctionnent désormais exactement comme les précommandes côté

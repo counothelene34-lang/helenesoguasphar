@@ -6372,6 +6372,44 @@ function menMixedDiscountProductsMarkup(products, response) {
   return `${lines}<br><strong>Remise ${escapeHtml(formatMenDiscountRate(state.rate))}</strong> (${state.totalPackages} paquet${pluralPackages} sur ${state.distinctReferences} référence${pluralReferences} différente${pluralReferences}) — Total net : <strong>${escapeHtml(formatEuros(totalAmount))}</strong>`;
 }
 
+// Colonnes "Remise" et "Prix remisé" affichées EN DIRECT dans le formulaire que
+// remplit la pharmacie pour "promotions-confiance-men" (pas enregistrées, pas
+// ajoutées à template.columns — sinon duplication avec les colonnes "Remise
+// appliquée"/"Montant net" déjà ajoutées dynamiquement à l'export côté
+// serveur, voir server.js). Remplace la dernière colonne du template (vide,
+// "Colonne 5" aujourd'hui) par "Remise", et ajoute "Prix remisé" juste après,
+// recalculés à chaque saisie de quantité à partir des mêmes fonctions que
+// côté admin (menMixedDiscountStateForProducts/menMixedUnitPrice). Limité à
+// cette seule précommande (comparaison sur l'id de campagne) : n'affecte ni
+// les données enregistrées, ni les autres opérations, ni l'écran admin.
+function menMixedDiscountDisplayColumns(columns) {
+  if (!columns.length) return columns;
+  return [...columns.slice(0, -1), "Remise", "Prix remisé"];
+}
+
+function menMixedDiscountFormProducts() {
+  if (!productRows) return [];
+  return [...productRows.querySelectorAll(".product-quantity")]
+    .map((input) => {
+      const row = (currentOrderTemplate.rows || []).find((item) => item.id === input.dataset.id);
+      return row ? { values: row.values, quantity: input.value } : null;
+    })
+    .filter(Boolean);
+}
+
+function renderMenMixedDiscountFormColumns() {
+  if (!productRows || selectedCampaign?.id !== MEN_MIXED_DISCOUNT_CAMPAIGN_ID) return;
+  const state = menMixedDiscountStateForProducts(menMixedDiscountFormProducts());
+  productRows.querySelectorAll(".men-discount-rate-cell").forEach((cell) => {
+    cell.textContent = formatMenDiscountRate(state.rate);
+  });
+  productRows.querySelectorAll(".men-discount-price-cell").forEach((cell) => {
+    const row = (currentOrderTemplate.rows || []).find((item) => item.id === cell.dataset.id);
+    const netPrice = row ? menMixedUnitPrice(row.values) * (1 - state.rate) : 0;
+    cell.textContent = Number.isFinite(netPrice) ? formatEuros(netPrice) : "";
+  });
+}
+
 // Une colonne "prix" (Prix unitaire, Tarif, PU...) doit afficher le symbole € après
 // la valeur, sans toucher à la valeur enregistrée (utile pour l'import/export).
 function isPriceColumn(column) {
@@ -6413,8 +6451,14 @@ function renderOrderTemplate() {
   const totalColumn = computedTotalColumnOf(columns);
   const quantityColumns = quantitySubColumnsOf(columns);
   const withQuantity = !totalColumn;
+  const isMenMixedDiscountForm = selectedCampaign?.id === MEN_MIXED_DISCOUNT_CAMPAIGN_ID;
 
-  if (orderTableHeadRow) orderTableHeadRow.innerHTML = orderColumnsHeadRowMarkup(columns, withQuantity);
+  if (orderTableHeadRow) {
+    orderTableHeadRow.innerHTML = orderColumnsHeadRowMarkup(
+      isMenMixedDiscountForm ? menMixedDiscountDisplayColumns(columns) : columns,
+      withQuantity
+    );
+  }
   if (orderTemplateHeadRow) orderTemplateHeadRow.innerHTML = orderColumnsHeadRowMarkup(columns, withQuantity);
 
   if (deliveryDatesSection && deliveryDatesFields) {
@@ -6446,7 +6490,11 @@ function renderOrderTemplate() {
       : 0;
     return `
     <tr class="order-row" data-line-id="${escapeHtml(item.id)}">
-      ${columns.map((column) => {
+      ${columns.map((column, columnIndex) => {
+        if (isMenMixedDiscountForm && columnIndex === columns.length - 1) {
+          return `<td class="men-discount-rate-cell" data-id="${escapeHtml(item.id)}"></td>
+            <td class="men-discount-price-cell" data-id="${escapeHtml(item.id)}"></td>`;
+        }
         if (column === totalColumn) {
           return `<td>
             <input
@@ -6510,6 +6558,7 @@ function renderOrderTemplate() {
   }
 
   renderMixedDiscountSummary();
+  renderMenMixedDiscountFormColumns();
 }
 
 // Recalcule, pour une ligne de produit d'un pré-cadencier, le total annuel
@@ -7742,7 +7791,10 @@ productRows?.addEventListener("input", (event) => {
   }
   const input = event.target.closest(".product-quantity");
   if (input) validateQuantityInput(input);
-  if (event.target.closest(".product-quantity")) renderMixedDiscountSummary();
+  if (event.target.closest(".product-quantity")) {
+    renderMixedDiscountSummary();
+    renderMenMixedDiscountFormColumns();
+  }
 });
 
 productRows?.addEventListener("change", (event) => {
@@ -7753,7 +7805,10 @@ productRows?.addEventListener("change", (event) => {
   }
   const input = event.target.closest(".product-quantity");
   if (input) validateQuantityInput(input);
-  if (event.target.closest(".product-quantity")) renderMixedDiscountSummary();
+  if (event.target.closest(".product-quantity")) {
+    renderMixedDiscountSummary();
+    renderMenMixedDiscountFormColumns();
+  }
 });
 
 adminDashboardNav?.addEventListener("click", async (event) => {
