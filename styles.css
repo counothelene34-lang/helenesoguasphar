@@ -3860,7 +3860,10 @@ main,
    isAdminPreviewMode() dans app.js). Limité aux formulaires de réponse
    pharmacie eux-mêmes (pas aux formulaires d'administration qui vivent aussi
    dans #formView, rubrique Paramètres, ex: createCampaignForm). */
-body.admin-preview-mode #requestForm button[type="submit"],
+/* Mode aperçu administrateur : lecture seule pour les formulaires sensibles.
+   EXCEPTION depuis le 25/11/2026 : le formulaire de précommande (#requestForm)
+   reste actif pour permettre à l'administrateur de valider une commande À LA
+   PLACE d'une pharmacie (demande d'Hélène). Les autres restent en lecture seule. */
 body.admin-preview-mode #pollForm button[type="submit"],
 body.admin-preview-mode #profileUpdateForm button[type="submit"],
 body.admin-preview-mode #batValidationForm button[type="submit"],

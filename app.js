@@ -10098,10 +10098,20 @@ profileHoursGrid?.addEventListener("change", (event) => {
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
-  if (blockIfAdminPreview(formMessage)) return;
   if (!selectedCampaign) {
     formMessage.textContent = "Veuillez choisir une commande avant d'envoyer une réponse.";
     return;
+  }
+  // Mode "voir comme pharmacie" (administrateur) : contrairement aux autres
+  // formulaires qui restent en lecture seule, la précommande peut être validée
+  // À LA PLACE de la pharmacie choisie — après confirmation explicite, pour
+  // éviter tout enregistrement par mégarde (demande d'Hélène, 25/11/2026).
+  if (isAdminPreviewMode()) {
+    const onBehalf = confirm(`Enregistrer cette commande pour la pharmacie « ${currentPharmacy?.name || ""} » ?`);
+    if (!onBehalf) {
+      formMessage.textContent = "Enregistrement annulé.";
+      return;
+    }
   }
 
   const formData = new FormData(form);
@@ -10151,12 +10161,25 @@ form.addEventListener("submit", async (event) => {
   };
 
   let savedResponse;
+  // Anti double-clic : on désactive le bouton le temps de l'enregistrement, pour
+  // ne jamais envoyer deux fois la même commande (le serveur met de toute façon
+  // à jour la commande existante plutôt que d'en créer une seconde).
+  const submitBtn = form.querySelector('button[type="submit"]');
+  if (submitBtn) submitBtn.disabled = true;
   try {
     savedResponse = await appendResponse(response);
   } catch (error) {
-    formMessage.textContent = error.message || "Enregistrement impossible. Merci de vérifier les quantités.";
+    if (submitBtn) submitBtn.disabled = false;
+    // Message honnête selon la cause réelle : une session expirée n'a RIEN à
+    // voir avec les quantités (l'ancien message prêtait à confusion).
+    if (error.status === 401 || error.status === 403) {
+      formMessage.textContent = "Votre session a expiré ou n'est plus valide. Reconnectez-vous, puis renvoyez votre commande.";
+    } else {
+      formMessage.textContent = error.message || "Enregistrement impossible. Vérifiez votre connexion internet puis réessayez.";
+    }
     return;
   }
+  if (submitBtn) submitBtn.disabled = false;
 
   pharmacyCampaignResponses[selectedCampaign.id] = savedResponse || response;
   renderCampaignPickers();

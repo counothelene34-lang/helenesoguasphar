@@ -4129,9 +4129,34 @@ const server = http.createServer(async (request, response) => {
     }
 
     if (url.pathname === "/api/responses" && request.method === "POST") {
-      const user = requirePharmacyWriteSession(request, response);
-      if (!user) return;
       const payload = JSON.parse(await readBody(request));
+      const principal = getAuthenticatedPrincipal(request);
+      if (!principal) {
+        sendJson(response, 401, { error: "Non authentifié" });
+        return;
+      }
+      const pharmacies = readPharmacies();
+      // Pour QUELLE pharmacie on enregistre :
+      //  - une pharmacie connectée : TOUJOURS la sienne (le pharmacyId du client
+      //    est ignoré, sécurité du 23/10/2026) ;
+      //  - un administrateur SOGUASPHAR en "voir comme pharmacie" : la pharmacie
+      //    qu'il a choisie (payload.pharmacyId), pour pouvoir commander à sa place.
+      let writerPharmacy;
+      if (principal.role === "soguasphar_admin") {
+        const targetId = String(payload.pharmacyId || "").trim();
+        writerPharmacy = pharmacies.find((item) => item.id === targetId);
+        if (!writerPharmacy) {
+          sendJson(response, 400, { error: "Choisissez la pharmacie pour laquelle enregistrer la commande." });
+          return;
+        }
+      } else if (principal.pharmacyId) {
+        writerPharmacy = pharmacies.find((item) => item.id === principal.pharmacyId)
+          || { id: principal.pharmacyId, name: principal.pharmacyName };
+      } else {
+        sendJson(response, 403, { error: "Accès refusé" });
+        return;
+      }
+
       const responses = readResponses();
       const campaignId = String(payload.campaignId || "herboristerie");
       const products = normalizeResponseProducts(payload.products, campaignId);
@@ -4148,10 +4173,10 @@ const server = http.createServer(async (request, response) => {
         periodId: String(payload.periodId || "").trim(),
         createdAt: String(payload.createdAt || new Date().toLocaleString("fr-FR")),
         updatedAt: String(payload.updatedAt || ""),
-        // Jamais le pharmacyId envoyé par le navigateur (sécurité, 23/10/2026) :
-        // toujours celui de la session en cours, seule preuve d'autorisation fiable.
-        pharmacyId: user.pharmacyId,
-        pharmacyName: String(payload.pharmacyName || "").trim(),
+        // Pharmacie réelle décidée ci-dessus (jamais une valeur arbitraire du
+        // client pour une pharmacie connectée ; la pharmacie choisie pour l'admin).
+        pharmacyId: writerPharmacy.id,
+        pharmacyName: writerPharmacy.name || String(payload.pharmacyName || "").trim(),
         interest: String(payload.interest || "").trim(),
         products,
         // Pré-cadencier : dates de livraison souhaitées (facultatif, absent pour
@@ -4161,12 +4186,6 @@ const server = http.createServer(async (request, response) => {
           : [],
         notes: String(payload.notes || "").trim()
       };
-      const pharmacies = readPharmacies();
-      // Le nom affiché suit aussi la pharmacie réelle de la session (pas celui
-      // envoyé par le client) — purement pour éviter un étiquetage trompeur,
-      // l'identifiant (déjà forcé ci-dessus) est la seule clé de sécurité.
-      const ownPharmacyForResponse = pharmacies.find((item) => item.id === user.pharmacyId);
-      if (ownPharmacyForResponse?.name) incoming.pharmacyName = ownPharmacyForResponse.name;
       const existing = responses.find((item) => responseOwnerKey(item, pharmacies) === responseOwnerKey(incoming, pharmacies));
       const now = new Date().toLocaleString("fr-FR");
       const savedResponse = {

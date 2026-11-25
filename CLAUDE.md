@@ -306,6 +306,37 @@ minimum de filet de sécurité (vu les incidents de septembre-octobre 2026 ci-de
    penser à `rafraichir-test` avant de l'utiliser (elle a pu prendre du retard
    pendant la pause).
 
+## Valider une précommande : admin « à la place d'une pharmacie » (25/11/2026)
+Signalé : blocage de validation sur la précommande « Promotions CONFIANCE MEN ».
+- **Pharmacie connectée directement** : la validation fonctionne (vérifié : sans remise,
+  palier 12,6 % = 5 paquets/3 réf., palier 17,2 % = 10 paquets/5 réf., ainsi que
+  10 paquets/4 réf.→12,6 % et 5 paquets/2 réf.→0 %). La **logique de remise** (par
+  pharmacie, références à quantité > 0, palier le plus élevé sans cumul) était **déjà
+  correcte** (`MEN_MIXED_DISCOUNT_TIERS`, app.js + server.js). Le colisage n'intervient
+  pas (colonne colisage nulle). Je n'ai pas pu reproduire d'échec en direct ; la cause la
+  plus probable d'un échec ponctuel est une **session expirée** dont l'ancien message
+  (« vérifier les quantités ») était trompeur.
+- **Vrai blocage reproduit = mode « voir comme pharmacie »** (admin) : volontairement en
+  lecture seule (`blockIfAdminPreview` + CSS `admin-preview-mode`), et côté serveur un
+  compte `soguasphar_admin` n'a pas de `pharmacyId` → `requirePharmacyWriteSession`
+  refusait (403). Hélène a demandé de **pouvoir valider à la place d'une pharmacie**.
+- **Correctif** :
+  - **server.js `POST /api/responses`** : n'utilise plus `requirePharmacyWriteSession` mais
+    `getAuthenticatedPrincipal`. Une pharmacie connectée écrit TOUJOURS pour elle-même
+    (pharmacyId du client ignoré, sécurité du 23/10 conservée) ; un `soguasphar_admin`
+    peut écrire pour la pharmacie choisie (`payload.pharmacyId`). Cible admin absente → 400.
+  - **app.js** : dans `#requestForm` (précommande uniquement), le mode aperçu n'est plus
+    bloqué — l'admin confirme (`confirm`) puis la commande est enregistrée pour la pharmacie
+    sélectionnée (`currentPharmacy.id`). Les autres formulaires restent en lecture seule.
+  - **styles.css** : `#requestForm` retiré de la liste des boutons grisés en aperçu admin.
+  - **Anti double-clic** : bouton désactivé pendant l'envoi (et le serveur met à jour la
+    commande existante au lieu d'en créer une 2ᵉ — clé `responseOwnerKey`).
+  - **Message d'erreur honnête** : 401/403 → « votre session a expiré… » au lieu de
+    « vérifier les quantités ».
+- **Vérifié** (copie isolée, aucune vraie commande) : admin→pharmacie choisie OK, double-clic
+  = 1 commande, une pharmacie ne peut pas écrire pour une autre, remises affichées correctes
+  pour les 5 cas ci-dessus.
+
 ## Une pharmacie peut modifier son vote à un sondage (16/11/2026)
 Avant, une fois la pharmacie ayant répondu à un sondage, sa réponse s'affichait sans
 possibilité de la changer. Désormais, bouton **« Modifier ma réponse »** (comme
