@@ -534,12 +534,23 @@ une vraie clôture automatique :
   `sendMail()`, ne jamais compter sur le défaut.**
 
 ## SOGUASPHAR Awards FERMÉ aux pharmacies (27/11/2026)
-L'événement étant terminé, l'accès pharmacie à SOGUASPHAR Awards est fermé. **L'accès
-administrateur (« voir comme pharmacie ») et toutes les données Awards sont conservés.**
-- **Préco (app.js)** : l'entrée `#awardsPromoBlock` n'est plus affichée aux pharmacies —
-  `awardsPromoBlock.hidden = !isAdminPreviewMode()` (visible UNIQUEMENT en aperçu admin).
-  `openAwardsSpace()` : si ce n'est pas l'aperçu admin, affiche « Soguasphar Awards est
-  terminé. » sans rien ouvrir.
+L'événement étant terminé, l'accès pharmacie à SOGUASPHAR Awards est fermé. **Les données
+Awards et l'accès de GESTION dans l'administration (onglet Administration de Préco + app
+admin Awards) sont conservés.**
+- **CORRECTION 27/11/2026 (2ᵉ passe)** : la 1ʳᵉ version laissait encore le bandeau visible
+  en **aperçu administrateur** (`!isAdminPreviewMode()`) — c'était le cas de la capture
+  BERTHELOT F. ET surtout `index.html` chargeait `app.js?v=20261023-awards-bloc` : ce
+  numéro de version n'avait jamais changé → les navigateurs pouvaient resservir l'ancien
+  `app.js` (bandeau visible). Deux corrections : (a) **bandeau supprimé du HTML** et masqué
+  dans les deux modes ; (b) **numéro de version bumpé** à `?v=20261127-awards-off` (anti-cache).
+- **Préco (index.html)** : le bloc `#awardsPromoBlock` (logo + « Confirmez votre présence… »
+  + bouton « Accéder à mon espace » `#viewAwards`) est **entièrement SUPPRIMÉ** du HTML.
+  Comme `index.html` est servi en `no-store`, le bandeau disparaît pour tous, tout de suite,
+  dans les DEUX modes — insensible au cache de `app.js`. Version `app.js`/`styles.css`
+  bumpée à `20261127-awards-off`.
+- **Préco (app.js)** : `awardsPromoBlock.hidden = true` (filet de sécurité inconditionnel) ;
+  `openAwardsSpace()` n'ouvre PLUS jamais l'espace (aucun appel réseau) et affiche
+  « Soguasphar Awards est terminé. » si jamais appelée.
 - **Préco (server.js)** : `GET /api/awards-link` (pont pharmacie) renvoie 403 « Soguasphar
   Awards est terminé. » quoi qu'il arrive (même session déjà ouverte). `GET
   /api/awards-link-preview` (aperçu admin, soguasphar_admin) est **laissé actif**.
