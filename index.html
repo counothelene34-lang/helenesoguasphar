@@ -1475,6 +1475,39 @@
     </div>
   </div>
 
+  <div id="relaunchModal" class="image-preview-modal" role="dialog" aria-modal="true" aria-labelledby="relaunchModalTitle" hidden>
+    <div class="image-preview-backdrop" data-close-relaunch></div>
+    <div class="image-preview-dialog relaunch-dialog">
+      <div class="image-preview-head">
+        <h2 id="relaunchModalTitle">Relancer la précommande</h2>
+        <button class="image-preview-close" type="button" data-close-relaunch aria-label="Fermer">X</button>
+      </div>
+      <div class="relaunch-body">
+        <p id="relaunchCampaignName" class="relaunch-campaign-name"></p>
+
+        <section class="relaunch-option">
+          <h3>Reprendre avec les commandes existantes</h3>
+          <p class="field-hint">Rouvre la <strong>même</strong> campagne en conservant toutes les commandes, quantités et participations déjà enregistrées. Idéal pour <strong>prolonger</strong> une précommande dont les résultats étaient insuffisants.</p>
+          <label for="relaunchKeepEndDate">Nouvelle date de clôture</label>
+          <input id="relaunchKeepEndDate" type="date">
+          <button id="relaunchKeepBtn" class="primary-btn" type="button">Reprendre avec les commandes existantes</button>
+        </section>
+
+        <section class="relaunch-option">
+          <h3>Créer une nouvelle campagne à zéro</h3>
+          <p class="field-hint">Crée une <strong>nouvelle</strong> campagne avec les mêmes produits, prix et règles. Chaque pharmacie <strong>repart de zéro</strong> (aucune commande ni participation reprise ; totaux et compteurs à zéro). L'ancienne campagne et son historique sont conservés.</p>
+          <label for="relaunchNewStartDate">Date de début</label>
+          <input id="relaunchNewStartDate" type="date">
+          <label for="relaunchNewEndDate">Date de clôture</label>
+          <input id="relaunchNewEndDate" type="date">
+          <button id="relaunchNewBtn" class="primary-btn" type="button">Créer une nouvelle campagne à zéro</button>
+        </section>
+
+        <p id="relaunchMessage" class="status-message" role="status"></p>
+      </div>
+    </div>
+  </div>
+
   <div id="awardsModal" class="image-preview-modal" role="dialog" aria-modal="true" aria-labelledby="awardsModalTitle" hidden>
     <div class="image-preview-backdrop" data-close-awards></div>
     <div class="image-preview-dialog awards-preview-dialog">

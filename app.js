@@ -1258,11 +1258,18 @@ function findCampaignByOperationId(operationId) {
   const normalizedId = normalizeOperationId(operationId);
   if (!normalizedId) return null;
 
-  return campaigns.find((campaign) => {
-    const campaignId = normalizeOperationId(campaign.id);
-    const campaignSlug = normalizeOperationId(slugify(campaign.title));
-    return campaignId === normalizedId || campaignSlug === normalizedId;
-  }) || null;
+  // Toutes les campagnes qui correspondent, par identifiant OU par slug de titre.
+  const matches = campaigns.filter((campaign) =>
+    normalizeOperationId(campaign.id) === normalizedId ||
+    normalizeOperationId(slugify(campaign.title)) === normalizedId);
+  if (!matches.length) return null;
+
+  // S'il y en a plusieurs (cas d'une « relance à zéro » : l'ancienne campagne
+  // clôturée porte souvent l'identifiant = slug du titre, identique à la
+  // nouvelle), on privilégie TOUJOURS celle réellement commandable maintenant,
+  // pour ne jamais ouvrir l'ancienne campagne clôturée au lieu de la nouvelle.
+  return matches.find((campaign) => !campaign.draft && !campaignIsEffectivelyClosed(campaign))
+    || matches[matches.length - 1];
 }
 
 function findPollByOperationId(operationId) {
@@ -7776,6 +7783,7 @@ document.addEventListener("keydown", (event) => {
     closeImagePreview();
     closePdfPreview();
     closeReminderModal();
+    closeRelaunchModal();
   }
 });
 
@@ -8741,45 +8749,10 @@ adminCampaignCards.addEventListener("click", async (event) => {
   if (relaunchButton) {
     const campaign = campaigns.find((item) => item.id === relaunchButton.dataset.relaunchCampaign);
     if (!campaign) return;
-
-    // Une relance prolonge l'opération en cours (mêmes commandes déjà reçues
-    // conservées) : on ne crée PAS une nouvelle période à part, sinon les
-    // commandes déjà passées deviennent invisibles derrière le filtre de
-    // période côté admin. On repousse simplement la date de clôture de la
-    // dernière période existante. Seule une opération sans aucune période
-    // programmée en obtient une nouvelle (elle n'en a jamais eu).
-    const periods = sortedPeriods(campaign);
-    const lastPeriod = periods.length ? periods[periods.length - 1] : null;
-
-    const endDate = prompt(
-      `Relancer la campagne "${campaign.title}"\n\nLes commandes déjà reçues sont conservées. Nouvelle date de clôture (AAAA-MM-JJ) :`,
-      addDaysToIso(todayIso(), 30)
-    );
-    if (endDate === null) return;
-    if (!isValidIsoDate(endDate)) {
-      alert("Date de clôture invalide. Utilisez le format AAAA-MM-JJ (ex : 2026-10-31).");
-      return;
-    }
-    if (lastPeriod && endDate < lastPeriod.startDate) {
-      alert(`La date de clôture doit être après le début de la période en cours (${formatDateFr(lastPeriod.startDate)}).`);
-      return;
-    }
-    if (!lastPeriod && endDate < todayIso()) {
-      alert("La date de clôture doit être aujourd'hui ou plus tard.");
-      return;
-    }
-
-    if (lastPeriod) {
-      lastPeriod.endDate = endDate;
-      campaign.periods = campaign.periods.map((period) => period.id === lastPeriod.id ? lastPeriod : period);
-    } else {
-      campaign.periods = [...(campaign.periods || []), { id: createId(), startDate: todayIso(), endDate }];
-    }
-    campaign.closed = false;
-    campaigns = campaigns.map((item) => item.id === campaign.id ? campaign : item);
-    await saveCampaigns(campaigns);
-    renderCampaignPickers();
-    adminMessage.textContent = `Campagne "${campaign.title}" relancée jusqu'au ${formatDateFr(endDate)}. Les commandes déjà reçues sont conservées.`;
+    // Deux façons de relancer, clairement distinguées dans une fenêtre de choix :
+    // « Reprendre avec les commandes existantes » ou « Créer une nouvelle
+    // campagne à zéro » (voir openRelaunchModal).
+    openRelaunchModal(campaign);
     return;
   }
 
@@ -9488,6 +9461,104 @@ document.addEventListener("click", (event) => {
   if (pollBtn) { openReminder("poll", pollBtn.getAttribute("data-remind-poll")); return; }
   if (event.target.closest("[data-remind-validation]")) { openReminder("validation", "current"); return; }
   if (event.target.closest("[data-remind-attestation]")) { openReminder("attestation", "current"); return; }
+});
+
+// ---- Relancer une précommande : deux modes (admin) --------------------------
+const relaunchModal = document.querySelector("#relaunchModal");
+const relaunchCampaignName = document.querySelector("#relaunchCampaignName");
+const relaunchKeepEndDate = document.querySelector("#relaunchKeepEndDate");
+const relaunchKeepBtn = document.querySelector("#relaunchKeepBtn");
+const relaunchNewStartDate = document.querySelector("#relaunchNewStartDate");
+const relaunchNewEndDate = document.querySelector("#relaunchNewEndDate");
+const relaunchNewBtn = document.querySelector("#relaunchNewBtn");
+const relaunchMessage = document.querySelector("#relaunchMessage");
+let relaunchTargetId = null;
+
+function closeRelaunchModal() {
+  if (relaunchModal) relaunchModal.hidden = true;
+  relaunchTargetId = null;
+}
+
+function openRelaunchModal(campaign) {
+  if (!relaunchModal) return;
+  relaunchTargetId = campaign.id;
+  const defaultEnd = addDaysToIso(todayIso(), 30);
+  if (relaunchCampaignName) relaunchCampaignName.textContent = campaign.title;
+  if (relaunchKeepEndDate) relaunchKeepEndDate.value = defaultEnd;
+  if (relaunchNewStartDate) relaunchNewStartDate.value = todayIso();
+  if (relaunchNewEndDate) relaunchNewEndDate.value = defaultEnd;
+  if (relaunchMessage) relaunchMessage.textContent = "";
+  if (relaunchKeepBtn) relaunchKeepBtn.disabled = false;
+  if (relaunchNewBtn) relaunchNewBtn.disabled = false;
+  relaunchModal.hidden = false;
+}
+
+// Mode 1 : reprendre la campagne existante (prolonge la dernière période, garde
+// les commandes). Même logique qu'avant, déplacée ici.
+relaunchKeepBtn?.addEventListener("click", async () => {
+  const campaign = campaigns.find((item) => item.id === relaunchTargetId);
+  if (!campaign) return;
+  const endDate = relaunchKeepEndDate ? relaunchKeepEndDate.value : "";
+  if (!isValidIsoDate(endDate)) { relaunchMessage.textContent = "Indiquez une date de clôture valide."; return; }
+  const periods = sortedPeriods(campaign);
+  const lastPeriod = periods.length ? periods[periods.length - 1] : null;
+  if (lastPeriod && endDate < lastPeriod.startDate) {
+    relaunchMessage.textContent = `La date de clôture doit être après le début de la période en cours (${formatDateFr(lastPeriod.startDate)}).`;
+    return;
+  }
+  if (!lastPeriod && endDate < todayIso()) { relaunchMessage.textContent = "La date de clôture doit être aujourd'hui ou plus tard."; return; }
+  relaunchKeepBtn.disabled = true;
+  if (lastPeriod) {
+    lastPeriod.endDate = endDate;
+    campaign.periods = campaign.periods.map((period) => period.id === lastPeriod.id ? lastPeriod : period);
+  } else {
+    campaign.periods = [...(campaign.periods || []), { id: createId(), startDate: todayIso(), endDate }];
+  }
+  campaign.closed = false;
+  campaigns = campaigns.map((item) => item.id === campaign.id ? campaign : item);
+  try {
+    await saveCampaigns(campaigns);
+  } catch (error) {
+    relaunchKeepBtn.disabled = false;
+    relaunchMessage.textContent = error.message || "Enregistrement impossible, réessayez.";
+    return;
+  }
+  closeRelaunchModal();
+  renderCampaignPickers();
+  adminMessage.textContent = `Campagne "${campaign.title}" reprise jusqu'au ${formatDateFr(endDate)}. Les commandes déjà reçues sont conservées.`;
+});
+
+// Mode 2 : créer une NOUVELLE campagne à zéro (id distinct côté serveur, aucune
+// commande reprise). Le bouton est désactivé pendant l'appel (anti double-clic)
+// et le serveur est idempotent (même source + mêmes dates = pas de 2e campagne).
+relaunchNewBtn?.addEventListener("click", async () => {
+  const campaign = campaigns.find((item) => item.id === relaunchTargetId);
+  if (!campaign) return;
+  const startDate = relaunchNewStartDate ? relaunchNewStartDate.value : "";
+  const endDate = relaunchNewEndDate ? relaunchNewEndDate.value : "";
+  if (!isValidIsoDate(startDate) || !isValidIsoDate(endDate)) { relaunchMessage.textContent = "Indiquez des dates de début et de clôture valides."; return; }
+  if (endDate < startDate) { relaunchMessage.textContent = "La date de clôture doit être après la date de début."; return; }
+  relaunchNewBtn.disabled = true;
+  relaunchMessage.textContent = "Création de la nouvelle campagne…";
+  try {
+    const result = await requestJson("/api/orders/relaunch", {
+      method: "POST",
+      headers: { "X-Admin-Code": ADMIN_CODE },
+      body: JSON.stringify({ sourceCampaignId: campaign.id, startDate, endDate })
+    });
+    campaigns = await getCampaigns();
+    closeRelaunchModal();
+    renderCampaignPickers();
+    const label = result?.created === false ? "déjà créée" : "créée";
+    adminMessage.textContent = `Nouvelle campagne à zéro ${label} à partir de "${campaign.title}" (du ${formatDateFr(startDate)} au ${formatDateFr(endDate)}). Les pharmacies repartent de zéro ; l'ancienne campagne et son historique sont conservés.`;
+  } catch (error) {
+    relaunchNewBtn.disabled = false;
+    relaunchMessage.textContent = error.message || "Création impossible, réessayez.";
+  }
+});
+
+document.addEventListener("click", (event) => {
+  if (event.target.closest("[data-close-relaunch]")) closeRelaunchModal();
 });
 
 savePollTitleBtn?.addEventListener("click", async () => {

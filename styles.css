@@ -4110,3 +4110,19 @@ body.admin-preview-mode #attestationForm button[type="submit"] {
   align-items: center;
   margin-top: 8px;
 }
+
+/* ===== Fenêtre "Relancer une précommande" (2 modes) ======================= */
+.relaunch-dialog { max-width: 560px; width: 92vw; max-height: 88vh; overflow-y: auto; text-align: left; }
+.relaunch-body { text-align: left; }
+.relaunch-campaign-name { font-weight: 700; margin: 0 0 12px; }
+.relaunch-option {
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 14px;
+  background: #fafbfa;
+}
+.relaunch-option h3 { margin: 0 0 6px; font-size: 1.05rem; color: #0f766e; }
+.relaunch-option label { display: block; margin-top: 10px; font-weight: 600; }
+.relaunch-option input[type="date"] { width: 100%; box-sizing: border-box; }
+.relaunch-option button { margin-top: 12px; width: 100%; }

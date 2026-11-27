@@ -306,6 +306,37 @@ minimum de filet de sécurité (vu les incidents de septembre-octobre 2026 ci-de
    penser à `rafraichir-test` avant de l'utiliser (elle a pu prendre du retard
    pendant la pause).
 
+## Relancer une précommande : 2 modes distincts + correction OXYPROLANE (27/11/2026)
+Au clic sur « Relancer » (carte d'une précommande clôturée, admin), une **fenêtre de
+choix** (`#relaunchModal`, app.js `openRelaunchModal`) propose deux actions :
+- **« Reprendre avec les commandes existantes »** = ancien comportement : rouvre la MÊME
+  campagne (prolonge la dernière période, garde commandes/quantités/participations). Pour
+  prolonger une précommande aux résultats insuffisants.
+- **« Créer une nouvelle campagne à zéro »** = nouvelle campagne (mêmes produits/prix/
+  règles), chaque pharmacie repart de zéro, totaux/compteurs à zéro ; l'ancienne campagne
+  et son historique sont conservés. On y choisit les **nouvelles dates** (début + clôture).
+- **Serveur** : `POST /api/orders/relaunch` (server.js, admin) crée la nouvelle campagne
+  avec un **identifiant DISTINCT** (`<sourceId>-relance-<AAAAMMJJ>`), copie titre, type,
+  description, message, image(s), **template** (produits/prix/colisage), règle de remise
+  éventuelle, et **recopie les fichiers de pièces jointes** sous le nouvel id. Les réponses
+  étant rattachées à l'id de campagne, la nouvelle campagne a **0 commande** automatiquement.
+  **Idempotent** : même source + mêmes dates = pas de 2ᵉ campagne (champ `relaunchOf`,
+  ajouté à l'allowlist du PUT /api/orders pour être préservé). Bouton désactivé pendant
+  l'appel (anti double-clic).
+- **Piège résolu** : l'identifiant d'une ancienne campagne est souvent le **slug du titre**
+  (ex. `precommande-oxyprolane-curcuma`), donc un lien `?operation=<slug>` tombait sur
+  l'ancienne campagne clôturée. `findCampaignByOperationId` (app.js) privilégie désormais
+  **toujours** la campagne réellement commandable (ni brouillon ni clôturée) parmi les
+  correspondances id/slug.
+- **Correction OXYPROLANE** (`Précommande Oxyprolane - curcuma`) : avait été **reprise** par
+  erreur (période prolongée au 03/12, 29 commandes héritées conservées) alors qu'une relance
+  **à zéro** était voulue. Vérifié : AUCUNE commande saisie depuis la relance (la plus
+  récente datait du 15/10 ; l'original était clôturé au 15/10 d'après la sauvegarde du 05/11).
+  Corrigé : ancienne campagne `precommande-oxyprolane-curcuma` remise **clôturée** (période
+  2026-09-21→2026-10-15, ses 29 commandes conservées en historique) ; nouvelle campagne
+  `precommande-oxyprolane-curcuma-relance-20261127` créée **à zéro** (ouverte 27/11→03/12,
+  0 commande). Sauvegardes dans `data-backups/*-before-oxyprolane-fix-*`.
+
 ## Valider une précommande : admin « à la place d'une pharmacie » (25/11/2026)
 Signalé : blocage de validation sur la précommande « Promotions CONFIANCE MEN ».
 - **Pharmacie connectée directement** : la validation fonctionne (vérifié : sans remise,

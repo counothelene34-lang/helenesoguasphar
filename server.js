@@ -3764,6 +3764,79 @@ const server = http.createServer(async (request, response) => {
       return;
     }
 
+    // "Relancer à zéro" : crée une NOUVELLE campagne à partir des produits/prix/
+    // règles d'une campagne existante, avec un identifiant DISTINCT (les anciennes
+    // commandes, rattachées à l'ancien id, ne sont donc jamais reprises : les
+    // totaux et compteurs de la nouvelle campagne repartent de zéro). L'ancienne
+    // campagne et son historique sont laissés intacts.
+    if (url.pathname === "/api/orders/relaunch" && request.method === "POST") {
+      if (!requireAdminCode(request, response)) return;
+      const payload = JSON.parse((await readBody(request)) || "{}");
+      const sourceId = String(payload.sourceCampaignId || "").trim();
+      const startDate = String(payload.startDate || "").trim();
+      const endDate = String(payload.endDate || "").trim();
+      if (!sourceId || !startDate || !endDate) {
+        sendJson(response, 400, { error: "Campagne source et dates (début, clôture) sont nécessaires." });
+        return;
+      }
+      if (endDate < startDate) {
+        sendJson(response, 400, { error: "La date de clôture doit être après la date de début." });
+        return;
+      }
+      const orders = readOrders();
+      const source = orders.find((item) => item.id === sourceId);
+      if (!source) {
+        sendJson(response, 404, { error: "Campagne source introuvable." });
+        return;
+      }
+      // Idempotence : un clic répété (même source + mêmes dates) ne crée pas une
+      // deuxième campagne, on renvoie celle déjà créée.
+      const already = orders.find((item) => item.relaunchOf === sourceId
+        && Array.isArray(item.periods)
+        && item.periods.some((p) => p.startDate === startDate && p.endDate === endDate));
+      if (already) {
+        sendJson(response, 200, { campaign: already, created: false });
+        return;
+      }
+      // Identifiant distinct (jamais celui de la source) et unique.
+      let uniqueId = `${sourceId}-relance-${startDate.replace(/-/g, "")}`.replace(/[^\w-]/g, "-");
+      let suffix = 2;
+      while (orders.some((item) => item.id === uniqueId)) { uniqueId = `${sourceId}-relance-${startDate.replace(/-/g, "")}-${suffix++}`.replace(/[^\w-]/g, "-"); }
+      // Copie des pièces jointes (fichiers sur disque) sous le nouvel identifiant.
+      const newAttachments = [];
+      for (const att of (Array.isArray(source.attachments) ? source.attachments : [])) {
+        try {
+          const srcPath = path.join(ORDER_ATTACHMENTS_DIR, attachmentFileName(sourceId, att));
+          if (fs.existsSync(srcPath)) {
+            if (!fs.existsSync(ORDER_ATTACHMENTS_DIR)) fs.mkdirSync(ORDER_ATTACHMENTS_DIR, { recursive: true });
+            fs.copyFileSync(srcPath, path.join(ORDER_ATTACHMENTS_DIR, attachmentFileName(uniqueId, att)));
+            newAttachments.push({ id: att.id, name: att.name, mime: att.mime, ext: att.ext });
+          }
+        } catch (error) { /* copie best-effort */ }
+      }
+      const newCampaign = {
+        id: uniqueId,
+        title: String(payload.title || source.title || "Précommande").trim(),
+        type: source.type || "Précommande",
+        description: source.description || "",
+        pharmacyMessage: source.pharmacyMessage || "",
+        deliveryDate: source.deliveryDate || "",
+        imageData: source.imageData || "",
+        imageData2: source.imageData2 || "",
+        closed: false,
+        draft: false,
+        periods: [{ id: `${uniqueId}-p1`, startDate, endDate }],
+        template: normalizeTemplate(source.template),
+        attachments: newAttachments,
+        relaunchOf: sourceId
+      };
+      if (source.mixedDiscountRule) newCampaign.mixedDiscountRule = source.mixedDiscountRule;
+      orders.push(newCampaign);
+      writeOrders(orders);
+      sendJson(response, 201, { campaign: newCampaign, created: true });
+      return;
+    }
+
     if (url.pathname === "/api/orders" && request.method === "PUT") {
       if (!requireAdminCode(request, response)) {
         return;
@@ -3806,7 +3879,12 @@ const server = http.createServer(async (request, response) => {
           endDate: String(period.endDate || "").trim()
         })).filter((period) => period.startDate) : [],
         template: normalizeTemplate(order.template),
-        attachments: persistAttachments(id, ORDER_ATTACHMENTS_DIR, order.attachments, previous)
+        attachments: persistAttachments(id, ORDER_ATTACHMENTS_DIR, order.attachments, previous),
+        // Trace d'une "relance à zéro" : la nouvelle campagne garde le lien vers
+        // la campagne d'origine (préservé lors des enregistrements admin ; sert à
+        // l'idempotence de /api/orders/relaunch). Repris de la version précédente
+        // s'il n'est pas renvoyé par le client (il n'est pas édité à l'écran).
+        relaunchOf: String(order.relaunchOf || (previous && previous.relaunchOf) || "").trim() || undefined
         };
       }) : [];
       writeOrders(orders);
