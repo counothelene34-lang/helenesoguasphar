@@ -533,7 +533,31 @@ une vraie clôture automatique :
   **Toujours préciser `from`/`fromName` explicitement dans tout nouvel appel à
   `sendMail()`, ne jamais compter sur le défaut.**
 
+## SOGUASPHAR Awards FERMÉ aux pharmacies (27/11/2026)
+L'événement étant terminé, l'accès pharmacie à SOGUASPHAR Awards est fermé. **L'accès
+administrateur (« voir comme pharmacie ») et toutes les données Awards sont conservés.**
+- **Préco (app.js)** : l'entrée `#awardsPromoBlock` n'est plus affichée aux pharmacies —
+  `awardsPromoBlock.hidden = !isAdminPreviewMode()` (visible UNIQUEMENT en aperçu admin).
+  `openAwardsSpace()` : si ce n'est pas l'aperçu admin, affiche « Soguasphar Awards est
+  terminé. » sans rien ouvrir.
+- **Préco (server.js)** : `GET /api/awards-link` (pont pharmacie) renvoie 403 « Soguasphar
+  Awards est terminé. » quoi qu'il arrive (même session déjà ouverte). `GET
+  /api/awards-link-preview` (aperçu admin, soguasphar_admin) est **laissé actif**.
+- **App Awards (`/opt/apps/soguasphar-awards/server.js`, hors git, déployée par
+  `appctl rebuild awards`)** : dans `requireGuest`, tout invité `type='pharmacy'` est refusé
+  (403 « Soguasphar Awards est terminé. ») — ferme consultation ET modification via n'importe
+  quelle route `/api/me*`, y compris avec un jeton pérenne déjà obtenu (session déjà ouverte /
+  ancien lien direct). `GET /api/auth/sso-link-pharmacy` est aussi fermé. **Labos/partenaires
+  (`type` labo/partner, via `guest_contacts`) NON concernés**, et l'aperçu admin
+  (`/api/preview/pharmacy`, audience `awards_preview`) ne passe pas par `requireGuest` → intact.
+- **Pour rouvrir un jour** : retirer ces gardes (Préco `/api/awards-link`, le bloc
+  `awardsPromoBlock`, `openAwardsSpace`, et dans Awards `requireGuest` + `sso-link-pharmacy`).
+- **Vérifié** : jeton pharmacie réel → `GET /api/me`, `PUT /api/me/presence`, `POST /api/me/vote`
+  tous 403 « terminé » ; jeton labo réel → `GET /api/me` = 200 ; routes admin (dashboard/preview)
+  intactes (401/400, pas 500) ; Préco `/api/awards-link` = 403 « terminé » en ligne.
+
 ## Espace SOGUASPHAR Awards pour les pharmacies — EN LIGNE depuis le 23/10/2026
+> ⚠️ Section historique — l'accès pharmacie est désormais FERMÉ, voir la section ci-dessus.
 Nouveau bouton menu pharmacie « 🏆 SOGUASPHAR Awards » (`#viewAwards`, hero-menu), ouvre une
 fenêtre DANS le site (modale `#awardsModal`/iframe `#awardsModalFrame`, même motif que
 `openPdfPreview()`/`closePdfPreview()` — fonctions `openAwardsSpace()`/`closeAwardsSpace()`,
