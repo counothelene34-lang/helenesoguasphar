@@ -3106,39 +3106,11 @@ const server = http.createServer(async (request, response) => {
     // Awards contre sa fiche invité. Jamais de nouveau mot de passe, jamais de code,
     // jamais l'identifiant nu dans l'URL (toujours signé + très court).
     if (url.pathname === "/api/awards-link" && request.method === "GET") {
-      const principal = getAuthenticatedPrincipal(request);
-      if (!principal || !principal.pharmacyId) {
-        sendJson(response, 403, { error: "Réservé aux comptes pharmacie." });
-        return;
-      }
-      if (!AWARDS_SSO_SECRET) {
-        sendJson(response, 500, { error: "Pont SOGUASPHAR Awards non configuré (secret manquant)." });
-        return;
-      }
-      const pharmacy = readPharmacies().find((item) => item.id === principal.pharmacyId);
-      if (!pharmacy) {
-        sendJson(response, 404, { error: "Pharmacie introuvable." });
-        return;
-      }
-      // Identité réelle du titulaire : prise sur le compte pharmacy_admin de CETTE
-      // pharmacie (donnée fiable Préco), jamais déduite du nom commercial de la
-      // pharmacie — transmise à Awards pour préremplir sa fiche "Présence du
-      // titulaire" sans jamais inventer un nom.
-      const titulaireAccount = readUsers().find(
-        (item) => item.role === "pharmacy_admin" && String(item.pharmacyId) === String(pharmacy.id)
-      );
-      const token = signShortAwardsToken(
-        {
-          type: "pharmacy",
-          login: pharmacy.id,
-          name: pharmacy.name,
-          titulaireFirstName: titulaireAccount ? titulaireAccount.firstName || "" : "",
-          titulaireLastName: titulaireAccount ? titulaireAccount.lastName || "" : "",
-          aud: "awards",
-        },
-        60
-      );
-      sendJson(response, 200, { url: `${AWARDS_BASE_URL}/api/auth/sso-link-pharmacy?token=${token}` });
+      // SOGUASPHAR Awards est TERMINÉ (27/11/2026) : le pont pharmacie est fermé.
+      // Aucune pharmacie ne peut plus obtenir de lien Awards (même depuis une
+      // session déjà ouverte / un ancien lien). L'aperçu administrateur passe par
+      // une route distincte (/api/awards-link-preview), laissée active.
+      sendJson(response, 403, { error: "Soguasphar Awards est terminé." });
       return;
     }
 

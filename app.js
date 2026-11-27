@@ -3375,6 +3375,16 @@ async function openAwardsSpace() {
   awardsModalClose?.focus();
   const previewMode = isAdminPreviewMode();
   if (awardsModalPreviewNote) awardsModalPreviewNote.hidden = !previewMode;
+  // SOGUASPHAR Awards est terminé pour les pharmacies : on n'ouvre plus l'espace
+  // (seul l'aperçu administrateur reste autorisé). Message clair si un ancien
+  // déclencheur/lien tente quand même d'ouvrir l'espace.
+  if (!previewMode) {
+    if (awardsModalError) {
+      awardsModalError.hidden = false;
+      awardsModalError.textContent = "Soguasphar Awards est terminé.";
+    }
+    return;
+  }
   try {
     const endpoint = previewMode
       ? `/api/awards-link-preview?pharmacyId=${encodeURIComponent(currentPharmacy.id)}`
@@ -3612,7 +3622,10 @@ function renderPharmacyAccess() {
   // dans ce cas, donc aucune écriture n'est possible, pas seulement des boutons
   // grisés).
   if (awardsPromoBlock) {
-    awardsPromoBlock.hidden = !((isNewSystemPharmacy && !isAdminPreviewMode()) || isAdminPreviewMode());
+    // SOGUASPHAR Awards est TERMINÉ (27/11/2026) : l'entrée est retirée de
+    // l'interface des pharmacies. On la conserve UNIQUEMENT en aperçu
+    // administrateur (« voir comme pharmacie »), pour préserver l'accès admin.
+    awardsPromoBlock.hidden = !isAdminPreviewMode();
   }
 
   // Sélecteur "Voir comme pharmacie" : seulement pour une administratrice
